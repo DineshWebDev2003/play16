@@ -1,0 +1,50 @@
+workflows:
+  react-native-expo-android:
+    name: React Native Expo Android
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - firebase
+      node: 20
+      java: 17
+    working_directory: my-expo-app
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Cleanup
+        script: |
+          rm -rf android
+      - name: Create google-services.json
+        script: |
+          echo $GOOGLE_SERVICES_JSON | base64 --decode > google-services.json
+          # Verify the file was created and isn't empty
+          if [ ! -s google-services.json ]; then
+            echo "ERROR: google-services.json is empty or was not created. Check your Codemagic Environment Variables!"
+            exit 1
+          fi
+      - name: Expo Prebuild
+        script: npx expo prebuild --platform android --clean
+      - name: Build Android AAB
+        script: |
+          export NODE_OPTIONS="--max-old-space-size=8192"
+          cd android
+          chmod +x gradlew
+          echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
+          
+          # Decode Keystore
+          echo $CM_KEYSTORE | base64 --decode > /tmp/keystore.keystore
+          
+          ./gradlew clean bundleRelease \
+            -Pandroid.injected.signing.store.file=/tmp/keystore.keystore \
+            -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD \
+            --no-daemon --stacktrace
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - dineshwebdev2003@gmail.com
