@@ -14,7 +14,7 @@ workflows:
         script: |
           rm -rf android
       - name: Expo Prebuild
-        script: npx expo prebuild --platform android --clean
+        script: yes | npx expo prebuild --platform android --clean --no-install
       - name: Build Android AAB
         script: |
           export NODE_OPTIONS="--max-old-space-size=8192"
