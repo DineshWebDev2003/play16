@@ -4,6 +4,8 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
+      groups:
+        - signing
       node: 20
       java: 17
     working_directory: my-expo-app
