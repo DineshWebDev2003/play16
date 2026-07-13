@@ -4,8 +4,6 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
-      groups:
-        - firebase
       node: 20
       java: 17
     working_directory: my-expo-app
@@ -15,14 +13,6 @@ workflows:
       - name: Cleanup
         script: |
           rm -rf android
-      - name: Create google-services.json
-        script: |
-          echo $GOOGLE_SERVICES_JSON | base64 --decode > google-services.json
-          # Verify the file was created and isn't empty
-          if [ ! -s google-services.json ]; then
-            echo "ERROR: google-services.json is empty or was not created. Check your Codemagic Environment Variables!"
-            exit 1
-          fi
       - name: Expo Prebuild
         script: npx expo prebuild --platform android --clean
       - name: Build Android AAB
