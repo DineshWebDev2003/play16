@@ -17,7 +17,7 @@ workflows:
           rm -rf android
       - name: Expo Prebuild
         script: yes | npx expo prebuild --platform android --clean --no-install
-      - name: Build Android AAB
+      - name: Build Android AAB (signed)
         script: |
           export NODE_OPTIONS="--max-old-space-size=8192"
           cd android
@@ -33,9 +33,15 @@ workflows:
             -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD \
             --no-daemon --stacktrace
+
+      - name: Build Debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
       - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/apk/debug/*.apk
     publishing:
       email:
         recipients:
