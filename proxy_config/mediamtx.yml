@@ -1,0 +1,43 @@
+# MediaMTX Configuration for Chithode PlaySchool CCTV Proxy
+# This file allows you to convert dynamic IMOU HLS streams into stable RTSP/HLS links.
+
+logLevel: info
+api: yes
+apiAddress: :9997
+paths:
+  # Path for Sleeping Area
+  sleeping_area:
+    source: "http://placeholder"
+    sourceOnDemand: yes
+    
+  # Path for Study Area
+  study_area:
+    source: "http://placeholder"
+    sourceOnDemand: yes
+
+  # Path for Outside / School Entrance
+  school_entrance:
+    source: "http://placeholder"
+    sourceOnDemand: yes
+
+  # Path for Activity Area (WebRTC Default)
+  activity_area:
+    source: publisher
+    sourceOnDemand: no
+
+# Global Settings
+rtsp: yes
+rtspAddress: :8554
+
+# HLS Section (Using HTTP for easier Local Testing)
+hls: yes
+hlsAddress: :4567 
+hlsEncryption: no # Set to 'no' for local testing
+# hlsServerKey: "C:\\xampp\\apache\\conf\\ssl.key\\server.key"
+# WebRTC / WHIP / WHEP
+webrtc: yes
+webrtcAddress: :8889
+webrtcICEUDP: yes
+webrtcICEUDPAddress: :8000
+webrtcSTUNServers:
+  - stun:stun.l.google.com:19302

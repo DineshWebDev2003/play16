@@ -1,0 +1,19 @@
+check.js
+check_brackets.py
+credentials.md
+.gemini/
+.agents/
+.agent/
+_agents/
+_agent/
+*.md
+*.js
+*.py
+
+# Allow important config files in my-expo-app
+!my-expo-app/tailwind.config.js
+!my-expo-app/metro.config.js
+!my-expo-app/babel.config.js
+!my-expo-app/eas.json
+!my-expo-app/index.js
+!my-expo-app/app.json

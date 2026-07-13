@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chithode PlaySchool - WebRTC Streamer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(244, 114, 182, 0.05) 0%, transparent 40%);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+        }
+        .neon-border:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.7); }
+            100% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-black bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-fill-color transparent mb-2">
+                Live Cam Streamer
+            </h1>
+            <p class="text-slate-400 font-semibold tracking-widest uppercase text-xs">PlaySchool Infrastructure Portal</p>
+        </header>
+
+        <!-- Main Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Settings -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-cog mr-3 text-indigo-400"></i> Configuration
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">WHIP Server URL</label>
+                            <input type="text" id="whip-url" value="http://localhost:8889/cam-stream/whip" 
+                                class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none neon-border"
+                                placeholder="http://[IP]:8889/[Path]/whip">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">STUN Server</label>
+                            <input type="text" id="stun-server" value="stun:stun.l.google.com:19302" 
+                                class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none neon-border">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Camera Label</label>
+                            <input type="text" id="cam-label" value="Office Cam 1" 
+                                class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none neon-border">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-info-circle mr-3 text-pink-400"></i> Status
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center bg-slate-900/30 p-3 rounded-xl border border-slate-700/50">
+                            <span class="text-sm text-slate-400">Connection</span>
+                            <span id="conn-status" class="px-3 py-1 rounded-full text-[10px] font-black bg-slate-800 text-slate-400 uppercase">Disconnected</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-900/30 p-3 rounded-xl border border-slate-700/50">
+                            <span class="text-sm text-slate-400">Bitrate</span>
+                            <span id="bitrate" class="text-sm font-bold text-indigo-400">0 kbps</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Preview -->
+            <div class="lg:col-span-2">
+                <div class="glass-card overflow-hidden relative group">
+                    <video id="preview" autoplay muted playsinline class="w-full aspect-video bg-black object-cover"></video>
+                    
+                    <div class="absolute top-6 left-6 flex items-center space-x-3 pointer-events-none">
+                        <div id="recording-dot" class="hidden">
+                            <div class="w-3 h-3 rounded-full bg-red-500 pulse"></div>
+                        </div>
+                        <div class="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                            <span class="text-white text-[10px] font-black uppercase tracking-[2px]" id="overlay-label">PREVIEW MODE</span>
+                        </div>
+                    </div>
+
+                    <div class="absolute bottom-6 left-6 right-6 flex justify-center space-x-4">
+                        <button id="start-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[2px] text-xs px-10 py-4 rounded-2xl transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
+                            Start Stream
+                        </button>
+                        <button id="stop-btn" class="hidden bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-[2px] text-xs px-10 py-4 rounded-2xl transition-all shadow-xl shadow-red-500/20 active:scale-95">
+                            Stop Stream
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6 glass-card p-6 border-l-4 border-l-indigo-500">
+                    <p class="text-sm text-slate-400 leading-relaxed italic">
+                        "This portal enables old smartphones and secondary PCs to act as high-performance CCTV nodes. Ensure the device is connected to a stable power source and localized Wi-Fi for optimal performance."
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auth Check
+        if (localStorage.getItem('chk_authorized') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        let peerConnection = null;
+        let localStream = null;
+        const videoElement = document.getElementById('preview');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusEl = document.getElementById('conn-status');
+        const dotEl = document.getElementById('recording-dot');
+        const overlayEl = document.getElementById('overlay-label');
+
+        // Load Saved Settings
+        window.addEventListener('load', () => {
+            const savedWhip = localStorage.getItem('chk_whip_url');
+            const savedStun = localStorage.getItem('chk_stun_server');
+            const savedLabel = localStorage.getItem('chk_cam_label');
+            
+            if (savedWhip) document.getElementById('whip-url').value = savedWhip;
+            if (savedStun) document.getElementById('stun-server').value = savedStun;
+            if (savedLabel) {
+                document.getElementById('cam-label').value = savedLabel;
+                overlayEl.innerText = 'PREVIEW: ' + savedLabel.toUpperCase();
+            }
+        });
+
+        async function initCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 1280, height: 720, frameRate: 24 },
+                    audio: true
+                });
+                videoElement.srcObject = localStream;
+            } catch (err) {
+                console.error('Camera access failed:', err);
+                alert('Could not access camera. Please ensure permissions are granted.');
+            }
+        }
+
+        async function startStream() {
+            const whipUrl = document.getElementById('whip-url').value;
+            const stunServer = document.getElementById('stun-server').value;
+            const camLabel = document.getElementById('cam-label').value;
+            
+            if (!whipUrl) return alert('Enter WHIP URL');
+
+            // Save Settings
+            localStorage.setItem('chk_whip_url', whipUrl);
+            localStorage.setItem('chk_stun_server', stunServer);
+            localStorage.setItem('chk_cam_label', camLabel);
+
+            peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: stunServer }]
+            });
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            // Wait for ICE gathering to complete (simple way for WHIP)
+            await new Promise(resolve => {
+                if (peerConnection.iceGatheringState === 'complete') {
+                    resolve();
+                } else {
+                    const checkState = () => {
+                        if (peerConnection.iceGatheringState === 'complete') {
+                            peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                            resolve();
+                        }
+                    };
+                    peerConnection.addEventListener('icegatheringstatechange', checkState);
+                }
+            });
+
+            try {
+                const response = await fetch(whipUrl, {
+                    method: 'POST',
+                    body: peerConnection.localDescription.sdp,
+                    headers: { 'Content-Type': 'application/sdp' }
+                });
+
+                if (!response.ok) throw new Error('WHIP offer failed');
+
+                const answerSdp = await response.text();
+                await peerConnection.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerSdp
+                });
+
+                // UI Updates
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                statusEl.innerText = 'LIVE';
+                statusEl.classList.remove('bg-slate-800', 'text-slate-400');
+                statusEl.classList.add('bg-red-500/20', 'text-red-500');
+                dotEl.classList.remove('hidden');
+                overlayEl.innerText = 'LIVE BROADCAST';
+                overlayEl.parentElement.classList.add('border-red-500/30');
+
+            } catch (err) {
+                console.error('Stream error:', err);
+                statusEl.innerText = 'ERROR';
+                alert('Streaming failed: ' + err.message);
+            }
+        }
+
+        function stopStream() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            statusEl.innerText = 'DISCONNECTED';
+            statusEl.classList.add('bg-slate-800', 'text-slate-400');
+            statusEl.classList.remove('bg-red-500/20', 'text-red-500');
+            dotEl.classList.add('hidden');
+            overlayEl.innerText = 'PREVIEW MODE';
+            overlayEl.parentElement.classList.remove('border-red-500/30');
+        }
+
+        startBtn.addEventListener('click', startStream);
+        stopBtn.addEventListener('click', stopStream);
+
+        // Auto-init
+        initCamera();
+    </script>
+</body>
+</html>

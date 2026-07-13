@@ -1,0 +1,25 @@
+workflows:
+  react-native-expo-android:
+    name: React Native Expo Android
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      node: latest
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npx expo install expo-build-properties expo-splash-screen
+      - name: Expo Prebuild (clean)
+        script: npx expo prebuild --platform android --clean
+      - name: Build Android AAB
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - dineshwebdev2003@gmail.com
