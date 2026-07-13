@@ -11,7 +11,7 @@ workflows:
     working_directory: my-expo-app
     scripts:
       - name: Install dependencies
-        script: npm install
+        script: npm ci
       - name: Cleanup
         script: |
           rm -rf android
