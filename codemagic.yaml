@@ -8,6 +8,10 @@ workflows:
         - android_signing
       node: 20
       java: 17
+      vars:
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID: 1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com
+        EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 1007921293882-hoeftpiglonoqr50go781nom220dqmpf.apps.googleusercontent.com
+        EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ""
     working_directory: my-expo-app
     scripts:
       - name: Install dependencies
