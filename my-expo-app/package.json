@@ -66,5 +66,14 @@
     "typescript": "~5.9.2"
   },
   "main": "node_modules/expo/AppEntry.js",
-  "private": true
+  "private": true,
+  "optionalDependencies": {
+    "lightningcss-win32-x64-msvc": "^1.32.0"
+  },
+  "overrides": {
+    "lightningcss": "$lightningcss",
+    "react-native-css-interop": {
+      "lightningcss": "$lightningcss"
+    }
+  }
 }
