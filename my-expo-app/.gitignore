@@ -4,14 +4,15 @@ dist/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .DS_Store
 *.jks
-keystore.md
 *.p12
+keystore.md
 *.key
 *.mobileprovision
 google-services.json
