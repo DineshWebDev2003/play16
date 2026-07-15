@@ -102,4 +102,38 @@ class AnnouncementController extends Controller
         Announcement::destroy($id);
         return response()->json(['message' => 'Announcement deleted']);
     }
+
+    public function notify($id, Request $request)
+    {
+        $authUser = $request->user();
+        $announcement = Announcement::findOrFail($id);
+
+        $title = "New Announcement: " . $announcement->title;
+        $body = $announcement->content;
+
+        $actualImageUrl = null;
+        if ($announcement->image_url) {
+            $base = config('app.push_image_base_url');
+            $path = 'storage/' . $announcement->image_url;
+            $actualImageUrl = $base ? rtrim($base, '/') . '/' . $path : asset($path);
+        }
+
+        $notificationData = [
+            'screen' => 'announcements',
+            'id' => $announcement->id,
+            'image' => $actualImageUrl
+        ];
+
+        try {
+            if ($announcement->target === 'all') {
+                $this->notificationService->notifyAll($title, $body, $notificationData, null, $authUser->id);
+            } else {
+                $this->notificationService->notifyRole($announcement->target, $title, $body, $notificationData, null, $authUser->id);
+            }
+            return response()->json(['message' => 'Notification sent']);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Notify announcement failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to send notification'], 500);
+        }
+    }
 }

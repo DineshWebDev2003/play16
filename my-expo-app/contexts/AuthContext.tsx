@@ -152,6 +152,7 @@ interface AuthContextType {
   toggleUserStatus: (userId: string) => void;
   addAnnouncement: (announcement: Announcement) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
+  notifyAnnouncement: (id: string) => Promise<void>;
   addActivity: (activity: Activity) => Promise<void>;
   deleteActivity: (id: string) => Promise<boolean>;
   likeActivity: (id: string) => Promise<void>;
@@ -666,6 +667,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [fetchData]);
 
+  const notifyAnnouncement = useCallback(async (id: string) => {
+    await api.post(`/announcements/${id}/notify`);
+  }, []);
+
   const addActivity = useCallback(async (activity: Activity) => {
     try {
       const formData = new FormData();
@@ -905,6 +910,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toggleUserStatus,
     addAnnouncement,
     deleteAnnouncement,
+    notifyAnnouncement,
     addActivity,
     deleteActivity,
     likeActivity,
@@ -929,7 +935,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }), [
     user, users, announcements, activities, transactions, fees, feeStructures, branches, selectedBranch,
     isLoading, login, googleLogin, testLogin, logout, addUser, updateUser, updateProfile,
-    deleteUser, toggleUserStatus, addAnnouncement, deleteAnnouncement,
+    deleteUser, toggleUserStatus, addAnnouncement, deleteAnnouncement, notifyAnnouncement,
     addActivity, deleteActivity, likeActivity, addComment, addTransaction, deleteTransaction, updateTransaction,
     approveTransaction, rejectTransaction,
     updateAvatar, refreshFees, updateNotificationSettings, fetchData,

@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/announcements', [AnnouncementController::class, 'index']);
     Route::post('/announcements', [AnnouncementController::class, 'store']);
     Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
+    Route::post('/announcements/{id}/notify', [AnnouncementController::class, 'notify']);
 
     // Activities
     Route::get('/activities', [ActivityController::class, 'index']);

@@ -160,7 +160,7 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
             ]}
           >
             <Image
-              source={{ uri: 'https://tnhappykids.in/public/images/hk.png' }}
+              source={require('../../assets/hk-removebg-preview.png')}
               style={{ width: width * 0.85, height: 80 }}
               resizeMode="contain"
             />
@@ -312,6 +312,15 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
                   Sign in with Google
                 </Text>
               </TouchableOpacity>
+
+              <Image
+                source={require('../../assets/bottom-login.png')}
+                style={{ width: '100%', height: 100, marginTop: 16 }}
+                resizeMode="contain"
+              />
+              <Text style={{ color: '#8B7E6B', fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 8, letterSpacing: 0.5, fontStyle: 'italic' }}>
+                "Every child is a different kind of flower, and all together make this world a beautiful garden."
+              </Text>
             </View>
           </Animated.View>
         </View>

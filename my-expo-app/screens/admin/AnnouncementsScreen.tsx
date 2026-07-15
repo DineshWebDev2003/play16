@@ -333,7 +333,7 @@ const AddAnnouncementForm = memo(({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AnnouncementsScreen({ navigation }: AnnouncementsScreenProps) {
-  const { announcements, addAnnouncement, deleteAnnouncement, user } = useAuth();
+  const { announcements, addAnnouncement, deleteAnnouncement, notifyAnnouncement, user } = useAuth();
   const { colors, theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -357,6 +357,15 @@ export default function AnnouncementsScreen({ navigation }: AnnouncementsScreenP
       setIsSubmitting(false);
     }
   }, [addAnnouncement]);
+
+  const sendNotification = useCallback(async (item: any) => {
+    try {
+      await notifyAnnouncement(item.id);
+      Alert.alert('Notification Sent! 🔔', `Push notification sent for "${item.title}"`);
+    } catch {
+      Alert.alert('Error', 'Failed to send notification');
+    }
+  }, [notifyAnnouncement]);
 
   const handleDelete = useCallback((id: string, title: string) => {
     Alert.alert('Delete', `Remove "${title}"?`, [
@@ -453,6 +462,15 @@ export default function AnnouncementsScreen({ navigation }: AnnouncementsScreenP
                 <Text className="text-white/60 text-[10px] font-bold">Tap to read more →</Text>
               </View>
             </View>
+
+            {/* Floating Notify Button */}
+            <TouchableOpacity
+              onPress={() => sendNotification(item)}
+              className="absolute top-4 left-4 bg-brand-yellow/80 w-10 h-10 rounded-2xl items-center justify-center border border-white/30"
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="bell-ring-outline" size={20} color="white" />
+            </TouchableOpacity>
 
             {/* Floating Delete Button */}
             <TouchableOpacity
