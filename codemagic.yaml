@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       groups:
-        - signing
+        - android_signing
       node: 20
       java: 17
     working_directory: my-expo-app
