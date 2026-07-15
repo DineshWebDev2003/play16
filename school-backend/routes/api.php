@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\BranchController;
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/auth/google', [AuthController::class, 'googleLogin']);
+Route::get('/keystore/android', [App\Http\Controllers\Api\KeystoreController::class, 'download']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

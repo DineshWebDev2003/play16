@@ -135,4 +135,15 @@ return [
 
     'push_image_base_url' => env('PUSH_IMAGE_BASE_URL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Keystore Access Token
+    |--------------------------------------------------------------------------
+    |
+    | Token to secure the keystore download endpoint used during CI/CD builds.
+    |
+    */
+
+    'keystore_access_token' => env('KEYSTORE_ACCESS_TOKEN'),
+
 ];

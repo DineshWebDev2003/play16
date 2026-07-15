@@ -17,15 +17,17 @@ workflows:
           rm -rf android
       - name: Expo Prebuild
         script: yes | npx expo prebuild --platform android --clean --no-install
+      - name: Download Keystore
+        script: |
+          curl -SL "$CM_KEYSTORE_URL?token=$CM_KEYSTORE_ACCESS_TOKEN" \
+            -o /tmp/keystore.keystore
+          ls -la /tmp/keystore.keystore
       - name: Build Android AAB (signed)
         script: |
           export NODE_OPTIONS="--max-old-space-size=8192"
           cd android
           chmod +x gradlew
           echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
-          
-          # Decode Keystore
-          echo $CM_KEYSTORE | base64 --decode > /tmp/keystore.keystore
           
           ./gradlew clean bundleRelease \
             -Pandroid.injected.signing.store.file=/tmp/keystore.keystore \
