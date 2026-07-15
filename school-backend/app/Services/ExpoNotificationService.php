@@ -77,7 +77,7 @@ class ExpoNotificationService
         }
 
         try {
-            $response = Http::post($this->url, $messages);
+            $response = Http::asJson()->post($this->url, $messages);
 
             if ($response->successful()) {
                 return true;
