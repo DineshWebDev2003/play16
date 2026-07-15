@@ -42,6 +42,10 @@
       },
       "package": "com.tnhappykids.throneapp",
       "versionCode": 2,
+      "notification": {
+        "icon": "./assets/splash.png",
+        "color": "#F59E0B"
+      },
       "splash": {
         "image": "./assets/splash.png",
         "resizeMode": "contain",
@@ -65,7 +69,7 @@
     [
       "expo-notifications",
       {
-        "icon": "./assets/icon.png",
+        "icon": "./assets/splash.png",
         "color": "#F59E0B",
         "sounds": [],
         "mode": "production",
