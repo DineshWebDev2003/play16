@@ -142,6 +142,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  googleLogin: (idToken: string) => Promise<boolean>;
   testLogin: (role: UserRole) => void;
   logout: () => void;
   addUser: (newUser: any) => Promise<void>;
@@ -465,6 +466,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          throw error;
       }
       console.error('Login Error:', error);
+      return false;
+    }
+  }, [fetchData]);
+
+  const googleLogin = useCallback(async (idToken: string): Promise<boolean> => {
+    try {
+      const response = await api.post('/auth/google', { id_token: idToken });
+      const { access_token, user: rawUser } = response.data;
+      const userData = mapUser(rawUser);
+
+      if (userData.status === 'inactive') {
+        throw new Error('INACTIVE_USER_ALERT');
+      }
+
+      await AsyncStorage.setItem('auth_token', access_token);
+      await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+
+      setAuthToken(access_token);
+      setUser(userData);
+
+      await fetchData();
+      await setupPushNotifications();
+      return true;
+    } catch (error: any) {
+      if (error.message === 'INACTIVE_USER_ALERT') throw error;
+      console.error('Google Login Error:', error);
       return false;
     }
   }, [fetchData]);
@@ -898,9 +925,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     branches,
     selectedBranch,
     setSelectedBranch,
+    googleLogin,
   }), [
     user, users, announcements, activities, transactions, fees, feeStructures, branches, selectedBranch,
-    isLoading, login, testLogin, logout, addUser, updateUser, updateProfile,
+    isLoading, login, googleLogin, testLogin, logout, addUser, updateUser, updateProfile,
     deleteUser, toggleUserStatus, addAnnouncement, deleteAnnouncement,
     addActivity, deleteActivity, likeActivity, addComment, addTransaction, deleteTransaction, updateTransaction,
     approveTransaction, rejectTransaction,

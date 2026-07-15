@@ -2,6 +2,7 @@
   "expo": {
     "name": "TN HAPPYKIDS",
     "slug": "tn-happykids",
+    "scheme": "com.tnhappykids.throneapp",
     "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -35,8 +36,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/chk_logo_4.png",
-        "monochromeImage": "./assets/images/chk_logo_4.png",
+        "foregroundImage": "./assets/icon.png",
+        "monochromeImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.tnhappykids.throneapp",
@@ -53,23 +54,27 @@
     },
     "plugins": [
       [
-        "expo-build-properties",
-        {
-          "android": {
-            "usesCleartextTraffic": true
-          }
+      "expo-build-properties",
+      {
+        "android": {
+          "usesCleartextTraffic": true
         }
-      ],
-      "@react-native-community/datetimepicker",
-      [
-        "expo-notifications",
-        {
-"icon": "./assets/icon.png",
-          "color": "#F59E0B",
-          "sounds": [],
-          "mode": "production"
+      }
+    ],
+    "@react-native-community/datetimepicker",
+    [
+      "expo-notifications",
+      {
+        "icon": "./assets/icon.png",
+        "color": "#F59E0B",
+        "sounds": [],
+        "mode": "production",
+        "channelId": "default",
+        "android": {
+          "googleServicesFile": "./google-services.json"
         }
-      ],
+      }
+    ],
       [
         "expo-splash-screen",
         {

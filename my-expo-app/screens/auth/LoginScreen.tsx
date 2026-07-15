@@ -7,8 +7,13 @@ import PremiumPopup from '../../components/PremiumPopup';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { GOOGLE } from '../../config/google';
 import 'react-native-reanimated';
 import '../../global.css';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,7 +29,55 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
   const [isLoading, setIsLoading] = React.useState(false);
   const [showRecoverModal, setShowRecoverModal] = useState(false);
   const [statusModal, setStatusModal] = useState({ visible: false, title: '', message: '', type: 'error' as 'success' | 'error' | 'info' | 'action' });
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
+
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
+    clientId: GOOGLE.clientId,
+    androidClientId: GOOGLE.androidClientId,
+    iosClientId: GOOGLE.iosClientId,
+  });
+
+  const handleGoogleLogin = async (idToken: string) => {
+    setIsLoading(true);
+    try {
+      const success = await googleLogin(idToken);
+      if (success) {
+        onLogin();
+      } else {
+        setStatusModal({
+          visible: true,
+          title: 'Google Login Failed 🔒',
+          message: 'Your Gmail is not registered with any account. Contact your admin to register your email.',
+          type: 'error'
+        });
+      }
+    } catch (error: any) {
+      if (error.message === 'INACTIVE_USER_ALERT') {
+        setStatusModal({
+          visible: true,
+          title: 'Account Halted 🛑',
+          message: 'Your account has been disabled. Please contact your admin to reactivate.',
+          type: 'info'
+        });
+      } else {
+        setStatusModal({
+          visible: true,
+          title: 'System Error ⚠️',
+          message: 'Google sign-in failed. Please try again or use username login.',
+          type: 'error'
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (googleResponse?.type === 'success') {
+      const { id_token } = googleResponse.params;
+      handleGoogleLogin(id_token);
+    }
+  }, [googleResponse]);
 
   const formTranslateY = useSharedValue(height * 0.3);
 
@@ -224,6 +277,40 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
                   </Text>
                   {!isLoading && <MaterialCommunityIcons name="arrow-right" size={22} color="#1E1B4B" style={{ marginLeft: 8 }} />}
                 </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 20 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E8E0D0' }} />
+                <Text style={{ marginHorizontal: 16, color: '#8B7E6B', fontWeight: '700', fontSize: 12 }}>OR</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E8E0D0' }} />
+              </View>
+
+              {/* Google Sign-In */}
+              <TouchableOpacity
+                onPress={() => googlePromptAsync()}
+                disabled={isLoading || !googleRequest}
+                activeOpacity={0.9}
+                style={{
+                  borderRadius: 20,
+                  paddingVertical: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1.5,
+                  borderColor: '#E8E0D0',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 8,
+                  elevation: 3,
+                }}
+              >
+                <MaterialCommunityIcons name="google" size={22} color="#EA4335" />
+                <Text style={{ color: '#444', fontWeight: '800', fontSize: 16, marginLeft: 10 }}>
+                  Sign in with Google
+                </Text>
               </TouchableOpacity>
             </View>
           </Animated.View>

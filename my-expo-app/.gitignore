@@ -10,6 +10,7 @@ yarn-error.*
 .env.production.local
 .DS_Store
 *.jks
+keystore.md
 *.p12
 *.key
 *.mobileprovision

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const LOCAL_IP = '10.43.120.139';
+const LOCAL_IP = '10.138.180.139';
 const BASE_DOMAIN = 'play1.tnhappykids.in';
 
 const IS_LOCAL = true;
