@@ -19,8 +19,18 @@ workflows:
         script: yes | npx expo prebuild --platform android --clean --no-install
       - name: Download Keystore
         script: |
-          curl -SL "$CM_KEYSTORE_URL?token=$CM_KEYSTORE_ACCESS_TOKEN" \
-            -o /tmp/keystore.keystore
+          # Try backend first, fall back to env var
+          if [ -n "$CM_KEYSTORE_URL" ]; then
+            echo "Downloading keystore from backend..."
+            curl -sSLf "$CM_KEYSTORE_URL?token=$CM_KEYSTORE_ACCESS_TOKEN" \
+              -o /tmp/keystore.keystore || {
+              echo "Backend unavailable, falling back to CM_KEYSTORE env var"
+              printf '%s' "$CM_KEYSTORE" | base64 --decode > /tmp/keystore.keystore
+            }
+          else
+            echo "Using CM_KEYSTORE env var..."
+            printf '%s' "$CM_KEYSTORE" | base64 --decode > /tmp/keystore.keystore
+          fi
           ls -la /tmp/keystore.keystore
       - name: Build Android AAB (signed)
         script: |
