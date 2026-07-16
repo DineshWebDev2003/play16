@@ -317,16 +317,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const token = await registerForPushNotificationsAsync();
       if (token) {
-        const saved = await savePushToken(token);
-        if (!saved) {
-          Alert.alert('Push Token', 'Token generated but failed to save to server');
-        }
-      } else {
-        Alert.alert('Push Token', 'Failed to generate push token. Check notification permission and google-services.json');
+        await savePushToken(token);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to setup notifications:', error);
-      Alert.alert('Push Error', error?.message || 'Unknown error registering push token');
     }
   }, []);
 
