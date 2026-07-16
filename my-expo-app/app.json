@@ -74,7 +74,10 @@
         "color": "#F59E0B",
         "sounds": [],
         "mode": "production",
-        "channelId": "default"
+        "channelId": "default",
+        "android": {
+          "googleServicesFile": "./google-services.json"
+        }
       }
     ],
       [
@@ -90,7 +93,10 @@
     "extra": {
       "eas": {
         "projectId": "61a28859-ebfa-4edd-9925-8a150cf26a3d"
-      }
+      },
+      "googleClientId": "1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com",
+      "googleAndroidClientId": "1007921293882-hoeftpiglonoqr50go781nom220dqmpf.apps.googleusercontent.com",
+      "googleIosClientId": ""
     }
   }
 }
