@@ -466,7 +466,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error.message === 'INACTIVE_USER_ALERT') {
          throw error;
       }
-      console.error('Login Error:', error);
+      console.error('Login Error:', error.message, error.code, error.response?.status);
       return false;
     }
   }, [fetchData]);

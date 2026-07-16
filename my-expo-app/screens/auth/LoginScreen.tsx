@@ -7,14 +7,10 @@ import PremiumPopup from '../../components/PremiumPopup';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import * as AuthSession from 'expo-auth-session';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { GOOGLE } from '../../config/google';
 import 'react-native-reanimated';
 import '../../global.css';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,19 +28,28 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
   const [statusModal, setStatusModal] = useState({ visible: false, title: '', message: '', type: 'error' as 'success' | 'error' | 'info' | 'action' });
   const { login, googleLogin } = useAuth();
 
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE.clientId,
-    androidClientId: GOOGLE.androidClientId,
-    iosClientId: GOOGLE.iosClientId,
-    redirectUri: AuthSession.makeRedirectUri({
-      scheme: 'com.tnhappykids.throneapp',
-      path: 'oauthredirect',
-    }),
-  });
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE.clientId,
+      iosClientId: GOOGLE.iosClientId,
+    });
+  }, []);
 
-  const handleGoogleLogin = async (idToken: string) => {
-    setIsLoading(true);
+  const handleGoogleSignIn = async () => {
     try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.idToken;
+      if (!idToken) {
+        setStatusModal({
+          visible: true,
+          title: 'Google Login Failed 🔒',
+          message: 'Could not get ID token from Google.',
+          type: 'error'
+        });
+        return;
+      }
+      setIsLoading(true);
       const success = await googleLogin(idToken);
       if (success) {
         onLogin();
@@ -57,6 +62,10 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         });
       }
     } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled
+        return;
+      }
       if (error.message === 'INACTIVE_USER_ALERT') {
         setStatusModal({
           visible: true,
@@ -76,13 +85,6 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (googleResponse?.type === 'success') {
-      const { id_token } = googleResponse.params;
-      handleGoogleLogin(id_token);
-    }
-  }, [googleResponse]);
 
   const formTranslateY = useSharedValue(height * 0.3);
 
@@ -293,8 +295,8 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
 
               {/* Google Sign-In */}
               <TouchableOpacity
-                onPress={() => googlePromptAsync()}
-                disabled={isLoading || !googleRequest}
+                onPress={handleGoogleSignIn}
+                disabled={isLoading}
                 activeOpacity={0.9}
                 style={{
                   borderRadius: 20,
