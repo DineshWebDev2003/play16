@@ -1,7 +1,7 @@
 workflows:
   react-native-expo-android:
-    name: React Native Expo Android
-    max_build_duration: 60
+    name: React Native Expo Android (Debug)
+    max_build_duration: 45
     instance_type: mac_mini_m1
     environment:
       groups:
@@ -12,40 +12,28 @@ workflows:
     scripts:
       - name: Install dependencies
         script: npm ci
-      - name: Cleanup
+      - name: Decode google-services.json
         script: |
-          rm -rf android
+          if [ -n "$CM_GOOGLE_SERVICES_JSON" ]; then
+            echo "Decoding google-services.json from env var..."
+            printf '%s' "$CM_GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+          fi
       - name: Expo Prebuild
         script: yes | npx expo prebuild --platform android --clean --no-install
-      - name: Download Keystore
+      - name: Write google-services.json (post-prebuild)
         script: |
-          # Try backend first, fall back to env var
-          if [ -n "$CM_KEYSTORE_URL" ]; then
-            echo "Downloading keystore from backend..."
-            curl -sSLf "$CM_KEYSTORE_URL?token=$CM_KEYSTORE_ACCESS_TOKEN" \
-              -o /tmp/keystore.keystore || {
-              echo "Backend unavailable, falling back to CM_KEYSTORE env var"
-              printf '%s' "$CM_KEYSTORE" | base64 --decode > /tmp/keystore.keystore
-            }
-          else
-            echo "Using CM_KEYSTORE env var..."
-            printf '%s' "$CM_KEYSTORE" | base64 --decode > /tmp/keystore.keystore
+          if [ -n "$CM_GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$CM_GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
           fi
-          ls -la /tmp/keystore.keystore
-      - name: Build Signed Release APK
+      - name: Build Debug APK
         script: |
           export NODE_OPTIONS="--max-old-space-size=8192"
           cd android
           chmod +x gradlew
           echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=/tmp/keystore.keystore \
-            -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD \
-            --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
     artifacts:
-      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/apk/debug/*.apk
     publishing:
       email:
         recipients:
