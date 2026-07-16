@@ -62,7 +62,6 @@ export async function registerForPushNotificationsAsync() {
     finalStatus = status;
   }
   if (finalStatus !== 'granted') {
-    console.log('Failed to get push token for push notification!');
     return;
   }
 
@@ -71,17 +70,42 @@ export async function registerForPushNotificationsAsync() {
     Constants.easConfig?.projectId ??
     Constants.manifest?.extra?.eas?.projectId ??
     '61a28859-ebfa-4edd-9925-8a150cf26a3d';
-  if (!projectId) {
-    console.log('Project ID not found');
-    return;
+
+  const errors: string[] = [];
+
+  // Try with projectId (primary method)
+  if (projectId) {
+    try {
+      const result = await Notifications.getExpoPushTokenAsync({ projectId });
+      return result.data;
+    } catch (e: any) {
+      errors.push(`projectId: ${e.message}`);
+    }
   }
 
+  // Try without projectId (auto-detect)
   try {
-    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    return token;
-  } catch (e) {
-    console.log('Error getting push token', e);
+    const result = await Notifications.getExpoPushTokenAsync();
+    return result.data;
+  } catch (e: any) {
+    errors.push(`auto: ${e.message}`);
   }
+
+  // Try with experienceId fallback
+  try {
+    const expoConfig = Constants.expoConfig as any;
+    const slug = expoConfig?.slug || 'tn-happykids';
+    const owner = expoConfig?.owner || 'anonymous';
+    const result = await Notifications.getExpoPushTokenAsync({
+      experienceId: `@${owner}/${slug}`,
+    });
+    return result.data;
+  } catch (e: any) {
+    errors.push(`experienceId: ${e.message}`);
+  }
+
+  console.log('All push token methods failed:', errors.join(' | '));
+  throw new Error('All push token methods failed: ' + errors.join(' | '));
 }
 
 export async function savePushToken(token: string) {
