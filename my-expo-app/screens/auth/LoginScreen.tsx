@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session';
 import { GOOGLE } from '../../config/google';
 import 'react-native-reanimated';
 import '../../global.css';
@@ -35,6 +36,10 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
     clientId: GOOGLE.clientId,
     androidClientId: GOOGLE.androidClientId,
     iosClientId: GOOGLE.iosClientId,
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: 'com.tnhappykids.throneapp',
+      path: 'oauthredirect',
+    }),
   });
 
   const handleGoogleLogin = async (idToken: string) => {

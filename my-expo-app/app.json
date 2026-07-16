@@ -41,6 +41,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.tnhappykids.throneapp",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 2,
       "notification": {
         "icon": "./assets/splash.png",

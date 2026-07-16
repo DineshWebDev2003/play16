@@ -12,7 +12,20 @@
           "package_name": "com.tnhappykids.throneapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1007921293882-hoeftpiglonoqr50go781nom220dqmpf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tnhappykids.throneapp",
+            "certificate_hash": "cb1badf4cd31f31f17cf6a7a5f71206290d91293"
+          }
+        },
+        {
+          "client_id": "1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA6Tq4NNCgAkJDWrGGEDShYaDBLTJYWx6c"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
