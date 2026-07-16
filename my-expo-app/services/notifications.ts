@@ -1,4 +1,3 @@
-import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
@@ -56,13 +55,6 @@ export async function setupNotificationChannels() {
 export async function registerForPushNotificationsAsync() {
   await setupNotificationChannels();
 
-  let token;
-
-  if (!Device.isDevice) {
-    console.log('Must use physical device for Push Notifications');
-    return;
-  }
-
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== 'granted') {
@@ -74,21 +66,22 @@ export async function registerForPushNotificationsAsync() {
     return;
   }
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    Constants.easConfig?.projectId ??
+    Constants.manifest?.extra?.eas?.projectId ??
+    '61a28859-ebfa-4edd-9925-8a150cf26a3d';
   if (!projectId) {
-    console.log('Project ID not found in app config');
+    console.log('Project ID not found');
     return;
   }
 
   try {
-    token = (await Notifications.getExpoPushTokenAsync({
-      projectId,
-    })).data;
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    return token;
   } catch (e) {
     console.log('Error getting push token', e);
   }
-
-  return token;
 }
 
 export async function savePushToken(token: string) {

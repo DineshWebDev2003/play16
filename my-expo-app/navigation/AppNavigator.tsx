@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync, savePushToken } from '../services/notifications';
 
 // Import screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -142,17 +141,6 @@ export default function AppNavigator() {
           }, 2000); // 2 seconds splash for logout
         }
       } else if (currentScreen === 'login') {
-        // Register push notification token on login
-        (async () => {
-          try {
-            const token = await registerForPushNotificationsAsync();
-            if (token) {
-              await savePushToken(token);
-            }
-          } catch (e) {
-            console.log('Push token registration failed:', e);
-          }
-        })();
         // Trigger login splash transition
         setIsTransitioning(true);
         setTimeout(() => {
