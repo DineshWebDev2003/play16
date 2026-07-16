@@ -8,9 +8,6 @@ workflows:
         - android_signing
       node: 20
       java: 17
-      vars:
-        EXPO_PUBLIC_GOOGLE_CLIENT_ID: 1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com
-        EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 1007921293882-hoeftpiglonoqr50go781nom220dqmpf.apps.googleusercontent.com
     working_directory: my-expo-app
     scripts:
       - name: Install dependencies
@@ -35,37 +32,20 @@ workflows:
             printf '%s' "$CM_KEYSTORE" | base64 --decode > /tmp/keystore.keystore
           fi
           ls -la /tmp/keystore.keystore
-      - name: Build Android AAB + Release APK (signed)
+      - name: Build Signed Release APK
         script: |
           export NODE_OPTIONS="--max-old-space-size=8192"
           cd android
           chmod +x gradlew
           echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
-          
-          # Signed AAB (Play Store)
-          ./gradlew clean bundleRelease \
-            -Pandroid.injected.signing.store.file=/tmp/keystore.keystore \
-            -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD \
-            --no-daemon --stacktrace
-          
-          # Signed APK (side-load / testing outside Expo Go)
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=/tmp/keystore.keystore \
             -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD \
             --no-daemon --stacktrace
-
-      - name: Build Debug APK
-        script: |
-          cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
     artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
       - android/app/build/outputs/apk/release/*.apk
-      - android/app/build/outputs/apk/debug/*.apk
     publishing:
       email:
         recipients:
