@@ -59,28 +59,28 @@
     },
     "plugins": [
       [
-      "expo-build-properties",
-      {
-        "android": {
-          "usesCleartextTraffic": true,
-          "googleServicesFile": "./google-services.json"
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "googleServicesFile": "./google-services.json"
+          }
         }
-      }
-    ],
-    "@react-native-community/datetimepicker",
-    [
-      "expo-notifications",
-      {
-        "icon": "./assets/splash.png",
-        "color": "#F59E0B",
-        "sounds": [],
-        "mode": "production",
-        "channelId": "default",
-        "android": {
-          "googleServicesFile": "./google-services.json"
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/splash.png",
+          "color": "#F59E0B",
+          "sounds": [],
+          "mode": "production",
+          "channelId": "default",
+          "android": {
+            "googleServicesFile": "./google-services.json"
+          }
         }
-      }
-    ],
+      ],
       [
         "expo-splash-screen",
         {
@@ -93,11 +93,12 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "61a28859-ebfa-4edd-9925-8a150cf26a3d"
+        "projectId": "caad12b4-5080-41c9-b239-071e6d9f622a"
       },
       "googleClientId": "1007921293882-eu3ij3714kggfqo9qlf7vjru4v4roaol.apps.googleusercontent.com",
       "googleAndroidClientId": "1007921293882-hoeftpiglonoqr50go781nom220dqmpf.apps.googleusercontent.com",
       "googleIosClientId": ""
-    }
+    },
+    "owner": "dineshwebdev"
   }
 }

@@ -69,7 +69,7 @@ export async function registerForPushNotificationsAsync() {
     Constants.expoConfig?.extra?.eas?.projectId ??
     Constants.easConfig?.projectId ??
     Constants.manifest?.extra?.eas?.projectId ??
-    '61a28859-ebfa-4edd-9925-8a150cf26a3d';
+    'caad12b4-5080-41c9-b239-071e6d9f622a';
 
   const errors: string[] = [];
 
