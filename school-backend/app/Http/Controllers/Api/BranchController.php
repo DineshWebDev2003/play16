@@ -63,7 +63,28 @@ class BranchController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'address' => 'nullable|string',
+            'settings' => 'nullable|array',
             'share' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $branch->update($validated);
+
+        return response()->json($branch);
+    }
+
+    public function updateSettings(Request $request, Branch $branch)
+    {
+        $authUser = $request->user();
+
+        // Only master_admin or admin of this branch can update settings
+        if (!$authUser->isMasterAdmin() && $authUser->branch_id !== $branch->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'settings' => 'required|array',
+            'settings.correspondent_phone' => 'nullable|string|max:20',
+            'settings.school_office_phone' => 'nullable|string|max:20',
         ]);
 
         $branch->update($validated);

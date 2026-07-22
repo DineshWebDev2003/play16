@@ -14,12 +14,12 @@ interface EmergencyContactScreenProps {
   navigation: NavigationProps;
 }
 
-const SCHOOL_OFFICE = '9787751430';
-const CORRESPONDENT_NUMBER = '9500553568';
-
 export default function EmergencyContactScreen({ navigation }: EmergencyContactScreenProps) {
   const { colors, theme } = useTheme();
-  const { user } = useAuth();
+  const { user, branches } = useAuth();
+
+  const branch = branches?.find((b: any) => b.id === user?.branch_id) || user?.branch;
+  const settings = (branch as any)?.settings || {};
 
   const emergencyContacts = [
     {
@@ -42,7 +42,7 @@ export default function EmergencyContactScreen({ navigation }: EmergencyContactS
       id: 'correspondent',
       name: 'Correspondent',
       relation: 'Management',
-      phone: CORRESPONDENT_NUMBER,
+      phone: settings.correspondent_phone || '',
       icon: 'account-star',
       color: 'bg-indigo-600',
     },
@@ -50,7 +50,7 @@ export default function EmergencyContactScreen({ navigation }: EmergencyContactS
       id: '3',
       name: 'School Office',
       relation: 'Administration',
-      phone: SCHOOL_OFFICE,
+      phone: settings.school_office_phone || '',
       icon: 'office-building',
       color: 'bg-yellow-600',
     },

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Fee;
 use App\Models\User;
+use App\Models\Transaction;
 
 class FeeController extends Controller
 {
@@ -46,11 +47,17 @@ class FeeController extends Controller
             'payment_method' => 'nullable|string',
             'payer_name' => 'nullable|string',
             'payer_phone' => 'nullable|string',
+            'branch_id' => 'nullable|integer|exists:branches,id',
         ]);
 
+        if (empty($validated['branch_id'])) {
+            $student = User::find($validated['student_id']);
+            $validated['branch_id'] = $student ? $student->branch_id : null;
+        }
         $fee = Fee::create($validated);
 
         if ($fee->status === 'paid') {
+            $this->createIncomeTransaction($fee, $request->user()?->id);
             try {
                 $service = app(\App\Services\ExpoNotificationService::class);
                 $title = "Fee Payment Successful! ✅";
@@ -71,8 +78,9 @@ class FeeController extends Controller
         $oldStatus = $fee->status;
         $fee->update($request->all());
 
-        // Send push notification if status changed to paid
+        // Handle income transaction sync on status change
         if ($fee->status === 'paid' && $oldStatus !== 'paid') {
+            $this->createIncomeTransaction($fee, $request->user()?->id);
             try {
                 $service = app(\App\Services\ExpoNotificationService::class);
                 $title = "Fee Payment Successful! ✅";
@@ -82,6 +90,8 @@ class FeeController extends Controller
                     'id' => $fee->id
                 ], 'payment');
             } catch (\Exception $e) {}
+        } elseif ($oldStatus === 'paid' && $fee->status !== 'paid') {
+            $this->removeIncomeTransaction($fee);
         }
 
         return response()->json($fee);
@@ -108,8 +118,8 @@ class FeeController extends Controller
         }
         $fee->save();
 
-        // Send push notification for payment confirmation (fire-and-forget)
         if ($fee->status === 'paid') {
+            $this->createIncomeTransaction($fee, $request->user()?->id);
             try {
                 $service = app(\App\Services\ExpoNotificationService::class);
                 $title = "Fee Payment Successful! ✅";
@@ -121,8 +131,168 @@ class FeeController extends Controller
             } catch (\Exception $e) {
                 // Notification failure shouldn't break the toggle
             }
+        } else {
+            $this->removeIncomeTransaction($fee);
         }
 
         return response()->json($fee);
+    }
+
+    public function cleanupDuplicates(Request $request)
+    {
+        $authUser = $request->user();
+        if (!$authUser || !$authUser->isMasterAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $duplicates = Fee::select('student_id', 'type', 'amount', 'due_date', \DB::raw('COUNT(*) as count'))
+            ->groupBy('student_id', 'type', 'amount', 'due_date')
+            ->having('count', '>', 1)
+            ->get();
+
+        $deleted = 0;
+        foreach ($duplicates as $dup) {
+            $records = Fee::where('student_id', $dup->student_id)
+                ->where('type', $dup->type)
+                ->where('amount', $dup->amount)
+                ->where('due_date', $dup->due_date)
+                ->orderBy('created_at')
+                ->get();
+            // Keep the first record, delete the rest
+            $records->shift();
+            foreach ($records as $record) {
+                $record->delete();
+                $deleted++;
+            }
+        }
+
+        return response()->json([
+            'message' => "Cleaned up {$deleted} duplicate fee record(s)",
+            'deleted' => $deleted
+        ]);
+    }
+
+    public function backfillTransactions(Request $request)
+    {
+        $authUser = $request->user();
+        if (!$authUser || !$authUser->isMasterAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Fix existing fee income transactions with null requested_by
+        $patched = 0;
+        $feeTxs = Transaction::where('category', 'Fees')
+            ->where('type', 'income')
+            ->whereNull('requested_by')
+            ->get();
+        foreach ($feeTxs as $tx) {
+            $branchAdmin = User::where('role', 'admin')
+                ->where('branch_id', $tx->branch_id)
+                ->where('status', 'active')
+                ->first();
+            if ($branchAdmin) {
+                $tx->update(['requested_by' => $branchAdmin->id]);
+                $patched++;
+            }
+        }
+
+        $paidFees = Fee::where('status', 'paid')->get();
+        $created = 0;
+
+        foreach ($paidFees as $fee) {
+            $txName = str_contains(strtolower($fee->type), 'admission')
+                ? "Admission: {$fee->student_name}"
+                : "Monthly Fee: {$fee->student_name}";
+
+            $existing = Transaction::where('category', 'Fees')
+                ->where('type', 'income')
+                ->where('name', $txName)
+                ->where('student_id', $fee->student_id)
+                ->first();
+
+            if ($existing) {
+                if (!$existing->requested_by) {
+                    $student = User::find($fee->student_id);
+                    $branchId = $student ? $student->branch_id : null;
+                    $branchAdmin = User::where('role', 'admin')
+                        ->where('branch_id', $branchId)
+                        ->where('status', 'active')
+                        ->first();
+                    if ($branchAdmin) {
+                        $existing->update(['requested_by' => $branchAdmin->id]);
+                        $patched++;
+                    }
+                }
+            } else {
+                $student = User::find($fee->student_id);
+                $branchId = $student ? $student->branch_id : null;
+                $branchAdmin = User::where('role', 'admin')
+                    ->where('branch_id', $branchId)
+                    ->where('status', 'active')
+                    ->first();
+
+                Transaction::create([
+                    'name' => $txName,
+                    'amount' => $fee->amount,
+                    'category' => 'Fees',
+                    'type' => 'income',
+                    'date' => $fee->paid_at ? explode(' ', $fee->paid_at)[0] : $fee->date,
+                    'status' => 'approved',
+                    'student_id' => $fee->student_id,
+                    'branch_id' => $branchId,
+                    'requested_by' => $branchAdmin ? $branchAdmin->id : null,
+                ]);
+                $created++;
+            }
+        }
+
+        return response()->json([
+            'message' => "Created {$created} and patched {$patched} transaction(s) for paid fees",
+            'created' => $created,
+            'patched' => $patched,
+        ]);
+    }
+
+    private function createIncomeTransaction($fee, $requestedBy = null)
+    {
+        $txName = str_contains(strtolower($fee->type), 'admission')
+            ? "Admission: {$fee->student_name}"
+            : "Monthly Fee: {$fee->student_name}";
+
+        $exists = Transaction::where('category', 'Fees')
+            ->where('type', 'income')
+            ->where('name', $txName)
+            ->where('student_id', $fee->student_id)
+            ->exists();
+
+        if (!$exists) {
+            $student = User::find($fee->student_id);
+            $branchId = $student ? $student->branch_id : null;
+
+            Transaction::create([
+                'name' => $txName,
+                'amount' => $fee->amount,
+                'category' => 'Fees',
+                'type' => 'income',
+                'date' => $fee->paid_at ? explode(' ', $fee->paid_at)[0] : $fee->date,
+                'status' => 'approved',
+                'student_id' => $fee->student_id,
+                'branch_id' => $branchId,
+                'requested_by' => $requestedBy,
+            ]);
+        }
+    }
+
+    private function removeIncomeTransaction($fee)
+    {
+        $txName = str_contains(strtolower($fee->type), 'admission')
+            ? "Admission: {$fee->student_name}"
+            : "Monthly Fee: {$fee->student_name}";
+
+        Transaction::where('category', 'Fees')
+            ->where('type', 'income')
+            ->where('name', $txName)
+            ->where('student_id', $fee->student_id)
+            ->delete();
     }
 }

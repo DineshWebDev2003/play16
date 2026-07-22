@@ -304,24 +304,21 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
                     <View className="bg-brand-violet/20 self-start px-4 py-1.5 rounded-full mt-3 border border-brand-violet/10 shadow-sm">
                         <Text className="text-brand-violet text-[10px] font-black uppercase tracking-[2px]">Master Control Panel</Text>
             </View>
-            <View className="mt-4 rounded-2xl overflow-hidden" style={{ elevation: 4 }}>
-              <LinearGradient
-                colors={theme === 'dark' ? ['#1e3a2f', '#0d2818'] : ['#E8F5E9', '#C8E6C9']}
-                className="p-4 flex-row items-center justify-between"
-              >
+            <View className="mt-4 rounded-2xl" style={{ elevation: 4, backgroundColor: theme === 'dark' ? '#1e3a2f' : '#E8F5E9' }}>
+              <View className="p-4 flex-row items-center justify-between">
                 <View className="flex-1">
                   <View className="flex-row items-center">
-                    <MaterialCommunityIcons name="handshake" size={18} color="#2E7D32" />
-                    <Text className="text-green-800 dark:text-green-300 font-black text-[10px] uppercase tracking-widest ml-2">Your Share ({adminShare}%)</Text>
+                    <MaterialCommunityIcons name="handshake" size={16} color={theme === 'dark' ? '#86EFAC' : '#166534'} />
+                    <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Your Share ({adminShare}%)</Text>
                   </View>
-                  <Text className="text-green-900 dark:text-green-200 font-black text-2xl mt-1">₹{netShareAmount.toLocaleString('en-IN')}</Text>
+                  <Text style={{ color: theme === 'dark' ? '#BBF7D0' : '#14532D', fontSize: 24, fontWeight: '900', marginTop: 4 }}>₹{netShareAmount.toLocaleString('en-IN')}</Text>
                 </View>
-                <View className="h-8 w-px bg-green-300 dark:bg-green-700 mx-4" />
-                <View className="items-end">
-                  <Text className="text-green-700 dark:text-green-400 font-black text-[10px] uppercase tracking-widest">Master Share</Text>
-                  <Text className="text-green-800 dark:text-green-300 font-black text-lg">₹{masterShareAmount.toLocaleString('en-IN')}</Text>
+                <View style={{ width: 1, height: 32, backgroundColor: theme === 'dark' ? '#166534' : '#86EFAC', marginHorizontal: 16 }} />
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ color: theme === 'dark' ? '#4ADE80' : '#15803D', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Share</Text>
+                  <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 18, fontWeight: '900', marginTop: 2 }}>₹{masterShareAmount.toLocaleString('en-IN')}</Text>
                 </View>
-              </LinearGradient>
+              </View>
             </View>
         </View>
 
@@ -666,6 +663,19 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
             type="info"
             icon="bullhorn"
           >
+            {bannerQueue[bannerIndex]?.date && (
+              <View className="bg-blue-50/50 dark:bg-blue-500/10 self-center px-4 py-1.5 rounded-full border border-blue-100 dark:border-blue-500/20 mb-4 flex-row items-center">
+                <MaterialCommunityIcons name="calendar-clock" size={12} color="#3B82F6" />
+                <Text className="text-blue-500 text-[10px] font-black uppercase tracking-widest ml-2">{bannerQueue[bannerIndex].date}</Text>
+              </View>
+            )}
+            {bannerQueue[bannerIndex]?.image && (
+              <Image
+                source={{ uri: bannerQueue[bannerIndex].image }}
+                style={{ width: '100%', height: 200, borderRadius: 24 }}
+                resizeMode="cover"
+              />
+            )}
             <TouchableOpacity
               onPress={() => dismissBanner(bannerQueue[bannerIndex].id, true)}
               className="flex-row items-center justify-center mt-2 mb-1"

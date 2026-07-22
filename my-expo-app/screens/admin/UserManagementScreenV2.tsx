@@ -989,59 +989,30 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         </View>
         <View style={{ paddingHorizontal: 24, paddingBottom: 4, marginTop: 4 }}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
-            <TouchableOpacity onPress={() => setFilter(prev => prev === 'student' ? 'all' : 'student')}
-              activeOpacity={0.9}
-              style={{
-                flex: 1, borderRadius: 20, overflow: 'hidden', elevation: filter === 'student' ? 8 : 3,
-                borderWidth: filter === 'student' ? 2 : 0, borderColor: brandColor,
-              }}>
-              <View style={{ padding: 14, backgroundColor: studentColor }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', padding: 8, borderRadius: 12 }}>
-                    <MaterialCommunityIcons name="school-outline" size={18} color="white" />
+            {[
+              { key: 'student', label: 'Students', short: 'St', icon: 'school-outline', color: studentColor, count: stats.students },
+              { key: 'teacher', label: 'Staff', short: 'Te', icon: 'account-tie-outline', color: teacherColor, count: stats.teachers },
+              { key: 'admin', label: 'Admins', short: 'Ad', icon: 'shield-account-outline', color: adminColor, count: stats.admins },
+            ].map(card => (
+              <TouchableOpacity key={card.key} onPress={() => setFilter(prev => prev === card.key ? 'all' : card.key)}
+                activeOpacity={0.9}
+                style={{
+                  flex: 1, borderRadius: 20, overflow: 'hidden',
+                  elevation: 8, borderWidth: 2,
+                  borderColor: filter === card.key ? '#FFFFFF' : 'transparent',
+                }}>
+                <View style={{ padding: 14, backgroundColor: card.color }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', padding: 8, borderRadius: 12 }}>
+                      <MaterialCommunityIcons name={card.icon as any} size={18} color="white" />
+                    </View>
+                    <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}>{card.short}</Text>
                   </View>
-                  <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}>St</Text>
+                  <Text style={{ fontSize: 24, fontWeight: '900', color: '#FFFFFF' }}>{card.count}</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>{card.label}</Text>
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: '900', color: '#FFFFFF' }}>{stats.students}</Text>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Students</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setFilter(prev => prev === 'teacher' ? 'all' : 'teacher')}
-              activeOpacity={0.9}
-              style={{
-                flex: 1, borderRadius: 20, overflow: 'hidden', elevation: filter === 'teacher' ? 8 : 3,
-                borderWidth: filter === 'teacher' ? 2 : 0, borderColor: brandColor,
-              }}>
-              <View style={{ padding: 14, backgroundColor: teacherColor }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', padding: 8, borderRadius: 12 }}>
-                    <MaterialCommunityIcons name="account-tie-outline" size={18} color="white" />
-                  </View>
-                  <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}>Te</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '900', color: '#FFFFFF' }}>{stats.teachers}</Text>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Staff</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setFilter(prev => prev === 'admin' ? 'all' : 'admin')}
-              activeOpacity={0.9}
-              style={{
-                flex: 1, borderRadius: 20, overflow: 'hidden', elevation: filter === 'admin' ? 8 : 3,
-                borderWidth: filter === 'admin' ? 2 : 0, borderColor: brandColor,
-              }}>
-              <View style={{ padding: 14, backgroundColor: adminColor }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.25)', padding: 8, borderRadius: 12 }}>
-                    <MaterialCommunityIcons name="shield-account-outline" size={18} color="white" />
-                  </View>
-                  <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}>Ad</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '900', color: '#FFFFFF' }}>{stats.admins}</Text>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>Admins</Text>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </Animated.View>

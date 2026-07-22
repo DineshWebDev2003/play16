@@ -12,6 +12,18 @@ _agent/
 *.js
 *.py
 
+# Firebase Admin SDK
+*-firebase-adminsdk-*.json
+
+# Android signing
+*.jks
+*.keystore
+*.p12
+
+# Certificates
+*.pem
+*.pfx
+
 # Allow important config files in my-expo-app
 !my-expo-app/tailwind.config.js
 !my-expo-app/metro.config.js

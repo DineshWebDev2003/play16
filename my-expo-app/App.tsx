@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import AppNavigator from './navigation/AppNavigator';
 
+
 const AppContent = () => {
   const { theme, colors } = useTheme();
   

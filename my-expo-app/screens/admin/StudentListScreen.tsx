@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Dimensions, RefreshControl } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, TextInput, Image,
+  RefreshControl, ActivityIndicator,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth, User } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 
@@ -16,13 +20,14 @@ interface StudentListScreenProps {
 
 export default function StudentListScreen({ navigation }: StudentListScreenProps) {
   const { users, fees: allFees, fetchData } = useAuth();
+  const { colors, theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [attendanceToday, setAttendanceToday] = useState<Record<string, any>>({});
   const [loadingAttendance, setLoadingAttendance] = useState(false);
 
-  const fetchTodayAttendance = React.useCallback(async () => {
+  const fetchTodayAttendance = useCallback(async () => {
     try {
       setLoadingAttendance(true);
       const today = new Date().toISOString().split('T')[0];
@@ -40,7 +45,7 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
     }
   }, []);
 
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await fetchData();
@@ -56,7 +61,6 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
     fetchTodayAttendance();
   }, [fetchTodayAttendance]);
 
-  // ── Financial Status Memo ──
   const studentFinancials = React.useMemo(() => {
     const map: Record<string, { status: 'overdue' | 'pending' | 'paid', title: string }> = {};
     const todayStr = new Date().toISOString().split('T')[0];
@@ -79,7 +83,7 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
       }
 
       const isPending = unpaidFees.length > 0 || (!currentMonthPaid && (student.fees && parseInt(student.fees) > 0));
-      
+
       map[student.id] = {
         status: (isPending && isOverdue) ? 'overdue' : (isPending ? 'pending' : 'paid'),
         title: (isPending && isOverdue) ? 'OVERDUE' : (isPending ? 'PENDING' : 'PAID')
@@ -89,7 +93,7 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
   }, [users, allFees]);
 
   const students = users.filter(u => u.role === 'student' && u.status === 'active');
-  const filteredStudents = students.filter(student => 
+  const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.studentId?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -104,54 +108,69 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="flex-1">
-        {/* ── Header ── */}
-        <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-2">
+    <View style={{ flex: 1, backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF' }}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />
+        }
+      >
+        {/* Header */}
+        <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
           <View className="flex-row items-center justify-between">
-            <View>
-              <TouchableOpacity 
+            <View className="flex-1">
+              <TouchableOpacity
                 onPress={() => navigation.goBack()}
-                className="w-12 h-12 rounded-2xl items-center justify-center bg-gray-100"
+                className={`mb-4 ${colors.surface} w-12 h-12 rounded-2xl items-center justify-center border ${colors.border} shadow-sm`}
+                activeOpacity={0.7}
               >
-                <MaterialCommunityIcons name="arrow-left" size={24} color="#F59E0B" />
+                <MaterialCommunityIcons name="arrow-left" size={28} color={theme === 'dark' ? '#FFF' : '#000'} />
               </TouchableOpacity>
-              <Text className="text-4xl font-black mt-6 tracking-tighter text-gray-900">Students</Text>
-              <Text className="text-2xl font-bold text-brand-pink mt-[-4px]">Directory 📇</Text>
+              <Text className={`text-4xl font-black ${colors.text} tracking-tighter`}>Students</Text>
+              <Text className="text-2xl font-bold text-brand-pink">Directory 📇</Text>
             </View>
-            <View className="w-20 h-20 rounded-2xl items-center justify-center border-4 border-white bg-brand-pink relative overflow-hidden">
-               <MaterialCommunityIcons name="account-group" size={40} color="white" />
+            <View className="bg-brand-pink w-20 h-20 rounded-3xl items-center justify-center shadow-lg border-4 border-white rotate-3">
+              <MaterialCommunityIcons name="account-group" size={42} color="white" />
             </View>
           </View>
 
-          {/* Search Bar */}
-          <View className="mt-8 px-6 py-4 rounded-2xl flex-row items-center bg-gray-50">
-            <MaterialCommunityIcons name="magnify" size={24} color="#F59E0B" />
+          {/* Search */}
+          <View className={`px-6 py-4 rounded-2xl flex-row items-center mt-6 ${colors.surface} border ${colors.border}`}>
+            <MaterialCommunityIcons name="magnify" size={22} color="#F59E0B" />
             <TextInput
               placeholder="Search by name or ID..."
-              placeholderTextColor="#9CA3AF"
-              className="flex-1 ml-3 font-bold text-base text-gray-900"
+              placeholderTextColor={theme === 'dark' ? '#6B7280' : '#9CA3AF'}
+              className={`flex-1 ml-3 font-bold text-base ${colors.text}`}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <MaterialCommunityIcons name="close-circle" size={20} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between px-8 mb-4 mt-2">
-           <Text className="text-[10px] font-black uppercase tracking-[3px] text-gray-500">Records found</Text>
-           <View className="bg-brand-pink/10 px-3 py-1 rounded-full">
-              <Text className="text-brand-pink font-black text-[10px]">{filteredStudents.length}</Text>
-           </View>
+        {/* Count */}
+        <View className="flex-row items-center justify-between px-6 mb-5">
+          <Text className={`text-xl font-black ${colors.text} ml-1 uppercase tracking-widest opacity-60`}>
+            Student Records ✨
+          </Text>
+          <View className="bg-brand-pink/10 px-4 py-1.5 rounded-full border border-brand-pink/10">
+            <Text className="text-brand-pink font-black text-xs">{filteredStudents.length} found</Text>
+          </View>
         </View>
 
-        <ScrollView 
-          className="flex-1" 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />
-          }
-        >
+        {/* List */}
+        <View className="px-6">
+          {loadingAttendance && (
+            <View className="items-center py-4">
+              <ActivityIndicator size="small" color="#F59E0B" />
+            </View>
+          )}
           {filteredStudents.length > 0 ? (
             filteredStudents.map((student) => {
               const catTheme = getCategoryTheme(student.category);
@@ -161,63 +180,85 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
                   key={student.id}
                   activeOpacity={0.9}
                   onPress={() => navigation.navigate('studentDetail', { studentId: student.id })}
-                  className="mb-6 rounded-2xl overflow-hidden bg-white border border-gray-100"
+                  style={{
+                    width: '100%', aspectRatio: 16 / 9,
+                    backgroundColor: theme === 'dark' ? '#1e1e1c' : '#FFFFFF',
+                  }}
+                  className="mb-6 relative overflow-hidden rounded-[32px] border-4 border-white shadow-xl"
                 >
-                  <View className="p-5 flex-row items-center">
-                    {/* Student Avatar */}
-                    <View className="w-20 h-20 rounded-[24px] overflow-hidden bg-gray-50 border-2 border-white items-center justify-center">
-                      {student.avatar ? (
-                        <Image source={{ uri: student.avatar }} className="w-full h-full" resizeMode="cover" />
-                      ) : (
-                        <MaterialCommunityIcons name="account-child" size={40} color="#E5E7EB" />
-                      )}
+                  {/* Background with avatar/icon */}
+                  {student.avatar ? (
+                    <Image
+                      source={{ uri: student.avatar }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="flex-1 items-center justify-center" style={{ backgroundColor: theme === 'dark' ? '#2a2a28' : '#FDF2F8' }}>
+                      <MaterialCommunityIcons name="account-child" size={80} color={theme === 'dark' ? '#3a3a38' : '#F9A8D4'} />
                     </View>
+                  )}
 
-                    <View className="flex-1 ml-5">
-                      <View className="flex-row items-center justify-between">
-                         <Text className="text-lg font-black tracking-tight flex-1 mr-2 text-gray-900" numberOfLines={1}>
-                           {student.name}
-                         </Text>
-                         <View className={`px-2 py-1 rounded-lg ${finStatus.status === 'overdue' ? 'bg-red-500' : finStatus.status === 'pending' ? 'bg-amber-500' : 'bg-green-500'}`}>
-                           <Text className="text-white text-[8px] font-black uppercase">{finStatus.title}</Text>
-                         </View>
-                      </View>
-
-                      <View className="flex-row items-center mt-1">
-                        <Text className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">ID: </Text>
-                        <Text className="text-[11px] font-black text-brand-pink uppercase">{student.studentId || 'PENDING'}</Text>
-                      </View>
-
-                      <View className="flex-row items-center mt-3 gap-2">
-                        <View className="px-3 py-1.5 rounded-xl flex-row items-center" style={{ backgroundColor: catTheme.bg }}>
-                          <MaterialCommunityIcons name={catTheme.icon as any} size={12} color={catTheme.color} />
-                          <Text className="text-[10px] font-black ml-2 uppercase" style={{ color: catTheme.color }}>{student.category || 'Playschool'}</Text>
+                  {/* Dark overlay for text readability */}
+                  <View className="absolute inset-0 justify-end p-6" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                    {/* Top badges row */}
+                    <View className="flex-row items-center justify-between mb-2">
+                      <View className="flex-row gap-2">
+                        <View className="px-3 py-1 rounded-full flex-row items-center" style={{ backgroundColor: catTheme.bg }}>
+                          <MaterialCommunityIcons name={catTheme.icon as any} size={11} color={catTheme.color} />
+                          <Text className="text-[10px] font-black ml-1.5 uppercase" style={{ color: catTheme.color }}>{student.category || 'Playschool'}</Text>
                         </View>
-                        <View className="px-3 py-1.5 rounded-xl bg-gray-100 border border-gray-200 flex-row items-center">
-                           <MaterialCommunityIcons name={student.gender === 'Female' ? 'gender-female' : 'gender-male'} size={12} color="#4B5563" />
-                           <Text className="text-[10px] font-black ml-1.5 uppercase text-gray-600">{student.gender}</Text>
+                        <View className="bg-white/20 px-3 py-1 rounded-full flex-row items-center">
+                          <MaterialCommunityIcons name={student.gender === 'Female' ? 'gender-female' : 'gender-male'} size={11} color="white" />
+                          <Text className="text-white text-[10px] font-black ml-1.5 uppercase">{student.gender || 'N/A'}</Text>
                         </View>
                       </View>
+                      <View className={`px-3 py-1 rounded-full ${
+                        finStatus.status === 'overdue' ? 'bg-red-500/90' :
+                        finStatus.status === 'pending' ? 'bg-amber-500/90' : 'bg-green-500/90'
+                      }`}>
+                        <Text className="text-white text-[9px] font-black uppercase tracking-wider">{finStatus.title}</Text>
+                      </View>
                     </View>
 
-                    <View className="w-10 h-10 rounded-full items-center justify-center bg-gray-50 border border-gray-100">
-                       <MaterialCommunityIcons name="chevron-right" size={20} color="#F59E0B" />
+                    {/* Student Name */}
+                    <Text className="text-white text-2xl font-black tracking-tighter mb-1" numberOfLines={1}>
+                      {student.name}
+                    </Text>
+
+                    {/* ID Row */}
+                    <View className="flex-row items-center mb-1">
+                      <MaterialCommunityIcons name="card-account-details-outline" size={13} color="white" />
+                      <Text className="text-white/80 text-xs font-bold ml-1.5 uppercase tracking-wider">
+                        {student.studentId || 'PENDING'}
+                      </Text>
+                    </View>
+
+                    {/* Bottom row */}
+                    <View className="flex-row items-center justify-between mt-1">
+                      <View className="flex-row items-center">
+                        <MaterialCommunityIcons name="account-circle-outline" size={13} color="white" />
+                        <Text className="text-white/70 text-[10px] font-bold ml-1.5">
+                          {student.fatherName || 'Parent'} {student.fatherPhone ? `• ${student.fatherPhone}` : ''}
+                        </Text>
+                      </View>
+                      <Text className="text-white/50 text-[10px] font-bold">View Profile →</Text>
                     </View>
                   </View>
 
-                  {/* Attendance Strip */}
+                  {/* Attendance strip at bottom edge */}
                   {attendanceToday[student.id] && (
-                    <View className="px-5 py-3 flex-row items-center border-t bg-brand-pink/5 border-brand-pink/5">
-                      <MaterialCommunityIcons 
-                        name={attendanceToday[student.id].status === 'absent' ? 'close-circle' : 'check-circle'} 
-                        size={14} 
-                        color={attendanceToday[student.id].status === 'absent' ? '#EF4444' : '#10B981'} 
+                    <View className="absolute bottom-0 left-0 right-0 px-6 py-2 flex-row items-center" style={{ backgroundColor: attendanceToday[student.id].status === 'absent' ? 'rgba(239,68,68,0.85)' : 'rgba(16,185,129,0.85)' }}>
+                      <MaterialCommunityIcons
+                        name={attendanceToday[student.id].status === 'absent' ? 'close-circle' : 'check-circle'}
+                        size={13}
+                        color="white"
                       />
-                      <Text className={`text-[10px] font-black ml-2 uppercase tracking-wide ${attendanceToday[student.id].status === 'absent' ? 'text-red-500' : 'text-green-600'}`}>
+                      <Text className="text-white text-[9px] font-black ml-2 uppercase tracking-wider">
                         Today: {attendanceToday[student.id].status === 'absent' ? 'Absent' : `Present (${attendanceToday[student.id].in_time || 'In'})`}
                       </Text>
                       {attendanceToday[student.id].out_time && (
-                        <Text className="text-[10px] font-bold text-amber-600 ml-4 italic">
+                        <Text className="text-white/80 text-[9px] font-bold ml-3 italic">
                           Picked at {attendanceToday[student.id].out_time}
                         </Text>
                       )}
@@ -228,13 +269,14 @@ export default function StudentListScreen({ navigation }: StudentListScreenProps
             })
           ) : (
             <View className="items-center justify-center py-20">
-              <MaterialCommunityIcons name="account-search-outline" size={80} color="#E5E7EB" />
-              <Text className="text-xl font-black mt-4 text-gray-900">No Students Found</Text>
-              <Text className="text-center px-10 mt-2 text-gray-500">Try searching for a different name or checking the student ID.</Text>
+              <MaterialCommunityIcons name="account-search-outline" size={80} color={theme === 'dark' ? '#4B5563' : '#E5E7EB'} />
+              <Text className={`text-2xl font-black mt-6 ${colors.text}`}>No Students Found</Text>
+              <Text className={`text-center px-10 mt-2 ${colors.textSecondary}`}>Try searching for a different name or checking the student ID.</Text>
             </View>
           )}
-        </ScrollView>
-      </View>
+        </View>
+        <View className="h-32" />
+      </ScrollView>
     </View>
   );
 }

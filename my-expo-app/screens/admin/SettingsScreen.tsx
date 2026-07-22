@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Image, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -17,7 +16,7 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
-  const { user, updateNotificationSettings } = useAuth() as any;
+  const { user, updateNotificationSettings, updateBranchSettings, branches } = useAuth() as any;
   const { colors, theme, toggleTheme } = useTheme();
   
   const [emailAlerts, setEmailAlerts] = useState(false);
@@ -25,12 +24,45 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   const pushEnabled = user?.notification_settings?.enabled ?? true;
 
+  const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master_admin';
+
+  const currentBranch = branches?.find((b: any) => b.id === user?.branch_id);
+
+  const [correspondentPhone, setCorrespondentPhone] = useState('');
+  const [schoolOfficePhone, setSchoolOfficePhone] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+
+  useEffect(() => {
+    if (currentBranch?.settings) {
+      setCorrespondentPhone(currentBranch.settings.correspondent_phone || '');
+      setSchoolOfficePhone(currentBranch.settings.school_office_phone || '');
+    }
+  }, [currentBranch]);
+
   const handlePushToggle = async () => {
     const newSettings = {
       ...user?.notification_settings,
       enabled: !pushEnabled
     };
     await updateNotificationSettings(newSettings);
+  };
+
+  const handleSaveContactSettings = async () => {
+    if (!currentBranch) {
+      Alert.alert('Error', 'No branch associated with your account.');
+      return;
+    }
+    setSavingContact(true);
+    const result = await updateBranchSettings(currentBranch.id, {
+      correspondent_phone: correspondentPhone.trim(),
+      school_office_phone: schoolOfficePhone.trim(),
+    });
+    setSavingContact(false);
+    if (result) {
+      Alert.alert('Saved', 'Contact numbers updated successfully.');
+    } else {
+      Alert.alert('Error', 'Failed to save contact numbers.');
+    }
   };
 
   const settingsSections = [
@@ -82,23 +114,19 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   return (
     <View className={`flex-1 ${colors.background}`} style={{ backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF' }}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-      {/* ── Background Gradient & 3D Illustration ── */}
       <View className="absolute top-0 left-0 right-0 h-[450px] overflow-hidden">
         <LinearGradient
             colors={[theme === 'dark' ? '#92400E33' : '#F59E0B33', theme === 'dark' ? '#F59E0B33' : '#FCD34D33']}
             className="absolute inset-0"
         />
-        {/* Soft pink overlap glow */}
         <View className="absolute -top-20 -left-20 w-64 h-64 bg-brand-pink/10 rounded-full blur-3xl" />
         
-        {/* Smooth transition gradient to content */}
         <LinearGradient
             colors={['transparent', theme === 'dark' ? '#1c1c14' : '#FFFFFF']}
             className="absolute bottom-0 left-0 right-0 h-40"
         />
       </View>
 
-      {/* Header */}
       <View className="px-6 pt-10 pb-6">
         <View className="flex-row items-center justify-between">
             <View className="flex-1">
@@ -158,7 +186,60 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           </View>
         ))}
 
-        {/* Additional Settings */}
+        {isAdminOrMaster && (
+          <View className="mb-6">
+            <Text className={`text-xl font-black ${colors.text} mb-4 ml-1 uppercase tracking-widest opacity-60`}>
+              Contact Numbers ☎️
+            </Text>
+
+            <View className={`${colors.surface} rounded-2xl border ${colors.border} p-5`}>
+              <View className="mb-4">
+                <Text className={`text-sm font-black ${colors.textSecondary} mb-2 uppercase tracking-wider`}>
+                  Correspondent Phone
+                </Text>
+                <TextInput
+                  value={correspondentPhone}
+                  onChangeText={setCorrespondentPhone}
+                  placeholder="Enter correspondent phone number"
+                  placeholderTextColor={theme === 'dark' ? '#6B7280' : '#9CA3AF'}
+                  keyboardType="phone-pad"
+                  className={`${theme === 'dark' ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-100 text-gray-900 border-gray-200'} p-4 rounded-xl border font-bold text-base`}
+                />
+              </View>
+
+              <View className="mb-4">
+                <Text className={`text-sm font-black ${colors.textSecondary} mb-2 uppercase tracking-wider`}>
+                  School Office Phone
+                </Text>
+                <TextInput
+                  value={schoolOfficePhone}
+                  onChangeText={setSchoolOfficePhone}
+                  placeholder="Enter school office phone number"
+                  placeholderTextColor={theme === 'dark' ? '#6B7280' : '#9CA3AF'}
+                  keyboardType="phone-pad"
+                  className={`${theme === 'dark' ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-100 text-gray-900 border-gray-200'} p-4 rounded-xl border font-bold text-base`}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={handleSaveContactSettings}
+                disabled={savingContact}
+                className="bg-brand-yellow p-4 rounded-xl flex-row items-center justify-center"
+                activeOpacity={0.7}
+              >
+                {savingContact ? (
+                  <ActivityIndicator color="#92400E" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="content-save" size={20} color="#92400E" />
+                    <Text className="text-amber-900 font-black text-base ml-2">Save Contact Numbers</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         <View className="mb-6">
           <Text className={`text-xl font-black ${colors.text} mb-4 ml-1 uppercase tracking-widest opacity-60`}>
             About

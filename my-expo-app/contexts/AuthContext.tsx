@@ -13,6 +13,10 @@ export interface Branch {
   name: string;
   address?: string;
   share?: number;
+  settings?: {
+    correspondent_phone?: string;
+    school_office_phone?: string;
+  };
 }
 
 export interface User {
@@ -170,6 +174,7 @@ interface AuthContextType {
   addBranch: (branch: Partial<Branch>) => Promise<void>;
   updateBranch: (id: string, data: Partial<Branch>) => Promise<void>;
   deleteBranch: (id: string) => Promise<void>;
+  updateBranchSettings: (id: string, settings: { correspondent_phone?: string; school_office_phone?: string }) => Promise<Branch | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -246,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         })) : []
       })));
 
-      setTransactions(resolveArray(transactionsRes.data).map((t: any) => ({
+      const rawTransactions = resolveArray(transactionsRes.data).map((t: any) => ({
         id:       (t.id || Math.random()).toString(),
         name:     t.name || t.description || 'Transaction',
         amount:   parseFloat(t.amount) || 0,
@@ -258,7 +263,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         requested_by: (t.requested_by || '').toString(),
         branch_id: t.branch_id?.toString(),
         branch:   t.branch ? { id: t.branch.id.toString(), name: t.branch.name } : undefined,
-      })));
+      }));
+      // Deduplicate fee-generated transactions: keep only the latest per (student name + fee type)
+      // Transactions have names like "Monthly Fee: Student X" — we extract the student name
+      // as the stable key, because old records may have empty student_id while new ones don't
+      const seen = new Map<string, number>();
+      const deduped: typeof rawTransactions = [];
+      for (let i = rawTransactions.length - 1; i >= 0; i--) {
+        const tx = rawTransactions[i];
+        if (tx.category === 'Fees' && tx.type === 'income') {
+          const nameParts = tx.name.split(':');
+          const studentName = (nameParts.length > 1 ? nameParts[1] : tx.name).trim().toLowerCase();
+          const feeType = nameParts.length > 1 ? nameParts[0].trim().toLowerCase() : 'fee';
+          const key = `${studentName}|${feeType}`;
+          if (seen.has(key)) {
+            // Prefer the record that has branch_id (newer properly-saved entry) over orphaned one
+            const existing = rawTransactions[seen.get(key)!];
+            if (!existing.branch_id && tx.branch_id) {
+              seen.set(key, i);
+            }
+            continue;
+          }
+          seen.set(key, i);
+        }
+        deduped.unshift(tx);
+      }
+      setTransactions(deduped);
 
       setFees(resolveArray(feesRes.data).map((f: any) => ({
           id: (f.id || Math.random()).toString(),
@@ -330,7 +360,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = res.data?.data || (Array.isArray(res.data) ? res.data : []);
       setFees(data.map((f: any) => ({
         id: f.id.toString(),
-        student_id: f.student_id,
+        student_id: (f.student_id || '').toString(),
         student_name: f.student_name,
         type: f.type,
         amount: parseFloat(f.amount) || 0,
@@ -341,6 +371,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         payment_method: f.payment_method,
         payer_name: f.payer_name,
         payer_phone: f.payer_phone,
+        branch_id: f.branch_id?.toString(),
+        branch: f.branch ? { id: f.branch.id.toString(), name: f.branch.name } : undefined,
       })));
     } catch (e) {}
   }, []);
@@ -473,7 +505,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const googleLogin = useCallback(async (idToken: string): Promise<boolean> => {
     try {
+      console.log('[googleLogin] Sending idToken to backend, length:', idToken?.length);
+      console.log('[googleLogin] API endpoint:', '/auth/google');
       const response = await api.post('/auth/google', { id_token: idToken });
+      console.log('[googleLogin] Response status:', response.status);
+      console.log('[googleLogin] Response data keys:', Object.keys(response.data));
       const { access_token, user: rawUser } = response.data;
       const userData = mapUser(rawUser);
 
@@ -889,6 +925,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [fetchBranches]);
 
+  const updateBranchSettings = useCallback(async (id: string, settings: { correspondent_phone?: string; school_office_phone?: string }) => {
+    try {
+      const res = await api.put(`/branches/${id}/settings`, { settings });
+      await fetchBranches();
+      return res.data as Branch;
+    } catch (error) {
+      console.error('Failed to update branch settings:', error);
+      return null;
+    }
+  }, [fetchBranches]);
+
   const value = useMemo(() => ({
     user,
     users,
@@ -928,6 +975,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     addBranch,
     updateBranch,
     deleteBranch,
+    updateBranchSettings,
     branches,
     selectedBranch,
     setSelectedBranch,
@@ -939,7 +987,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     addActivity, deleteActivity, likeActivity, addComment, addTransaction, deleteTransaction, updateTransaction,
     approveTransaction, rejectTransaction,
     updateAvatar, refreshFees, updateNotificationSettings, fetchData,
-    fetchBranches, addBranch, updateBranch, deleteBranch, setSelectedBranch
+    fetchBranches, addBranch, updateBranch, deleteBranch, updateBranchSettings, setSelectedBranch
   ]);
 
   return (

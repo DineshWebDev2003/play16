@@ -71,41 +71,8 @@ export async function registerForPushNotificationsAsync() {
     Constants.manifest?.extra?.eas?.projectId ??
     'caad12b4-5080-41c9-b239-071e6d9f622a';
 
-  const errors: string[] = [];
-
-  // Try with projectId (primary method)
-  if (projectId) {
-    try {
-      const result = await Notifications.getExpoPushTokenAsync({ projectId });
-      return result.data;
-    } catch (e: any) {
-      errors.push(`projectId: ${e.message}`);
-    }
-  }
-
-  // Try without projectId (auto-detect)
-  try {
-    const result = await Notifications.getExpoPushTokenAsync();
-    return result.data;
-  } catch (e: any) {
-    errors.push(`auto: ${e.message}`);
-  }
-
-  // Try with experienceId fallback
-  try {
-    const expoConfig = Constants.expoConfig as any;
-    const slug = expoConfig?.slug || 'tn-happykids';
-    const owner = expoConfig?.owner || 'anonymous';
-    const result = await Notifications.getExpoPushTokenAsync({
-      experienceId: `@${owner}/${slug}`,
-    });
-    return result.data;
-  } catch (e: any) {
-    errors.push(`experienceId: ${e.message}`);
-  }
-
-  console.log('All push token methods failed:', errors.join(' | '));
-  throw new Error('All push token methods failed: ' + errors.join(' | '));
+  const result = await Notifications.getExpoPushTokenAsync({ projectId });
+  return result.data;
 }
 
 export async function savePushToken(token: string) {

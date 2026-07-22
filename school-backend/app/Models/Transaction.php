@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['branch_id', 'name', 'category', 'amount', 'type', 'date', 'status', 'requested_by'];
+    protected $fillable = ['branch_id', 'student_id', 'name', 'category', 'amount', 'type', 'date', 'status', 'requested_by'];
 
     public function branch()
     {

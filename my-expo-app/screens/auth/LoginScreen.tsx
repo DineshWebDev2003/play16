@@ -36,11 +36,20 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
   }, []);
 
   const handleGoogleSignIn = async () => {
+    console.log('[GoogleSignIn] === START ===');
     try {
-      await GoogleSignin.hasPlayServices();
+      console.log('[GoogleSignIn] Checking Play Services...');
+      const hasPlay = await GoogleSignin.hasPlayServices();
+      console.log('[GoogleSignIn] hasPlayServices result:', hasPlay);
+
+      console.log('[GoogleSignIn] Calling signIn()...');
       const userInfo = await GoogleSignin.signIn();
+      console.log('[GoogleSignIn] signIn() success, userInfo keys:', Object.keys(userInfo));
+      console.log('[GoogleSignIn] userInfo:', JSON.stringify({ ...userInfo, idToken: userInfo.idToken ? userInfo.idToken.substring(0, 30) + '...' : null, serverAuthCode: userInfo.serverAuthCode ? 'present' : 'absent' }));
+
       const idToken = userInfo.idToken;
       if (!idToken) {
+        console.log('[GoogleSignIn] ERROR: idToken is null/undefined');
         setStatusModal({
           visible: true,
           title: 'Google Login Failed 🔒',
@@ -49,11 +58,18 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         });
         return;
       }
+      console.log('[GoogleSignIn] idToken obtained, length:', idToken.length);
+
       setIsLoading(true);
+      console.log('[GoogleSignIn] Calling googleLogin(idToken)...');
       const success = await googleLogin(idToken);
+      console.log('[GoogleSignIn] googleLogin result:', success);
+
       if (success) {
+        console.log('[GoogleSignIn] Login SUCCESS, calling onLogin()');
         onLogin();
       } else {
+        console.log('[GoogleSignIn] Login FAILED - backend rejected');
         setStatusModal({
           visible: true,
           title: 'Google Login Failed 🔒',
@@ -62,9 +78,21 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         });
       }
     } catch (error: any) {
+      console.log('[GoogleSignIn] CATCH error:', error);
+      console.log('[GoogleSignIn] error.code:', error?.code);
+      console.log('[GoogleSignIn] error.message:', error?.message);
+      console.log('[GoogleSignIn] error.stack:', error?.stack?.substring(0, 500));
+
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // User cancelled
+        console.log('[GoogleSignIn] User cancelled sign-in');
         return;
+      }
+      if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('[GoogleSignIn] Sign-in already in progress');
+        return;
+      }
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        console.log('[GoogleSignIn] Play Services not available');
       }
       if (error.message === 'INACTIVE_USER_ALERT') {
         setStatusModal({
@@ -82,6 +110,7 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         });
       }
     } finally {
+      console.log('[GoogleSignIn] === END ===');
       setIsLoading(false);
     }
   };

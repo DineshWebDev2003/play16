@@ -86,6 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/fees/{id}', [FeeController::class, 'update']);
     Route::delete('/fees/{id}', [FeeController::class, 'destroy']);
     Route::post('/fees/{id}/toggle-status', [FeeController::class, 'toggleStatus']);
+    Route::post('/fees/cleanup-duplicates', [FeeController::class, 'cleanupDuplicates']);
+    Route::post('/fees/backfill-transactions', [FeeController::class, 'backfillTransactions']);
 
     Route::get('/fee-structures', [FeeStructureController::class, 'index']);
     Route::post('/fee-structures', [FeeStructureController::class, 'store']);
@@ -101,4 +103,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Branches (master_admin only)
     Route::apiResource('branches', BranchController::class);
+    Route::put('branches/{branch}/settings', [BranchController::class, 'updateSettings']);
 });

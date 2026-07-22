@@ -6,7 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Branch extends Model
 {
-    protected $fillable = ['name', 'address', 'share'];
+    protected $fillable = ['name', 'address', 'share', 'settings'];
+
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+        ];
+    }
 
     public function users()
     {

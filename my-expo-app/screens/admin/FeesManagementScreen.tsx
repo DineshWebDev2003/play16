@@ -488,7 +488,7 @@ const InvoicePopupModal = memo(({ visible, onClose, payment, student, onDownload
 });
 
 export default function FeesManagementScreen({ navigation }: any) {
-  const { user, users, fees, transactions, refreshFees, addTransaction, updateTransaction, deleteTransaction, fetchData, updateUser } = useAuth();
+  const { user, users, fees, transactions, branches, refreshFees, addTransaction, updateTransaction, deleteTransaction, fetchData, updateUser } = useAuth();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -518,8 +518,27 @@ export default function FeesManagementScreen({ navigation }: any) {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [payerName, setPayerName] = useState('');
   const [payerPhone, setPayerPhone] = useState('');
+  const [isResyncing, setIsResyncing] = useState(false);
   const isMasterAdmin = user?.role === 'master_admin';
   const PAYMENT_METHODS = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Other'];
+  const handleResyncLedger = useCallback(async () => {
+    Alert.alert('Resync Ledger', 'This will clean up duplicate fee records and create missing income entries for paid fees. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Resync', onPress: async () => {
+        setIsResyncing(true);
+        try {
+          await api.post('/fees/cleanup-duplicates');
+          await api.post('/fees/backfill-transactions');
+          await fetchData();
+          Alert.alert('Resync Complete', 'Duplicate records cleaned, missing income entries created.');
+        } catch (e) {
+          Alert.alert('Resync Failed', 'Could not complete ledger resync.');
+        } finally {
+          setIsResyncing(false);
+        }
+      }},
+    ]);
+  }, [fetchData]);
 
   const generateInvoiceHtml = (item: FeeRecord, qrSvg?: string, logoBase64?: string) => `
     <html>
@@ -759,10 +778,27 @@ export default function FeesManagementScreen({ navigation }: any) {
     } else if (activeTab === 'admission') {
         baseList = list.filter(f => (f.type || '').split(',').some((t:any) => t.trim().toLowerCase() === 'admission'));
     } else if (activeTab === 'history') {
-        baseList = list.filter(f => 
+        const historyList = list.filter(f => 
           (f.status || '').toLowerCase() === 'paid' || 
           f.date.includes(monthPrefix)
         );
+        // Deduplicate: keep only the latest fee record per (matched student + normalized type)
+        const seen = new Map<string, any>();
+        for (const f of historyList) {
+          const matchedStudent = users.find(u =>
+            u.id?.toString() === f.student_id?.toString() ||
+            u.studentId === f.student_id ||
+            u.name === f.student_name
+          );
+          const uid = matchedStudent?.id || f.student_id || f.student_name;
+          const typeKey = (f.type || '').toLowerCase().trim();
+          const key = `${uid}|${typeKey}`;
+          const existing = seen.get(key);
+          if (!existing || f.date > existing.date) {
+            seen.set(key, f);
+          }
+        }
+        baseList = Array.from(seen.values());
     }
 
     if (sq) {
@@ -809,7 +845,17 @@ export default function FeesManagementScreen({ navigation }: any) {
           due_date: updatedItem.due_date
       };
       if (updatedItem.id === 'NEW' || (updatedItem.id?.toString().startsWith('VIRTUAL_'))) {
-        await api.post('/fees', payload);
+        // Check if fee already exists for this student+type+due_date to avoid duplicates
+        const existingFee = fees.find(f =>
+          f.student_id?.toString() === updatedItem.student_id?.toString() &&
+          (f.type || '').toLowerCase() === (updatedItem.type || '').toLowerCase() &&
+          f.due_date === updatedItem.due_date
+        );
+        if (existingFee) {
+          await api.put(`/fees/${existingFee.id}`, payload);
+        } else {
+          await api.post('/fees', payload);
+        }
       } else {
         await api.put(`/fees/${updatedItem.id}`, payload);
       }
@@ -843,21 +889,29 @@ export default function FeesManagementScreen({ navigation }: any) {
       const saveStudent = users.find(u => u.id?.toString() === updatedItem.student_id?.toString() || u.studentId === updatedItem.student_id);
       const saveBranchId = saveStudent?.branch_id;
 
+      const findFeeTx = () => {
+        const exact = (transactions || []).find(t =>
+          t.category === 'Fees' && t.type === 'income' &&
+          t.name === txName &&
+          t.student_id === updatedItem.student_id?.toString()
+        );
+        if (exact) return exact;
+        return (transactions || []).find(t =>
+          t.category === 'Fees' && t.type === 'income' &&
+          t.name === txName && !t.student_id
+        );
+      };
+
       if (updatedItem.status === 'paid') {
         try {
-          const existingTx = (transactions || []).find(t => 
-            t.category === 'Fees' && 
-            t.type === 'income' &&
-            t.student_id === updatedItem.student_id?.toString() &&
-            t.name === txName
-          );
-
+          const existingTx = findFeeTx();
           if (existingTx) {
             await updateTransaction(existingTx.id, {
               amount: updatedItem.amount,
               name: txName,
               date: today,
-              branch_id: saveBranchId
+              branch_id: saveBranchId,
+              student_id: updatedItem.student_id?.toString()
             });
           } else {
             await addTransaction({
@@ -876,12 +930,7 @@ export default function FeesManagementScreen({ navigation }: any) {
         }
       } else {
         try {
-          const existingTx = (transactions || []).find(t => 
-            t.category === 'Fees' && 
-            t.type === 'income' &&
-            t.student_id === updatedItem.student_id?.toString() &&
-            t.name === txName
-          );
+          const existingTx = findFeeTx();
           if (existingTx) {
             await deleteTransaction(existingTx.id);
           }
@@ -930,19 +979,36 @@ export default function FeesManagementScreen({ navigation }: any) {
             u.studentId === item.student_id
         );
         const realStudentId = matchedStudent?.id || item.student_id;
-        await api.post('/fees', {
-          student_id: realStudentId,
-          student_name: item.student_name,
-          type: item.type,
-          amount: item.amount,
-          status: targetStatus,
-          date: new Date().toISOString().split('T')[0],
-          due_date: item.due_date,
-          paid_at: targetStatus === 'paid' ? new Date().toISOString().replace('T', ' ').substring(0, 19) : null,
-          payment_method: payMethod || null,
-          payer_name: payName || null,
-          payer_phone: payPhone || null,
-        });
+        // Check if a fee record already exists for this student+type+due_date to avoid duplicates
+        const existingFee = fees.find(f =>
+          f.student_id?.toString() === realStudentId?.toString() &&
+          (f.type || '').toLowerCase() === (item.type || '').toLowerCase() &&
+          f.due_date === item.due_date
+        );
+        if (existingFee) {
+          await api.put(`/fees/${existingFee.id}`, {
+            status: targetStatus,
+            paid_at: targetStatus === 'paid' ? new Date().toISOString().replace('T', ' ').substring(0, 19) : null,
+            payment_method: payMethod || null,
+            payer_name: payName || null,
+            payer_phone: payPhone || null,
+          });
+        } else {
+          await api.post('/fees', {
+            student_id: realStudentId,
+            student_name: item.student_name,
+            type: item.type,
+            amount: item.amount,
+            status: targetStatus,
+            date: new Date().toISOString().split('T')[0],
+            due_date: item.due_date,
+            paid_at: targetStatus === 'paid' ? new Date().toISOString().replace('T', ' ').substring(0, 19) : null,
+            payment_method: payMethod || null,
+            payer_name: payName || null,
+            payer_phone: payPhone || null,
+            branch_id: feeBranchId,
+          });
+        }
       } else {
         await api.post(`/fees/${item.id}/toggle-status`, {
           payment_method: payMethod || null,
@@ -959,14 +1025,23 @@ export default function FeesManagementScreen({ navigation }: any) {
       const feeStudent = users.find(u => u.id?.toString() === item.student_id?.toString() || u.studentId === item.student_id);
       const feeBranchId = feeStudent?.branch_id;
 
-      if (targetStatus === 'paid') {
-        const existingTx = (transactions || []).find(t =>
+      const findFeeTx = () => {
+        const exact = (transactions || []).find(t =>
           t.category === 'Fees' && t.type === 'income' &&
           t.name === txName &&
           t.student_id === item.student_id?.toString()
         );
+        if (exact) return exact;
+        return (transactions || []).find(t =>
+          t.category === 'Fees' && t.type === 'income' &&
+          t.name === txName && !t.student_id
+        );
+      };
+
+      if (targetStatus === 'paid') {
+        const existingTx = findFeeTx();
         if (existingTx) {
-          await updateTransaction(existingTx.id, { amount: item.amount, name: txName, date: today, branch_id: feeBranchId });
+          await updateTransaction(existingTx.id, { amount: item.amount, name: txName, date: today, branch_id: feeBranchId, student_id: item.student_id?.toString() });
         } else {
           await addTransaction({
             id: Date.now().toString(),
@@ -980,9 +1055,7 @@ export default function FeesManagementScreen({ navigation }: any) {
           });
         }
       } else {
-        const existingTx = (transactions || []).find(t =>
-          t.category === 'Fees' && t.type === 'income' && t.name === txName && t.student_id === item.student_id?.toString()
-        );
+        const existingTx = findFeeTx();
         if (existingTx) {
           await deleteTransaction(existingTx.id);
         }
@@ -1002,9 +1075,9 @@ export default function FeesManagementScreen({ navigation }: any) {
   const renderFeeItem = ({ item }: any) => {
     const isOverdue = item.status === 'unpaid' && item.due_date && new Date(item.due_date) < new Date(new Date().toISOString().split('T')[0]);
     
-    // Find directory ID if the record has database ID
     const student = users.find(u => u.id?.toString() === item.student_id?.toString() || u.studentId === item.student_id);
     const displayId = student?.studentId || item.student_id;
+    const branchName = item.branch?.name || student?.branch?.name || branches.find(b => b.id === (item.branch_id || student?.branch_id))?.name;
 
     return (
       <View 
@@ -1037,6 +1110,14 @@ export default function FeesManagementScreen({ navigation }: any) {
                       {formatDate(item.due_date)}
                     </Text>
                   </View>
+                  {branchName && (
+                    <View className="flex-row items-center bg-gray-100 px-2 py-0.5 rounded-md">
+                      <MaterialCommunityIcons name="domain" size={10} color="#6B7280" />
+                      <Text className="text-[8px] font-black uppercase tracking-wider ml-1 text-gray-500">
+                        {branchName}
+                      </Text>
+                    </View>
+                  )}
                   {item.status === 'paid' && item.paid_at && (
                     <View className="flex-row items-center">
                       <MaterialCommunityIcons name="check-circle" size={12} color="#10B981" />
@@ -1105,7 +1186,20 @@ export default function FeesManagementScreen({ navigation }: any) {
             <MaterialCommunityIcons name="arrow-left" size={24} color="#111827" />
           </TouchableOpacity>
           {isMasterAdmin && (
-            <BranchFilter selectedBranchId={branchFilterId} onSelect={setBranchFilterId} />
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                onPress={handleResyncLedger}
+                disabled={isResyncing}
+                className="w-12 h-12 rounded-[14px] bg-amber-50 items-center justify-center"
+              >
+                {isResyncing ? (
+                  <ActivityIndicator size="small" color="#D97706" />
+                ) : (
+                  <MaterialCommunityIcons name="sync" size={20} color="#D97706" />
+                )}
+              </TouchableOpacity>
+              <BranchFilter selectedBranchId={branchFilterId} onSelect={setBranchFilterId} />
+            </View>
           )}
           <TouchableOpacity
             onPress={() => setSearchModalVisible(true)}

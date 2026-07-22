@@ -16,6 +16,11 @@
         "buildType": "apk"
       }
     },
+    "preview-notif": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

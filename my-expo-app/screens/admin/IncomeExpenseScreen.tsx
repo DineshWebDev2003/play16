@@ -181,6 +181,15 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
   const pendingNet = pendingIncome - pendingExpense;
   const rupee = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
+  const selectedBranch = useMemo(() =>
+    branches.find(b => b.id?.toString() === branchFilterId),
+    [branches, branchFilterId]
+  );
+  const sharePct = selectedBranch?.share ?? 70;
+  const adminShareAmount = Math.round(net * sharePct / 100);
+  const masterShareAmount = net - adminShareAmount;
+  const showShare = !!branchFilterId && net !== 0;
+
   const handleSubmit = async () => {
     if (!name.trim() || !amount || !category.trim()) {
       setStatusModal({ visible: true, title: 'Missing', message: 'Please fill all fields.', type: 'error' });
@@ -276,20 +285,24 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
 
   const handlePrint = useCallback(async () => {
     setPdfLoading(true);
+    const shareLine = showShare
+      ? `<p style="margin-top:16px;text-align:center;color:#16A34A;font-weight:bold;">School Admin Share (${sharePct}%): ${rupee(adminShareAmount)} | Master Admin Share (${100 - sharePct}%): ${rupee(masterShareAmount)}</p>`
+      : '';
     const html = `<html><body style="font-family:sans-serif;padding:40px;">
-      <h1 style="color:#F59E0B;text-align:center;">Finance Report</h1>
+      <h1 style="color:#F59E0B;text-align:center;">Finance Report${selectedBranch ? ' — ' + selectedBranch.name : ''}</h1>
       <table style="width:100%;border-collapse:collapse;margin-top:30px;">
         <tr style="background:#F9FAFB;"><th style="padding:12px;text-align:left;">Date</th><th style="padding:12px;text-align:left;">Description</th><th style="padding:12px;text-align:left;">Type</th><th style="padding:12px;text-align:right;">Amount</th></tr>
         ${historyFiltered.map((t: any) => `<tr style="border-bottom:1px solid #E5E7EB;"><td style="padding:12px;">${t.date}</td><td style="padding:12px;">${t.name}</td><td style="padding:12px;">${t.type}</td><td style="padding:12px;text-align:right;">₹${t.amount.toLocaleString()}</td></tr>`).join('')}
       </table>
-      <p style="margin-top:40px;text-align:center;color:#9CA3AF;">Income: ₹${totalIncome.toLocaleString()} | Expense: ₹${totalExpense.toLocaleString()}</p>
+      <p style="margin-top:40px;text-align:center;color:#9CA3AF;">Income: ₹${totalIncome.toLocaleString()} | Expense: ₹${totalExpense.toLocaleString()} | Net: ₹${net.toLocaleString()}</p>
+      ${shareLine}
     </body></html>`;
     try {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri);
     } catch { Alert.alert('Error', 'Print failed.'); }
     finally { setPdfLoading(false); }
-  }, [historyFiltered, totalIncome, totalExpense]);
+  }, [historyFiltered, totalIncome, totalExpense, net, showShare, sharePct, adminShareAmount, masterShareAmount, selectedBranch]);
 
   const HEADER_H = 520;
   const stickyHeaderStyle = useAnimatedStyle(() => ({
@@ -321,6 +334,7 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
             { label: 'Income', value: rupee(totalIncome), color: '#10B981' },
             { label: 'Expense', value: rupee(totalExpense), color: '#EF4444' },
             { label: 'Net', value: rupee(net), color: net >= 0 ? '#10B981' : '#EF4444' },
+            ...(showShare ? [{ label: 'Share', value: `${rupee(adminShareAmount)} (${sharePct}%)`, color: '#16A34A' }] : []),
           ].map(item => (
             <View key={item.label} style={{ flex: 1, alignItems: 'center', marginHorizontal: 4, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 10, elevation: 4, borderWidth: 1, borderColor: '#F3F4F6' }}>
               <Text style={{ fontSize: 14, fontWeight: '900', color: item.color }}>{item.value}</Text>
@@ -372,6 +386,24 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
       >
         {activeTab === 'history' ? (
           <>
+            {showShare && (
+              <View style={{ backgroundColor: '#F0FDF4', borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#BBF7D0', elevation: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+                  <MaterialCommunityIcons name="handshake" size={18} color="#16A34A" />
+                  <Text style={{ fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: '#166534', marginLeft: 8 }}>Revenue Share — {selectedBranch?.name || 'Branch'}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, marginRight: 6, elevation: 2, borderWidth: 1, borderColor: '#DCFCE7' }}>
+                    <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#16A34A' }}>School Admin ({sharePct}%)</Text>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#14532D', marginTop: 4 }}>{rupee(adminShareAmount)}</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, marginLeft: 6, elevation: 2, borderWidth: 1, borderColor: '#DCFCE7' }}>
+                    <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#16A34A' }}>Master Admin ({100 - sharePct}%)</Text>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#14532D', marginTop: 4 }}>{rupee(masterShareAmount)}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
             <View style={{ marginBottom: 8 }}>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                 <DatePicker label="FROM" value={fromDate} onChange={setFromDate} theme={isDark ? 'dark' : 'light'} colors={colors} />
