@@ -10,9 +10,11 @@ interface BranchFilterProps {
 }
 
 export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilterProps) {
-  const { branches } = useAuth();
+  const { branches, user } = useAuth();
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
+
+  if (user?.role !== 'master_admin') return null;
 
   const selectedName = selectedBranchId
     ? branches.find(b => b.id === selectedBranchId)?.name || 'Unknown'

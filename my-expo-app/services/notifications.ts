@@ -27,7 +27,7 @@ export function setNotificationResponseHandler(handler: (data: NotificationData)
 export async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
     // Main channel for announcements with image support (MAX importance = heads-up + big picture)
-    await Notifications.setNotificationChannelAsync('default', {
+    await Notifications.setNotificationChannelAsync('announcements', {
       name: 'Announcements',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],

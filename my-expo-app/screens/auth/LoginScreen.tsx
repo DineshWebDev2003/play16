@@ -33,23 +33,31 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
       webClientId: GOOGLE.clientId,
       iosClientId: GOOGLE.iosClientId,
     });
+    // Clear any cached Google session so picker always shows
+    GoogleSignin.signOut().catch(() => {});
   }, []);
 
   const handleGoogleSignIn = async () => {
     console.log('[GoogleSignIn] === START ===');
     try {
+      // Sign out first to force fresh account picker
+      console.log('[GoogleSignIn] Signing out to clear cached session...');
+      try { await GoogleSignin.signOut(); } catch (_) {}
+
       console.log('[GoogleSignIn] Checking Play Services...');
       const hasPlay = await GoogleSignin.hasPlayServices();
       console.log('[GoogleSignIn] hasPlayServices result:', hasPlay);
 
       console.log('[GoogleSignIn] Calling signIn()...');
       const userInfo = await GoogleSignin.signIn();
-      console.log('[GoogleSignIn] signIn() success, userInfo keys:', Object.keys(userInfo));
-      console.log('[GoogleSignIn] userInfo:', JSON.stringify({ ...userInfo, idToken: userInfo.idToken ? userInfo.idToken.substring(0, 30) + '...' : null, serverAuthCode: userInfo.serverAuthCode ? 'present' : 'absent' }));
+      console.log('[GoogleSignIn] signIn() returned type:', userInfo.type);
+      console.log('[GoogleSignIn] signIn() top keys:', Object.keys(userInfo));
+      console.log('[GoogleSignIn] data keys:', userInfo.data ? Object.keys(userInfo.data) : 'no data');
 
-      const idToken = userInfo.idToken;
+      // v16+ returns { type: 'success', data: { idToken, user, ... } }
+      const idToken = userInfo.data?.idToken || userInfo.idToken;
       if (!idToken) {
-        console.log('[GoogleSignIn] ERROR: idToken is null/undefined');
+        console.log('[GoogleSignIn] ERROR: no idToken in response');
         setStatusModal({
           visible: true,
           title: 'Google Login Failed 🔒',
@@ -66,7 +74,7 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
       console.log('[GoogleSignIn] googleLogin result:', success);
 
       if (success) {
-        console.log('[GoogleSignIn] Login SUCCESS, calling onLogin()');
+        console.log('[GoogleSignIn] Login SUCCESS');
         onLogin();
       } else {
         console.log('[GoogleSignIn] Login FAILED - backend rejected');
@@ -78,21 +86,16 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         });
       }
     } catch (error: any) {
-      console.log('[GoogleSignIn] CATCH error:', error);
-      console.log('[GoogleSignIn] error.code:', error?.code);
-      console.log('[GoogleSignIn] error.message:', error?.message);
-      console.log('[GoogleSignIn] error.stack:', error?.stack?.substring(0, 500));
+      console.log('[GoogleSignIn] ERROR:', error?.message);
+      console.log('[GoogleSignIn] code:', error?.code);
 
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('[GoogleSignIn] User cancelled sign-in');
+        console.log('[GoogleSignIn] User cancelled');
         return;
       }
       if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('[GoogleSignIn] Sign-in already in progress');
+        console.log('[GoogleSignIn] Already in progress');
         return;
-      }
-      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.log('[GoogleSignIn] Play Services not available');
       }
       if (error.message === 'INACTIVE_USER_ALERT') {
         setStatusModal({
@@ -105,7 +108,7 @@ export default function LoginScreen({ onLogin, onOpenPrivacy }: LoginScreenProps
         setStatusModal({
           visible: true,
           title: 'System Error ⚠️',
-          message: 'Google sign-in failed. Please try again or use username login.',
+          message: error?.message || 'Google sign-in failed. Please try again.',
           type: 'error'
         });
       }

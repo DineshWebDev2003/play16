@@ -36,13 +36,8 @@ class ExpoNotificationService
                 'body' => $body,
                 'sound' => 'default',
                 'priority' => 'high',
-                'channelId' => 'default',
+                'channelId' => 'announcements',
             ];
-
-            // Add root-level image for Android notification preview
-            if (!empty($data['image']) && !str_starts_with($data['image'], 'data:')) {
-                $message['image'] = $data['image'];
-            }
 
             if (!empty($data)) {
                 $sanitizedData = (array) $data;
@@ -57,15 +52,15 @@ class ExpoNotificationService
                 // Force data to be a JSON object (record)
                 $message['data'] = (object) $sanitizedData;
 
-                // iOS-specific attachments for rich notifications (images)
+                // Rich content (notification image) – supports Android out of the box, iOS needs a Notification Service Extension
                 if (!empty($data['image']) && !str_starts_with($data['image'], 'data:')) {
-                    $message['attachments'] = [
-                        [
-                            'url' => $data['image'],
-                            'type' => 'image',
-                        ]
+                    $message['richContent'] = [
+                        'image' => $data['image'],
                     ];
                     $message['mutableContent'] = true;
+                    \Illuminate\Support\Facades\Log::info('[PushNotify] richContent image set: ' . $data['image']);
+                } else {
+                    \Illuminate\Support\Facades\Log::info('[PushNotify] no richContent image, key exists: ' . (isset($data['image']) ? 'yes but base64' : 'no'));
                 }
             }
 
@@ -77,9 +72,21 @@ class ExpoNotificationService
         }
 
         try {
-            $response = Http::asJson()->post($this->url, $messages);
+            \Illuminate\Support\Facades\Log::info('[PushNotify] Sending to Expo API, messages count: ' . count($messages) . ', first message keys: ' . json_encode(array_keys($messages[0] ?? [])));
+            \Illuminate\Support\Facades\Log::info('[PushNotify] First message image field: ' . ($messages[0]['image'] ?? 'NOT SET'));
+            $response = Http::timeout(30)->asJson()->post($this->url, $messages);
 
             if ($response->successful()) {
+                $body = $response->json();
+                \Illuminate\Support\Facades\Log::info('[PushNotify] Expo API success', ['response' => $body]);
+                // Check for individual push ticket errors
+                if (isset($body['data']) && is_array($body['data'])) {
+                    foreach ($body['data'] as $i => $ticket) {
+                        if (isset($ticket['status']) && $ticket['status'] === 'error') {
+                            \Illuminate\Support\Facades\Log::error('[PushNotify] Ticket ' . $i . ' error: ' . ($ticket['message'] ?? 'unknown'), $ticket);
+                        }
+                    }
+                }
                 return true;
             } else {
                 Log::error('Expo Notification Error:', $response->json());
@@ -123,16 +130,27 @@ class ExpoNotificationService
             ->whereNotNull('push_token')
             ->get();
 
+        \Illuminate\Support\Facades\Log::info('[PushNotify] Target role: ' . $role . ', users with tokens: ' . $users->count());
+
         $tokens = [];
         foreach ($users as $user) {
-            if ($excludeUserId && $user->id === $excludeUserId) continue;
+            if ($excludeUserId && $user->id === $excludeUserId) {
+                \Illuminate\Support\Facades\Log::info('[PushNotify] Excluded user: ' . $user->id);
+                continue;
+            }
             if ($this->shouldNotify($user, $type)) {
                 $tokens[] = $user->push_token;
+            } else {
+                \Illuminate\Support\Facades\Log::info('[PushNotify] Skipped user ' . $user->id . ' due to notification settings');
             }
         }
 
-        if (empty($tokens))
+        \Illuminate\Support\Facades\Log::info('[PushNotify] Final tokens to send: ' . count($tokens));
+
+        if (empty($tokens)) {
+            \Illuminate\Support\Facades\Log::warning('[PushNotify] No tokens found to send notification');
             return false;
+        }
 
         return $this->send($tokens, $title, $body, $data);
     }

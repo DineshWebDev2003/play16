@@ -10,7 +10,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 export default function MyFeesScreen({ navigation }: any) {
-  const { user, transactions, fees, feeStructures, refreshFees, fetchData } = useAuth();
+  const { user, fees, feeStructures, refreshFees, fetchData } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
@@ -29,43 +29,32 @@ export default function MyFeesScreen({ navigation }: any) {
     setIsRefreshing(false);
   }, []);
 
-  const studentTransactions = useMemo(() => {
+  const myFeesList = useMemo(() => {
     if (!user) return [];
     const dbId = user.id?.toString();
     const schoolId = user.studentId?.toString();
-
-    return transactions
-      .filter(t => 
-        (t.student_id?.toString() === dbId || t.name.includes(user.name)) && 
-        t.category === 'Fees' &&
-        t.type === 'income'
-      )
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, user]);
+    return fees.filter(f => 
+      (f.student_id?.toString() === dbId || f.student_id?.toString() === schoolId)
+    );
+  }, [user, fees]);
 
   const studentFinancials = useMemo(() => {
     if (!user) return { paid: 0, pending: 0 };
     
-    const dbId = user.id?.toString();
-    const schoolId = user.studentId?.toString();
-    
-    // Aggregate all fee records from DB
-    const myFeesList = fees.filter(f => 
-      (f.student_id?.toString() === dbId || f.student_id?.toString() === schoolId)
-    );
-    
-    // Source of Truth for "Paid": Sum of all fee transactions
-    const paidSum = studentTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+    // Paid: sum of all fee records with status 'paid'
+    const paidSum = myFeesList
+      .filter(f => f.status === 'paid')
+      .reduce((sum, f) => sum + (f.amount || 0), 0);
       
-    // Source of Truth for "Pending": Sum of all unpaid fee records
+    // Pending: sum of all fee records with status 'unpaid'
     const pendingSum = myFeesList
       .filter(f => f.status === 'unpaid')
       .reduce((sum, f) => sum + (f.amount || 0), 0);
       
     return { paid: paidSum, pending: pendingSum };
-  }, [user, fees, studentTransactions]);
+  }, [myFeesList]);
 
-  const generateInvoiceHtml = (tx: any) => `
+  const generateInvoiceHtml = (feeRecord: any) => `
     <html>
       <head>
         <style>
@@ -88,26 +77,32 @@ export default function MyFeesScreen({ navigation }: any) {
         <div class="paid-stamp">PAID</div>
         <div class="header">
           <div class="logo">H</div>
-          <div class="title">CHITHODE HAPPYKIDS</div>
-          <div class="subtitle">Official Fee Receipt</div>
+          <div class="title">TN HAPPYKIDS</div>
+          <div class="subtitle">${user?.branch?.name || 'School'} — Official Fee Receipt</div>
         </div>
         <div class="receipt-box">
-          <div class="row"><span class="label">Date</span><span class="value">${tx.date}</span></div>
+          <div class="row"><span class="label">Date</span><span class="value">${feeRecord.date}</span></div>
           <div class="row"><span class="label">Student</span><span class="value">${user?.name}</span></div>
-          <div class="row"><span class="label">Payment For</span><span class="value">${tx.name}</span></div>
+          <div class="row"><span class="label">Payment For</span><span class="value">${feeRecord.type || feeRecord.student_name || 'School Fee'}</span></div>
         </div>
         <div class="amount-box">
-            <div class="amount-value" style="font-size: 32px; font-weight: 900; color: #F59E0B;">₹${tx.amount.toLocaleString()}</div>
+            <div class="amount-value" style="font-size: 32px; font-weight: 900; color: #F59E0B;">₹${(Number(feeRecord.amount) || 0).toLocaleString()}</div>
         </div>
         <div class="footer">Issued on ${new Date().toLocaleDateString()}</div>
       </body>
     </html>
   `;
 
-  const handleDownload = async (tx: any) => {
+  const paidFeeRecords = useMemo(() =>
+    myFeesList.filter(f => f.status === 'paid')
+      .sort((a, b) => b.date.localeCompare(a.date)),
+    [myFeesList]
+  );
+
+  const handleDownload = async (feeRecord: any) => {
     try {
       setPdfLoading(true);
-      const html = generateInvoiceHtml(tx);
+      const html = generateInvoiceHtml(feeRecord);
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri);
     } catch (e) {
@@ -171,18 +166,18 @@ export default function MyFeesScreen({ navigation }: any) {
 
   const renderHistory = () => (
     <View className="px-6">
-      {studentTransactions.length === 0 ? (
+      {paidFeeRecords.length === 0 ? (
         <View className="items-center py-24">
           <MaterialCommunityIcons name="history" size={64} color="#D1D5DB" />
-          <Text className="font-bold text-gray-400 tracking-widest mt-4 text-xs text-center uppercase">No Transaction Logs</Text>
-          <Text className="text-gray-300 text-xs mt-2">Payments you make will appear here</Text>
+          <Text className="font-bold text-gray-400 tracking-widest mt-4 text-xs text-center uppercase">No Payment History</Text>
+          <Text className="text-gray-300 text-xs mt-2">Your paid fee records will appear here</Text>
         </View>
       ) : (
-        studentTransactions.map((tx, idx) => (
+        paidFeeRecords.map((fee, idx) => (
           <TouchableOpacity 
             key={idx}
             activeOpacity={0.95}
-            onPress={() => handleDownload(tx)}
+            onPress={() => handleDownload(fee)}
             className="bg-white dark:bg-gray-800 p-5 mb-4 rounded-2xl shadow-sm"
           >
             <View className="flex-row items-center justify-between">
@@ -191,12 +186,12 @@ export default function MyFeesScreen({ navigation }: any) {
                   <MaterialCommunityIcons name="hand-coin-outline" size={24} color="white" />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bold text-gray-900 dark:text-white text-base" numberOfLines={1}>{tx.name}</Text>
-                  <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{tx.date}</Text>
+                  <Text className="font-bold text-gray-900 dark:text-white text-base" numberOfLines={1}>{fee.type || 'School Fee'}</Text>
+                  <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{fee.date}</Text>
                 </View>
               </View>
               <View className="items-end">
-                <Text className="font-bold text-xl text-emerald-600 dark:text-emerald-400">+ ₹{tx.amount.toLocaleString()}</Text>
+                <Text className="font-bold text-xl text-emerald-600 dark:text-emerald-400">+ ₹{(Number(fee.amount) || 0).toLocaleString()}</Text>
                 <View className="bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-lg mt-1">
                   <Text className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">PAID</Text>
                 </View>

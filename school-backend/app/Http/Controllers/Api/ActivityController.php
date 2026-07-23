@@ -130,6 +130,23 @@ class ActivityController extends Controller
             Log::error('Activity push notification failed: ' . $e->getMessage());
         }
 
+        // Also notify the poster (master admin) so they can see the notification output
+        try {
+            if ($authUser->push_token) {
+                $imagePath = $activity->thumbnail_url ?: $activity->media_url;
+                $base = config('app.push_image_base_url');
+                $fullImageUrl = $imagePath ? ($base ? rtrim($base, '/') . '/storage/' . $imagePath : asset('storage/' . $imagePath)) : null;
+                $service = app(\App\Services\ExpoNotificationService::class);
+                $service->send($authUser->push_token, "New Activity: " . $activity->title, $activity->description, [
+                    'screen' => 'activityFeed',
+                    'id' => $activity->id,
+                    'image' => $fullImageUrl
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Activity self-notify failed: ' . $e->getMessage());
+        }
+
         return response()->json($activity->load(['students', 'comments.user']), 201);
     }
 
@@ -187,6 +204,10 @@ class ActivityController extends Controller
         $notified = [];
         $service = app(\App\Services\ExpoNotificationService::class);
 
+        $imagePath = $activity->thumbnail_url ?: $activity->media_url;
+        $base = config('app.push_image_base_url');
+        $fullImageUrl = $imagePath ? ($base ? rtrim($base, '/') . '/storage/' . $imagePath : asset('storage/' . $imagePath)) : null;
+
         foreach ($students as $student) {
             if ($excludeUserId && $student->id === $excludeUserId) {
                 continue;
@@ -195,9 +216,6 @@ class ActivityController extends Controller
                 continue;
             }
             $notified[] = $student->id;
-
-            $imagePath = $activity->thumbnail_url ?: $activity->media_url;
-            $fullImageUrl = $imagePath ? asset('storage/' . $imagePath) : null;
 
             $service->notifyUser($student->id, $title, $body, [
                 'screen' => 'activityFeed',

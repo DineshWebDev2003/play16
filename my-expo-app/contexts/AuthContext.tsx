@@ -116,6 +116,7 @@ export interface Activity {
   date: string;
   author: string;
   studentIds: string[];
+  branch_id?: string;
   likesCount: number;
   comments: Comment[];
 }
@@ -593,7 +594,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true;
     } catch (error: any) {
       console.error('Update Profile Error:', error.response?.data || error.message);
-      Alert.alert('Update Failed', 'An error occurred.');
+      const msg = error.response?.data?.message || error.response?.data?.errors?.email?.[0] || 'An error occurred.';
+      Alert.alert('Update Failed', msg);
       return false;
     }
   }, [user, fetchData]);
@@ -704,7 +706,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchData]);
 
   const notifyAnnouncement = useCallback(async (id: string) => {
-    await api.post(`/announcements/${id}/notify`);
+    console.log('[notifyAnnouncement] Sending notify request for announcement:', id);
+    try {
+      const res = await api.post(`/announcements/${id}/notify`);
+      console.log('[notifyAnnouncement] Response status:', res.status);
+      console.log('[notifyAnnouncement] Response data:', JSON.stringify(res.data));
+    } catch (err: any) {
+      console.log('[notifyAnnouncement] ERROR:', err?.message);
+      console.log('[notifyAnnouncement] Response:', err?.response?.data);
+      console.log('[notifyAnnouncement] Status:', err?.response?.status);
+      throw err;
+    }
   }, []);
 
   const addActivity = useCallback(async (activity: Activity) => {
@@ -715,7 +727,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       formData.append('media_type', activity.mediaType);
       formData.append('date', activity.date);
       formData.append('author', activity.author);
-      
+      if (activity.branch_id) formData.append('branch_id', activity.branch_id);
+
       activity.studentIds.forEach(id => {
         formData.append('student_ids[]', id);
       });

@@ -39,7 +39,7 @@ const PrivacyPolicyScreen = ({ navigation }: { navigation: any }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Introduction</Text>
           <Text style={styles.text}>
-            Welcome to CHK (Chithode Happykids). We are committed to protecting the privacy of our students, parents, and teachers. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.
+            Welcome to TN HappyKids. We are committed to protecting the privacy of our students, parents, and teachers. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.
           </Text>
         </View>
 
@@ -134,7 +134,7 @@ const PrivacyPolicyScreen = ({ navigation }: { navigation: any }) => {
             If you have any questions regarding this Privacy Policy, you may contact the school office at:
           </Text>
           <Text style={[styles.text, { fontWeight: '700', color: '#F59E0B', marginTop: 8 }]}>
-            Chithode Happykids PlaySchool
+            TN HappyKids
           </Text>
           <Text style={styles.text}>Phone: +91 97877 51430</Text>
         </View>
@@ -144,7 +144,7 @@ const PrivacyPolicyScreen = ({ navigation }: { navigation: any }) => {
 
       {/* Acceptable Use Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2026 Chithode Happykids. All Rights Reserved.</Text>
+        <Text style={styles.footerText}>© 2026 TN HappyKids. All Rights Reserved.</Text>
       </View>
     </SafeAreaView>
   );

@@ -19,8 +19,7 @@ export default function TeacherQuickActionScreen({ navigation }: Props) {
     { label: 'Student Info', screen: 'studentList', icon: 'account-group', color: '#3B82F6', desc: 'Global directory' },
     { label: 'School Fee', screen: 'feesManagement', icon: 'cash-multiple', color: '#10B981', desc: 'Fee records & payments' },
     { label: 'Duty Log', screen: 'myAttendance', icon: 'calendar-account', color: '#6366F1', desc: 'Work history' },
-    { label: 'Roll Call', screen: 'takeAttendance', icon: 'calendar-check', color: '#F59E0B', desc: 'Mark presence' },
-    { label: 'Analytics', screen: 'studentAttendanceReport', icon: 'file-chart-outline', color: '#10B981', desc: 'Student stats' },
+    { label: 'Student Attendance', screen: 'takeAttendance', icon: 'calendar-check', color: '#F59E0B', desc: 'Mark presence' },
     { label: 'Social Feed', screen: 'postActivity', icon: 'camera-burst', color: '#FBBF24', desc: 'Share moments' },
     { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', desc: 'Daily schedule' },
   ];
@@ -52,7 +51,7 @@ export default function TeacherQuickActionScreen({ navigation }: Props) {
               onPress={() => navigation.navigate(action.screen)}
               className="w-[48%] mb-4 rounded-2xl overflow-hidden shadow-lg"
             >
-              <View style={{ backgroundColor: action.color }} className="p-5 h-36 justify-between">
+              <View style={{ backgroundColor: action.color }} className="p-5 h-44 justify-between">
                 <View className="flex-row justify-between items-start">
                   <View className="bg-white/20 p-2.5 rounded-2xl">
                     <MaterialCommunityIcons name={action.icon as any} size={24} color="white" />

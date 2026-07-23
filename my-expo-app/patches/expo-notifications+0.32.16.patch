@@ -1,0 +1,33 @@
+diff --git a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
+index a05765b..4be58de 100644
+--- a/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
++++ b/node_modules/expo-notifications/android/src/main/java/expo/modules/notifications/notifications/presentation/builders/ExpoNotificationBuilder.kt
+@@ -103,11 +103,6 @@ open class ExpoNotificationBuilder(
+     // see "Notification anatomy" https://developer.android.com/develop/ui/views/notifications#Templates
+     builder.setContentTitle(content.title)
+     builder.setContentText(content.text)
+-    builder.setSubText(content.subText)
+-    // Sets the text/contentText as the bigText to allow the notification to be expanded and the
+-    // entire text to be viewed.
+-    builder.setStyle(NotificationCompat.BigTextStyle().bigText(content.text))
++    builder.setSubText(content.subText)
+ 
+     color?.let { builder.color = it.toInt() }
+     notificationContent.badgeCount?.toInt()?.let { builder.setNumber(it) }
+@@ -148,8 +143,16 @@ open class ExpoNotificationBuilder(
+     if (notificationContent.containsImage()) {
+       val bitmap = notificationContent.getImage(context)
+-      bitmap?.let { builder.setLargeIcon(it) }
++      if (bitmap != null) {
++        builder.setLargeIcon(bitmap)
++        builder.setStyle(NotificationCompat.BigPictureStyle()
++          .bigPicture(bitmap)
++          .bigLargeIcon(null))
++      } else {
++        builder.setStyle(NotificationCompat.BigTextStyle().bigText(content.text))
++        builder.setLargeIcon(largeIcon)
++      }
+     } else {
++      builder.setStyle(NotificationCompat.BigTextStyle().bigText(content.text))
+       builder.setLargeIcon(largeIcon)
+     }

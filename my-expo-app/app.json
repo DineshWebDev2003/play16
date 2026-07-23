@@ -44,7 +44,7 @@
       "googleServicesFile": "./google-services.json",
       "versionCode": 2,
       "notification": {
-        "icon": "./assets/icon.png",
+        "icon": "./assets/notification-icon.png",
         "color": "#F59E0B"
       },
       "splash": {
@@ -71,7 +71,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#F59E0B",
           "sounds": [],
           "mode": "production",

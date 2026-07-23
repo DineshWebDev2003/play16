@@ -17,7 +17,8 @@ import PremiumPopup from '../../components/PremiumPopup';
 import BranchFilter from '../../components/BranchFilter';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const COLUMN_WIDTH = SCREEN_WIDTH / 2;
+const GAP = 1.5;
+const COLUMN_WIDTH = (SCREEN_WIDTH - GAP * 4) / 3;
 
 interface Student {
   id: string;
@@ -493,9 +494,6 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
     });
   }, [likeActivity]);
 
-  // Use state to store balanced columns
-  const [columns, setColumns] = useState<Activity[][]>([[], [], []]);
-
   // Convert AuthContext activities to the grid activity format
   const gridActivities: Activity[] = useMemo(() => {
     let filtered = activities;
@@ -505,9 +503,13 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
     }
 
     if (isMyKidOnly && user && user.role === 'student') {
-      const studentIdStr = user.studentId || user.id.toString();
-      filtered = activities.filter(act => 
-        act.studentIds?.some(id => id.toString() === studentIdStr)
+      const userIdStr = user.id.toString();
+      const altIdStr = user.studentId?.toString();
+      filtered = filtered.filter(act => 
+        act.studentIds?.some(id => {
+          const idStr = id.toString();
+          return idStr === userIdStr || (altIdStr && idStr === altIdStr);
+        })
       );
     }
 
@@ -535,7 +537,7 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
           avatar: s.avatar || '',
           studentId: s.studentId || s.id
         })),
-        layoutType: index % 2 === 0 ? 'tall' : 'square',
+        layoutType: 'square',
         likesCount: act.likesCount || 0,
         comments: act.comments || []
       };
@@ -556,21 +558,6 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
       }
     }
   }, [route?.params?.id, gridActivities.length]);
-
-  // Balancing columns logic
-  useEffect(() => {
-    let colHeights = [0, 0, 0];
-    let tempCols: Activity[][] = [[], [], []];
-
-    gridActivities.forEach((activity) => {
-      let minHeight = Math.min(...colHeights);
-      let colIndex = colHeights.indexOf(minHeight);
-      tempCols[colIndex].push(activity);
-      colHeights[colIndex] += activity.layoutType === 'tall' ? 2 : 1;
-    });
-
-    setColumns(tempCols);
-  }, [gridActivities]);
 
   const openReel = useCallback((index: number) => {
     setSelectedInitialIndex(index);
@@ -723,61 +710,53 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
         )}
       </View>
 
-      {/* Balanced Masonry Grid */}
-      <ScrollView 
-        className="flex-1" 
+      {/* Instagram-style 3-column Grid */}
+      <FlatList
+        className="flex-1"
         showsVerticalScrollIndicator={false}
+        data={gridActivities}
+        numColumns={3}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: GAP, paddingBottom: 120 }}
+        columnWrapperStyle={{ gap: GAP }}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={['#F59E0B']} // Brand Pink
+            colors={['#F59E0B']}
             tintColor={theme === 'dark' ? '#FFF' : '#F59E0B'}
           />
         }
-      >
-        <View className="flex-row px-0.5">
-          {columns.map((col, colIdx) => (
-            <View key={colIdx} style={{ flex: 1 }}>
-              {col.map((activity) => (
-                <TouchableOpacity
-                  key={activity.id}
-                  style={{ 
-                    width: '100%', 
-                    height: activity.layoutType === 'tall' ? COLUMN_WIDTH * 2 : COLUMN_WIDTH,
-                    padding: 0.5,
-                  }}
-                  activeOpacity={0.9}
-                  onPress={() => {
-                    const idx = gridActivities.findIndex(a => a.id === activity.id);
-                    if (idx !== -1) openReel(idx);
-                  }}
-                >
-                  <View className="w-full h-full overflow-hidden" style={{ backgroundColor: theme === 'dark' ? '#111827' : '#F3F4F6' }}>
-                    <Image source={{ uri: activity.thumbnail }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                    <View className="absolute top-3 right-3 bg-black/50 px-2 py-1 rounded-lg flex-row items-center border border-white/20">
-                      <MaterialCommunityIcons 
-                        name={activity.type === 'video' ? 'play' : 'image'} 
-                        size={12} 
-                        color="white" 
-                      />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))}
-        </View>
-        {gridActivities.length === 0 && (
+        ListEmptyComponent={
           <View className="py-20 items-center">
             <MaterialCommunityIcons name={activeTab === 'saved' ? "bookmark-outline" : "image-off-outline"} size={64} color={colors.textTertiary} />
             <Text className={`text-lg font-bold ${colors.textTertiary} mt-4`}>
               {activeTab === 'saved' ? "No saved highlights yet" : "No magical moments yet"}
             </Text>
           </View>
+        }
+        renderItem={({ item: activity, index }) => (
+          <TouchableOpacity
+            style={{ width: COLUMN_WIDTH, height: COLUMN_WIDTH, marginBottom: GAP }}
+            activeOpacity={0.9}
+            onPress={() => {
+              const idx = gridActivities.findIndex(a => a.id === activity.id);
+              if (idx !== -1) openReel(idx);
+            }}
+          >
+            <View className="w-full h-full overflow-hidden rounded-sm" style={{ backgroundColor: theme === 'dark' ? '#111827' : '#F3F4F6' }}>
+              <Image source={{ uri: activity.thumbnail }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              {activity.type === 'video' && (
+                <View className="absolute inset-0 items-center justify-center">
+                  <View className="bg-black/40 w-10 h-10 rounded-full items-center justify-center">
+                    <MaterialCommunityIcons name="play" size={18} color="white" />
+                  </View>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         )}
-        <View className="h-32" />
-      </ScrollView>
+      />
 
       <Modal 
         visible={showReel} 

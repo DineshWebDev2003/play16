@@ -67,18 +67,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   const settingsSections = [
     {
-      title: 'Appearance',
-      items: [
-        {
-          id: 'darkMode',
-          icon: 'theme-light-dark',
-          label: 'Dark Mode',
-          value: theme === 'dark',
-          onToggle: toggleTheme,
-        },
-      ],
-    },
-    {
       title: 'Notifications',
       items: [
         {
@@ -252,7 +240,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             </View>
             <View className="flex-row items-center justify-between mb-3">
               <Text className={`${colors.textSecondary} font-bold`}>School Name</Text>
-              <Text className={`${colors.text} font-black`}>Chithode Happy Kids</Text>
+              <Text className={`${colors.text} font-black`}>TN HappyKids</Text>
             </View>
             <View className="flex-row items-center justify-between">
               <Text className={`${colors.textSecondary} font-bold`}>License</Text>

@@ -24,6 +24,7 @@ export default function SuperAdminQuickActionScreen({ navigation }: Props) {
     { label: 'Income/Expense', screen: 'incomeExpense', icon: 'finance', color: '#6366F1', desc: 'Financial transactions' },
     { label: 'Backup & Restore', screen: 'backup', icon: 'backup-restore', color: '#14B8A6', desc: 'Data backup management' },
     { label: 'Student Info', screen: 'studentInfo', icon: 'account-details', color: '#3B82F6', desc: 'View all student profiles' },
+    { label: 'Post Activity', screen: 'postActivity', icon: 'creation', color: '#D97706', desc: 'Post student activities with branch selection' },
   ];
 
   return (
@@ -51,7 +52,8 @@ export default function SuperAdminQuickActionScreen({ navigation }: Props) {
                 key={index}
                 activeOpacity={0.9}
                 onPress={() => navigation.navigate(action.screen)}
-                className="w-[48%] mb-4 rounded-2xl shadow-lg"
+                style={{ width: action.label === 'Post Activity' ? '100%' : '48%', marginBottom: 16 }}
+                className="rounded-2xl shadow-lg"
               >
                 <View style={{ backgroundColor: action.color, borderRadius: 16, padding: 20, minHeight: 150, justifyContent: 'space-between' }}>
                   <View className="flex-row justify-between items-start">

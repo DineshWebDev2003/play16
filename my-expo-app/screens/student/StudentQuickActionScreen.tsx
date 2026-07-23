@@ -20,6 +20,7 @@ export default function StudentQuickActionScreen({ navigation }: Props) {
     { label: 'Kids Activity', screen: 'activityFeed', icon: 'image-multiple', color: '#F59E0B', desc: 'View school activities' },
     { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', desc: 'Daily school schedule' },
     { label: 'Live Camera', screen: 'liveCamera', icon: 'broadcast', color: '#F59E0B', desc: 'View classroom live feed' },
+    { label: 'My Fees', screen: 'myFees', icon: 'cash-multiple', color: '#8B5CF6', desc: 'View fee details & payments' },
     { label: 'Emergency Contact', screen: 'emergencyContact', icon: 'phone-alert', color: '#EF4444', desc: 'Call guardians quickly' },
   ];
 
@@ -42,23 +43,28 @@ export default function StudentQuickActionScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View className="px-6">
+        <View className="px-6 flex-row flex-wrap justify-between">
           {actions.map((action, index) => (
             <TouchableOpacity
               key={index}
-              activeOpacity={0.8}
+              activeOpacity={0.9}
               onPress={() => navigation.navigate(action.screen)}
-              className="mb-4 rounded-2xl overflow-hidden shadow-sm"
+              style={{ width: '48%', marginBottom: 16 }}
+              className="rounded-2xl shadow-lg"
             >
-              <View style={{ backgroundColor: action.color }} className="p-6 flex-row items-center">
-                <View className="bg-white/20 w-14 h-14 rounded-xl items-center justify-center mr-4">
-                  <MaterialCommunityIcons name={action.icon as any} size={28} color="white" />
+              <View style={{ backgroundColor: action.color, borderRadius: 16, padding: 20, minHeight: 150, justifyContent: 'space-between' }}>
+                <View className="flex-row justify-between items-start">
+                  <View className="bg-white/20 p-2.5 rounded-2xl">
+                    <MaterialCommunityIcons name={action.icon as any} size={24} color="white" />
+                  </View>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-lg font-bold text-white">{action.label}</Text>
-                  <Text className="text-sm text-white/70 mt-1">{action.desc}</Text>
+                <View>
+                  <Text className="text-white text-lg font-black tracking-tight">{action.label}</Text>
+                  <Text className="text-white/60 text-[10px] font-bold mt-0.5 uppercase tracking-widest">{action.desc}</Text>
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.5)" />
+                <View className="absolute -bottom-4 -right-4 opacity-10">
+                  <MaterialCommunityIcons name={action.icon as any} size={70} color="white" />
+                </View>
               </View>
             </TouchableOpacity>
           ))}

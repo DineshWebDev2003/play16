@@ -9,6 +9,7 @@ import StatusModal from '../../components/StatusModal';
 import ChoiceModal from '../../components/ChoiceModal';
 import PremiumPopup from '../../components/PremiumPopup';
 import BranchFilter from '../../components/BranchFilter';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -415,6 +416,7 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
   const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
   const [statusModal, setStatusModal] = useState({ visible: false, title: '', message: '', type: 'error' as any });
   const [choiceModal, setChoiceModal] = useState({ visible: false, title: '', message: '', options: [] as any[], iconName: '', accentColor: '' });
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -984,32 +986,50 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
                     ListEmptyComponent={<EmptyList colors={colors} />}
                     ListHeaderComponent={
                     <>
-                        <View className="px-6 mb-6 flex-row items-center justify-between">
+                        <View className="px-6 mb-6 flex-row items-center justify-center">
                         <TouchableOpacity 
-                            onPress={() => {
-                            const d = new Date(selectedDate);
-                            d.setDate(d.getDate() - 1);
-                            setSelectedDate(d.toISOString().split('T')[0]);
-                            }}
-                            className={`${appTheme === 'dark' ? 'bg-[#1e1e1e]' : colors.surface} w-10 h-10 rounded-full items-center justify-center border ${appTheme === 'dark' ? 'border-gray-800' : colors.border}`}
+                            onPress={() => setShowDatePicker(true)}
+                            className="flex-row items-center"
                         >
-                            <MaterialCommunityIcons name="chevron-left" size={24} color={appTheme === 'dark' ? '#F59E0B' : colors.text} />
-                        </TouchableOpacity>
-                        <View className="items-center">
-                            <Text className={`text-base font-black ${colors.text}`}>{selectedDate}</Text>
-                            <Text className={`text-[10px] font-black uppercase text-brand-pink tracking-widest`}>Change Date</Text>
-                        </View>
-                        <TouchableOpacity 
-                            onPress={() => {
-                            const d = new Date(selectedDate);
-                            d.setDate(d.getDate() + 1);
-                            setSelectedDate(d.toISOString().split('T')[0]);
-                            }}
-                            className={`${appTheme === 'dark' ? 'bg-[#1e1e1e]' : colors.surface} w-10 h-10 rounded-full items-center justify-center border ${appTheme === 'dark' ? 'border-gray-800' : colors.border}`}
-                        >
-                            <MaterialCommunityIcons name="chevron-right" size={24} color={appTheme === 'dark' ? '#F59E0B' : colors.text} />
+                            <MaterialCommunityIcons name="calendar" size={22} color="#F59E0B" />
+                            <Text className={`text-base font-black ml-2 ${colors.text}`}>{selectedDate}</Text>
+                            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textTertiary} style={{ marginLeft: 4 }} />
                         </TouchableOpacity>
                         </View>
+
+                        {showDatePicker && (
+                          <View className="px-6 mb-4">
+                            {Platform.OS === 'ios' ? (
+                              <View className={`rounded-2xl p-4 ${appTheme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                                <DateTimePicker
+                                  value={new Date(selectedDate)}
+                                  mode="date"
+                                  display="inline"
+                                  minimumDate={new Date()}
+                                  onChange={(_event: DateTimePickerEvent, date?: Date) => {
+                                    if (date) {
+                                      setSelectedDate(date.toISOString().split('T')[0]);
+                                    }
+                                    setShowDatePicker(false);
+                                  }}
+                                />
+                              </View>
+                            ) : (
+                              <DateTimePicker
+                                value={new Date(selectedDate)}
+                                mode="date"
+                                display="default"
+                                minimumDate={new Date()}
+                                onChange={(_event: DateTimePickerEvent, date?: Date) => {
+                                  if (date) {
+                                    setSelectedDate(date.toISOString().split('T')[0]);
+                                  }
+                                  setShowDatePicker(false);
+                                }}
+                              />
+                            )}
+                          </View>
+                        )}
     
                         {SummaryHeader}
     

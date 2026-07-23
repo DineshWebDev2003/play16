@@ -6,19 +6,23 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AppNavigator from './navigation/AppNavigator';
+
+// Suppress Reanimated strict mode warnings (reading .value during render)
+try {
+  const Reanimated = require('react-native-reanimated');
+  if (Reanimated.configureReanimatedLogger) {
+    Reanimated.configureReanimatedLogger({ strict: false });
+  }
+} catch (e) {} // fallback: nothing
+global.__REANIMATED_STRICT_MODE = false;
 
 
 const AppContent = () => {
-  const { theme, colors } = useTheme();
-  
   return (
     <>
-      <StatusBar
-        style={theme === 'dark' ? 'light' : 'dark'}
-        backgroundColor={theme === 'dark' ? '#1c1c14' : '#FFFFFF'}
-      />
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <AuthProvider>
         <AppNavigator />
       </AuthProvider>

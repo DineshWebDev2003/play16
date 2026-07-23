@@ -135,12 +135,19 @@ export default function MyAttendanceScreen({ navigation }: any) {
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between px-6 mb-4">
-            <Text className="font-black text-gray-900 text-lg">{MONTHS[selectedMonth]} {selectedYear}</Text>
+        <TouchableOpacity
+          onPress={() => setShowMonthDropdown(true)}
+          className="flex-row items-center justify-between px-6 mb-4"
+          activeOpacity={0.6}
+        >
+            <View className="flex-row items-center">
+              <Text className="font-black text-gray-900 text-lg">{MONTHS[selectedMonth]} {selectedYear}</Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color="#9CA3AF" style={{ marginLeft: 6 }} />
+            </View>
             <View className="bg-pink-100 px-3 py-1 rounded-full border border-pink-200">
                <Text className="text-amber-500 text-[9px] font-black uppercase tracking-widest">Monthly Pulse</Text>
             </View>
-        </View>
+        </TouchableOpacity>
 
         <ScrollView 
             className="flex-1 px-6" 
@@ -213,11 +220,30 @@ export default function MyAttendanceScreen({ navigation }: any) {
         </ScrollView>
       </View>
 
-      {/* Month Dropdown Overlay */}
+      {/* Month & Year Dropdown Overlay */}
       <Modal visible={showMonthDropdown} transparent animationType="fade">
         <View className="flex-1 bg-black/80 items-center justify-center px-6">
           <View className="bg-white w-full rounded-[45px] p-8">
             <Text className="text-2xl font-black text-gray-900 mb-8 text-center tracking-tighter">Select Period</Text>
+
+            {/* Year Selector */}
+            <View className="flex-row items-center justify-center mb-6">
+              <TouchableOpacity
+                onPress={() => setSelectedYear(selectedYear - 1)}
+                className="w-12 h-12 rounded-2xl bg-gray-100 items-center justify-center"
+              >
+                <MaterialCommunityIcons name="chevron-left" size={24} color="#4B5563" />
+              </TouchableOpacity>
+              <Text className="text-xl font-black text-gray-900 mx-6">{selectedYear}</Text>
+              <TouchableOpacity
+                onPress={() => setSelectedYear(selectedYear + 1)}
+                className="w-12 h-12 rounded-2xl bg-gray-100 items-center justify-center"
+              >
+                <MaterialCommunityIcons name="chevron-right" size={24} color="#4B5563" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Month Grid */}
             <View className="flex-row flex-wrap justify-between">
               {MONTHS.map((m, i) => (
                 <TouchableOpacity 

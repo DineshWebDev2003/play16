@@ -26,7 +26,7 @@ export default function AdminQuickActionScreen({ navigation }: Props) {
     { label: 'Assign Fee', screen: 'feesManagement', icon: 'cash-plus', color: '#DB2777', desc: 'Student records' },
     { label: 'Finances', screen: 'incomeExpense', icon: 'cash-multiple', color: '#059669', desc: 'Budget tracker' },
     { label: 'Broadcast', screen: 'announcements', icon: 'bullhorn', color: '#DB2777', desc: 'Push alerts' },
-    { label: 'Post Now', screen: 'postActivity', icon: 'camera-burst', color: '#3B82F6', desc: 'Media sharing' },
+    { label: 'Post Activity', screen: 'postActivity', icon: 'creation', color: '#D97706', desc: 'Post student activities' },
     { label: 'Backup', screen: 'backup', icon: 'database', color: '#F59E0B', desc: 'System vault' },
     { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', desc: 'Daily plans' },
   ];
@@ -56,9 +56,10 @@ export default function AdminQuickActionScreen({ navigation }: Props) {
               key={index}
               activeOpacity={0.9}
               onPress={() => navigation.navigate(action.screen)}
-              className="w-[48%] mb-4 rounded-2xl overflow-hidden shadow-lg"
+              style={{ width: action.label === 'Post Activity' ? '100%' : '48%', marginBottom: 16 }}
+              className="rounded-2xl overflow-hidden shadow-lg"
             >
-              <View style={{ backgroundColor: action.color }} className="p-5 h-36 justify-between">
+              <View style={{ backgroundColor: action.color, borderRadius: 16, padding: 20, minHeight: action.label === 'Post Activity' ? 150 : 144, justifyContent: 'space-between' }}>
                 <View className="flex-row justify-between items-start">
                   <View className="bg-white/20 p-2.5 rounded-2xl">
                     <MaterialCommunityIcons name={action.icon as any} size={24} color="white" />

@@ -124,6 +124,9 @@ class AnnouncementController extends Controller
             'image' => $actualImageUrl
         ];
 
+        \Illuminate\Support\Facades\Log::info('[Notify] image_url from DB: ' . ($announcement->image_url ?? 'null'));
+        \Illuminate\Support\Facades\Log::info('[Notify] actualImageUrl constructed: ' . ($actualImageUrl ?? 'null'));
+
         try {
             if ($announcement->target === 'all') {
                 $this->notificationService->notifyAll($title, $body, $notificationData, null, $authUser->id);

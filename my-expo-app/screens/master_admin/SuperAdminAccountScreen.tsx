@@ -25,6 +25,9 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [savingName, setSavingName] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [email, setEmail] = useState(user?.email || '');
+  const [savingEmail, setSavingEmail] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -37,6 +40,14 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
     const ok = await updateProfile({ name: name.trim() });
     setSavingName(false);
     if (ok) setEditingName(false);
+  };
+
+  const handleSaveEmail = async () => {
+    if (!email.trim()) return;
+    setSavingEmail(true);
+    const ok = await updateProfile({ email: email.trim() });
+    setSavingEmail(false);
+    if (ok) setEditingEmail(false);
   };
 
   const handleChangePassword = async () => {
@@ -162,13 +173,32 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
 
           {/* Email */}
           <View style={[cardStyle, { marginTop: 12 }]}>
-            <View className="flex-row items-center mb-2">
-              <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center">
+                <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
+                </View>
+                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Email</Text>
               </View>
-              <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Email</Text>
+              {!editingEmail && (
+                <TouchableOpacity onPress={() => setEditingEmail(true)}>
+                  <MaterialCommunityIcons name="pencil" size={18} color="#6366F1" />
+                </TouchableOpacity>
+              )}
             </View>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
+            {editingEmail ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TextInput value={email} onChangeText={setEmail} style={{ ...inputStyle, flex: 1, fontSize: 16 }} autoFocus placeholder="Enter email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
+                <TouchableOpacity onPress={handleSaveEmail} disabled={savingEmail} style={{ backgroundColor: '#6366F1', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
+                  {savingEmail ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setEditingEmail(false); setEmail(user?.email || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
+                  <MaterialCommunityIcons name="close" size={22} color={isDark ? '#FFF' : '#111'} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
+            )}
           </View>
 
           {/* Password */}

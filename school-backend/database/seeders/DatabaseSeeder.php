@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         // 0. Create a default branch
         $mainBranch = Branch::create([
             'name' => 'TN HAPPYKIDS - Main Branch',
-            'address' => 'Chithode, Tamil Nadu',
+            'address' => 'Tamil Nadu',
         ]);
 
         // 1. Master Admin
