@@ -18,33 +18,62 @@ workflows:
         script: |
           cd my-expo-app
           npx expo prebuild --platform android
-      - name: Build APK
-        script: |
-          cd my-expo-app/android
-          ./gradlew assembleRelease
-      - name: Build AAB
-        script: |
-          cd my-expo-app/android
-          ./gradlew bundleRelease
-      - name: Save keystore
+      - name: Setup release signing
         script: |
           echo $CM_KEYSTORE | base64 --decode > /tmp/keystore.jks
-      - name: Sign APK with release key
+      - name: Patch build.gradle for release signing
         script: |
-          apksigner sign \
-            --ks /tmp/keystore.jks \
-            --ks-pass "pass:$CM_KEYSTORE_PASSWORD" \
-            --ks-key-alias $CM_KEY_ALIAS \
-            --key-pass "pass:$CM_KEY_PASSWORD" \
+          python3 << 'EOF'
+with open("my-expo-app/android/app/build.gradle", "r") as f:
+    content = f.read()
+
+# Add release signing config inside signingConfigs block
+content = content.replace(
+    '''        }
+    }
+    buildTypes {''',
+    '''        }
+        release {
+            storeFile file(System.getenv("KEYSTORE_PATH") ?: "/tmp/keystore.jks")
+            storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("CM_KEY_ALIAS")
+            keyPassword System.getenv("CM_KEY_PASSWORD")
+        }
+    }
+    buildTypes {'''
+)
+
+# Switch release buildType to use release signing config
+content = content.replace(
+    '''        release {
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug''',
+    '''        release {
+            signingConfig signingConfigs.release'''
+)
+
+with open("my-expo-app/android/app/build.gradle", "w") as f:
+    f.write(content)
+print("build.gradle patched successfully")
+EOF
+      - name: Build APK & AAB (signed with release key)
+        script: |
+          export KEYSTORE_PATH=/tmp/keystore.jks
+          export CM_KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD
+          export CM_KEY_ALIAS=$CM_KEY_ALIAS
+          export CM_KEY_PASSWORD=$CM_KEY_PASSWORD
+          cd my-expo-app/android
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
+      - name: Verify APK fingerprint
+        script: |
+          apksigner verify --print-certs \
             my-expo-app/android/app/build/outputs/apk/release/app-release.apk
-      - name: Sign AAB with release key
+      - name: Verify AAB fingerprint
         script: |
-          jarsigner \
-            -keystore /tmp/keystore.jks \
-            -storepass $CM_KEYSTORE_PASSWORD \
-            -keypass $CM_KEY_PASSWORD \
-            my-expo-app/android/app/build/outputs/bundle/release/app-release.aab \
-            $CM_KEY_ALIAS
+          keytool -printcert -jarfile \
+            my-expo-app/android/app/build/outputs/bundle/release/app-release.aab 2>&1 | head -20
     artifacts:
       - my-expo-app/android/app/build/outputs/apk/release/*.apk
       - my-expo-app/android/app/build/outputs/bundle/release/*.aab
