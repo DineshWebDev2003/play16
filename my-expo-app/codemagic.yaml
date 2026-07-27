@@ -1,6 +1,6 @@
 workflows:
   react-native-expo-android:
-    name: React Native Expo Android
+    name: TN Happy Kids - Android Release
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
