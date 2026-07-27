@@ -15,11 +15,11 @@ workflows:
         script: |
           cd my-expo-app
           npx expo prebuild --platform android --clean
-      - name: Build Android APK
+      - name: Build Signed Release APK
         script: |
           cd my-expo-app/android
           ./gradlew assembleRelease
-      - name: Build Android AAB
+      - name: Build Signed Release AAB
         script: |
           cd my-expo-app/android
           ./gradlew bundleRelease
