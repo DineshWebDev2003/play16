@@ -1,6 +1,6 @@
 workflows:
   react-native-expo-android:
-    name: TN Happy Kids - Android Release
+    name: TN Happy Kids - Android Builds
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -24,20 +24,25 @@ workflows:
       - name: Patch build.gradle for release signing
         script: |
           python3 my-expo-app/scripts/patch_build.py
-      - name: Build Release APK
+      - name: Build Debug APK
+        script: |
+          cd my-expo-app/android
+          ./gradlew assembleDebug
+      - name: Build Release AAB
         script: |
           export KEYSTORE_PATH=/tmp/keystore.jks
           export CM_KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD
           export CM_KEY_ALIAS=$CM_KEY_ALIAS
           export CM_KEY_PASSWORD=$CM_KEY_PASSWORD
           cd my-expo-app/android
-          ./gradlew assembleRelease
-      - name: Verify APK fingerprint
+          ./gradlew bundleRelease
+      - name: Verify AAB fingerprint
         script: |
           apksigner verify --print-certs \
-            my-expo-app/android/app/build/outputs/apk/release/app-release.apk
+            my-expo-app/android/app/build/outputs/bundle/release/app-release.aab
     artifacts:
-      - my-expo-app/android/app/build/outputs/apk/release/*.apk
+      - my-expo-app/android/app/build/outputs/apk/debug/*.apk
+      - my-expo-app/android/app/build/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:
