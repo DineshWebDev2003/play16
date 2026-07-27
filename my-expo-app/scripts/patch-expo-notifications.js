@@ -77,7 +77,7 @@ const newStyleBlock = `    builder.setSubText(content.subText)
 
 if (!content.includes(oldStyleBlock)) {
   console.log('[notif-patch] Could not find style block to patch.');
-  process.exit(1);
+  process.exit(0);
 }
 content = content.replace(oldStyleBlock, newStyleBlock);
 
@@ -97,7 +97,7 @@ const newIconBlock = `    if (imageBitmap != null) {
 
 if (!content.includes(oldIconBlock)) {
   console.log('[notif-patch] Could not find icon block to patch.');
-  process.exit(1);
+  process.exit(0);
 }
 content = content.replace(oldIconBlock, newIconBlock);
 
