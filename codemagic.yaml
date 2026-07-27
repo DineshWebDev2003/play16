@@ -1,39 +1,28 @@
 workflows:
   react-native-expo-android:
-    name: Android Debug Build
-    max_build_duration: 45
+    name: TN Happy Kids - Android Release
+    max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
-      groups:
-        - firebase
-      node: 20
-      java: 17
-    working_directory: my-expo-app
+      node: latest
     scripts:
       - name: Install dependencies
-        script: npm ci
-      - name: Create google-services.json
         script: |
-          echo $GOOGLE_SERVICES_JSON | base64 --decode > google-services.json
-          if [ ! -s google-services.json ]; then
-            echo "ERROR: google-services.json is empty or was not created!"
-            exit 1
-          fi
-      - name: Expo Prebuild
+          npm install
+          npx expo install expo-build-properties expo-splash-screen
+      - name: Expo Prebuild (clean)
         script: npx expo prebuild --platform android --clean
-      - name: Build Android Debug APK
-        script: |
-          export NODE_OPTIONS="--max-old-space-size=8192"
-          cd android
-          chmod +x gradlew
-          echo "org.gradle.jvmargs=-Xmx4096m" >> gradle.properties
-          ./gradlew assembleDebug --no-daemon --stacktrace
-      - name: Get SHA-1 Fingerprints
+      - name: Build Android APK
         script: |
           cd android
-          ./gradlew signingReport | grep -E "SHA1|SHA-1" | head -10
+          ./gradlew assembleRelease
+      - name: Build Android AAB
+        script: |
+          cd android
+          ./gradlew bundleRelease
     artifacts:
-      - android/app/build/outputs/apk/debug/*.apk
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:
