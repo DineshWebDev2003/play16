@@ -15,27 +15,42 @@ workflows:
         script: |
           cd my-expo-app
           npx expo prebuild --platform android
-      - name: Configure release signing
-        script: |
-          cd my-expo-app
-          chmod +x scripts/configure-signing.sh
-          ./scripts/configure-signing.sh
-      - name: Build Signed Release APK
+      - name: Build APK
         script: |
           cd my-expo-app/android
           ./gradlew assembleRelease
-      - name: Build Signed Release AAB
+      - name: Sign APK with release keystore
+        script: |
+          echo "$CM_KEYSTORE" > /tmp/keystore.b64
+          python3 -c "import base64; open('/tmp/keystore.keystore','wb').write(base64.b64decode(open('/tmp/keystore.b64').read()))"
+          APK=$(ls my-expo-app/android/app/build/outputs/apk/release/*.apk | head -1)
+          apksigner sign --ks /tmp/keystore.keystore \
+            --ks-key-alias "$CM_KEY_ALIAS" \
+            --ks-pass "pass:$CM_KEYSTORE_PASSWORD" \
+            --key-pass "pass:$CM_KEY_PASSWORD" \
+            "$APK"
+          echo "APK signed successfully"
+      - name: Build AAB
         script: |
           cd my-expo-app/android
           ./gradlew bundleRelease
+      - name: Sign AAB with release keystore
+        script: |
+          AAB=$(ls my-expo-app/android/app/build/outputs/bundle/release/*.aab | head -1)
+          jarsigner -keystore /tmp/keystore.keystore \
+            -storepass "$CM_KEYSTORE_PASSWORD" \
+            -keypass "$CM_KEY_PASSWORD" \
+            -digestalg SHA-256 \
+            -sigalg SHA256withRSA \
+            "$AAB" \
+            "$CM_KEY_ALIAS"
+          echo "AAB signed successfully"
       - name: Print SHA-1 fingerprint
         script: |
           APK=$(ls my-expo-app/android/app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)
           if [ -n "$APK" ]; then
             echo "APK: $APK"
             apksigner verify --print-certs "$APK" 2>&1
-          else
-            echo "No APK found at expected path"
           fi
     artifacts:
       - my-expo-app/android/app/build/outputs/apk/release/*.apk
