@@ -32,3 +32,4 @@ _agent/
 !my-expo-app/eas.json
 !my-expo-app/index.js
 !my-expo-app/app.json
+!my-expo-app/scripts/*.js
