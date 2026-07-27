@@ -17,31 +17,12 @@ workflows:
           npx expo prebuild --platform android
       - name: Configure release signing
         script: |
-          export KEYSTORE_PATH=/tmp/keystore.keystore
-          export KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD
-          export KEY_ALIAS=$CM_KEY_ALIAS
-          export KEY_PASSWORD=$CM_KEY_PASSWORD
           cd my-expo-app
-          echo "$CM_KEYSTORE" > /tmp/keystore.b64
-          python3 -c "import base64; open('/tmp/keystore.keystore','wb').write(base64.b64decode(open('/tmp/keystore.b64').read()))"
-          python3 -c "
-with open('android/app/build.gradle','r') as f:
-    c = f.read()
-b = '''        release {
-            storeFile file(System.getenv('KEYSTORE_PATH'))
-            storePassword System.getenv('KEYSTORE_PASSWORD')
-            keyAlias System.getenv('KEY_ALIAS')
-            keyPassword System.getenv('KEY_PASSWORD')
-        }
-'''
-c = c.replace('signingConfigs {\n        debug {','signingConfigs {\n' + b + '        debug {')
-c = c.replace('signingConfig signingConfigs.debug','signingConfig signingConfigs.release',1)
-open('android/app/build.gradle','w').write(c)
-print('Signing configured')
-"
+          chmod +x scripts/configure-signing.sh
+          ./scripts/configure-signing.sh
       - name: Print SHA-1 fingerprint
         script: |
-          keytool -list -v -keystore /tmp/keystore.keystore -alias $CM_KEY_ALIAS -storepass $CM_KEYSTORE_PASSWORD -keypass $CM_KEY_PASSWORD 2>&1 | grep -A 1 "SHA1:"
+          keytool -list -v -keystore /tmp/keystore.keystore -alias "$CM_KEY_ALIAS" -storepass "$CM_KEYSTORE_PASSWORD" -keypass "$CM_KEY_PASSWORD" 2>&1 | grep -A 1 "SHA1:"
       - name: Build Signed Release APK
         script: |
           cd my-expo-app/android
