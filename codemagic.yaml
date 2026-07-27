@@ -27,7 +27,6 @@ workflows:
 with open("my-expo-app/android/app/build.gradle", "r") as f:
     content = f.read()
 
-# Add release signing config inside signingConfigs block
 content = content.replace(
     '''        }
     }
@@ -43,7 +42,6 @@ content = content.replace(
     buildTypes {'''
 )
 
-# Switch release buildType to use release signing config
 content = content.replace(
     '''        release {
             // Caution! In production, you need to generate your own keystore file.
@@ -57,7 +55,7 @@ with open("my-expo-app/android/app/build.gradle", "w") as f:
     f.write(content)
 print("build.gradle patched successfully")
 EOF
-      - name: Build APK & AAB (signed with release key)
+      - name: Build Release APK
         script: |
           export KEYSTORE_PATH=/tmp/keystore.jks
           export CM_KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD
@@ -65,18 +63,12 @@ EOF
           export CM_KEY_PASSWORD=$CM_KEY_PASSWORD
           cd my-expo-app/android
           ./gradlew assembleRelease
-          ./gradlew bundleRelease
       - name: Verify APK fingerprint
         script: |
           apksigner verify --print-certs \
             my-expo-app/android/app/build/outputs/apk/release/app-release.apk
-      - name: Verify AAB fingerprint
-        script: |
-          keytool -printcert -jarfile \
-            my-expo-app/android/app/build/outputs/bundle/release/app-release.aab 2>&1 | head -20
     artifacts:
       - my-expo-app/android/app/build/outputs/apk/release/*.apk
-      - my-expo-app/android/app/build/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:
