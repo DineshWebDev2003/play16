@@ -67,4 +67,23 @@ export const getFormData = (uri: string, name: string = 'file', type: string = '
   return formData;
 };
 
+let onUnauthorized: (() => void) | null = null;
+let unauthorizedFired = false;
+
+export const setOnUnauthorized = (cb: (() => void) | null) => {
+  onUnauthorized = cb;
+  if (!cb) unauthorizedFired = false;
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !unauthorizedFired) {
+      unauthorizedFired = true;
+      onUnauthorized?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

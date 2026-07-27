@@ -24,7 +24,7 @@ const AppContent = () => {
     <>
       <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <AuthProvider>
-        <AppNavigator />
+          <AppNavigator />
       </AuthProvider>
     </>
   );

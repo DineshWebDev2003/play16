@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Image, Linking, Switch, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
@@ -242,22 +242,6 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
               <Text style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user.branch.name}</Text>
             </View>
           )}
-
-          {/* Theme */}
-          <View style={[cardStyle, { marginTop: 12 }]}>
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <View style={{ backgroundColor: isDark ? 'rgba(129, 140, 248, 0.15)' : 'rgba(249, 115, 22, 0.15)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <MaterialCommunityIcons name={isDark ? 'weather-night' : 'weather-sunny'} size={22} color={isDark ? '#818CF8' : '#F97316'} />
-                </View>
-                <View>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FFF' : '#111' }}>Theme</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>{isDark ? 'Dark' : 'Light'} Mode</Text>
-                </View>
-              </View>
-              <Switch value={isDark} onValueChange={() => {}} trackColor={{ false: '#D1D5DB', true: '#F59E0B' }} thumbColor="#FFF" />
-            </View>
-          </View>
 
           {/* Navigation items */}
           <TouchableOpacity

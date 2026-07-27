@@ -8,7 +8,8 @@
     "prebuild": "node node_modules/expo/bin/cli prebuild",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
-    "web": "node node_modules/expo/bin/cli start --web"
+    "web": "node node_modules/expo/bin/cli start --web",
+    "postinstall": "node scripts/patch-expo-notifications.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -62,6 +63,7 @@
     "eslint": "^9.25.1",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.2",
+    "patch-package": "^8.0.1",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "tailwindcss": "^3.4.19",
@@ -70,7 +72,7 @@
   "main": "node_modules/expo/AppEntry.js",
   "private": true,
   "optionalDependencies": {
-    "lightningcss-win32-x64-msvc": "^1.32.0"
+    "lightningcss-win32-x64-msvc": "^1.33.0"
   },
   "overrides": {
     "lightningcss": "$lightningcss",

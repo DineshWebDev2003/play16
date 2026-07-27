@@ -326,6 +326,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: b.name,
           address: b.address,
           share: parseFloat(b.share) || 70,
+          settings: b.settings,
         }));
         setBranches(branchList);
         setSelectedBranch(prev => prev || (branchList.length > 0 ? branchList[0] : null));
@@ -902,6 +903,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name: b.name,
         address: b.address,
         share: b.share !== undefined ? b.share : 70,
+        settings: b.settings,
       })));
     } catch (error) {
       console.error('Failed to fetch branches:', error);

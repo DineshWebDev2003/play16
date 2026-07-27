@@ -1,11 +1,13 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system';
 import api from '../services/api';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -16,6 +18,7 @@ export type NotificationData = {
   id?: string;
   image?: string;
   url?: string;
+  localImageUri?: string;
 };
 
 let notificationResponseHandler: ((data: NotificationData) => void) | null = null;
@@ -87,9 +90,25 @@ export async function savePushToken(token: string) {
 
 export function addNotificationListeners() {
   // Listen for incoming notifications while app is foregrounded
-  const foregroundSub = Notifications.addNotificationReceivedListener(notification => {
+  const foregroundSub = Notifications.addNotificationReceivedListener(async notification => {
     const data = notification.request.content.data as NotificationData;
     console.log('Notification received in foreground:', data);
+
+    // Pre-cache the image for foreground notifications so it's available
+    // if the user navigates to the relevant screen
+    if (data?.image && Platform.OS === 'android') {
+      try {
+        const filename = `notif_cache_${data.id ?? Date.now()}.jpg`;
+        const localUri = FileSystem.cacheDirectory + filename;
+        const downloadResult = await FileSystem.downloadAsync(data.image, localUri);
+        if (downloadResult?.uri) {
+          // Store the local URI in the data for later retrieval
+          data.localImageUri = downloadResult.uri;
+        }
+      } catch (e) {
+        console.log('Notification image cache failed (non-critical):', e);
+      }
+    }
   });
 
   // Listen for notification taps (background → foreground)

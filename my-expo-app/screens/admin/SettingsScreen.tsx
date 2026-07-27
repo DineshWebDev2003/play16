@@ -24,7 +24,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   const pushEnabled = user?.notification_settings?.enabled ?? true;
 
-  const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master_admin';
+  const isAdminOrMaster = user?.role === 'admin';
 
   const currentBranch = branches?.find((b: any) => b.id === user?.branch_id);
 

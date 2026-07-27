@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Switch, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -18,9 +18,85 @@ interface AdminAccountScreenProps {
 }
 
 export default function AdminAccountScreen({ navigation }: AdminAccountScreenProps) {
-  const { user, logout, updateAvatar } = useAuth();
-  const { theme, colors, toggleTheme } = useTheme();
+  const { user, logout, updateAvatar, updateProfile } = useAuth();
+  const { theme, colors } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+  const [savingName, setSavingName] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [email, setEmail] = useState(user?.email || '');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const handleSaveName = async () => {
+    if (!name.trim()) return;
+    setSavingName(true);
+    const ok = await updateProfile({ name: name.trim() });
+    setSavingName(false);
+    if (ok) setEditingName(false);
+  };
+
+  const handleSaveEmail = async () => {
+    if (!email.trim()) return;
+    setSavingEmail(true);
+    const ok = await updateProfile({ email: email.trim() });
+    setSavingEmail(false);
+    if (ok) setEditingEmail(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please fill all password fields');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const ok = await updateProfile({
+        current_password: currentPassword,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      } as any);
+      if (ok) {
+        Alert.alert('Success', 'Password updated successfully');
+        setShowPasswordForm(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const inputStyle = {
+    backgroundColor: theme === 'dark' ? '#262626' : '#F3F4F6',
+    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
+    fontSize: 16, fontWeight: '700' as const,
+    color: theme === 'dark' ? '#FFF' : '#111',
+    borderWidth: 1, borderColor: theme === 'dark' ? '#333' : '#E5E7EB',
+  };
+
+  const cardStyle = {
+    backgroundColor: theme === 'dark' ? '#1e1e1e' : '#FFFFFF',
+    borderRadius: 32, padding: 20,
+    borderWidth: 1, borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+  };
 
   const menuItems = [
     {
@@ -38,14 +114,6 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       icon: 'bell-outline',
       iconColor: '#F59E0B', // Pink
       bgColor: 'rgba(244, 114, 182, 0.15)',
-    },
-    {
-      id: 'theme',
-      title: 'Theme Settings',
-      subtitle: `Current: ${theme === 'light' ? 'Light' : 'Dark'} Mode`,
-      icon: theme === 'light' ? 'weather-sunny' : 'weather-night',
-      iconColor: theme === 'light' ? '#F97316' : '#818CF8', // Orange/Indigo
-      bgColor: theme === 'light' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(129, 140, 248, 0.15)',
     },
     {
       id: 'settings',
@@ -119,11 +187,11 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
         </View>
       </View>
       
-      {/* Premium Admin Card Summary */}
+      {/* Profile Card */}
       <View className="px-6 py-4">
         <TouchableOpacity 
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('profile')}
+            onPress={() => setShowProfileForm(!showProfileForm)}
             className="rounded-[40px] overflow-hidden shadow-2xl"
             style={{ elevation: 25 }}
         >
@@ -145,13 +213,106 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
                             <Text className={`${theme === 'dark' ? 'text-brand-yellow' : 'text-amber-900'} text-[10px] font-black uppercase tracking-widest`}>Verified Badge</Text>
                         </View>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={24} color="#F59E0B" />
+                    <MaterialCommunityIcons name={showProfileForm ? 'chevron-up' : 'chevron-right'} size={24} color="#F59E0B" />
                 </View>
                 <View className="absolute -bottom-10 -right-10 opacity-5">
                     <MaterialCommunityIcons name="key-chain-variant" size={120} color={colors.text} />
                 </View>
             </LinearGradient>
         </TouchableOpacity>
+
+        {showProfileForm && (
+          <View style={{ marginTop: 12 }}>
+            {/* Name */}
+            <View style={cardStyle}>
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                  <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <MaterialCommunityIcons name="account" size={22} color="#F59E0B" />
+                  </View>
+                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>Full Name</Text>
+                </View>
+                {!editingName && (
+                  <TouchableOpacity onPress={() => { setEditingName(true); setName(user?.name || ''); }}>
+                    <MaterialCommunityIcons name="pencil" size={18} color="#F59E0B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {editingName ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput value={name} onChangeText={setName} style={{ ...inputStyle, flex: 1, fontSize: 18 }} autoFocus placeholder="Enter name" placeholderTextColor="#9CA3AF" />
+                  <TouchableOpacity onPress={handleSaveName} disabled={savingName} style={{ backgroundColor: '#F59E0B', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
+                    {savingName ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setEditingName(false); setName(user?.name || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
+                    <MaterialCommunityIcons name="close" size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 20, fontWeight: '900', color: theme === 'dark' ? '#FFF' : '#111', marginTop: 4 }}>{user?.name || 'Admin'}</Text>
+              )}
+            </View>
+
+            {/* Email */}
+            <View style={[cardStyle, { marginTop: 12 }]}>
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center">
+                  <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
+                  </View>
+                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>Email</Text>
+                </View>
+                {!editingEmail && (
+                  <TouchableOpacity onPress={() => { setEditingEmail(true); setEmail(user?.email || ''); }}>
+                    <MaterialCommunityIcons name="pencil" size={18} color="#6366F1" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {editingEmail ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput value={email} onChangeText={setEmail} style={{ ...inputStyle, flex: 1, fontSize: 16 }} autoFocus placeholder="Enter email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
+                  <TouchableOpacity onPress={handleSaveEmail} disabled={savingEmail} style={{ backgroundColor: '#6366F1', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
+                    {savingEmail ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setEditingEmail(false); setEmail(user?.email || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
+                    <MaterialCommunityIcons name="close" size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 16, fontWeight: '700', color: theme === 'dark' ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
+              )}
+            </View>
+
+            {/* Password */}
+            <View style={[cardStyle, { marginTop: 12 }]}>
+              <TouchableOpacity onPress={() => setShowPasswordForm(!showPasswordForm)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View className="flex-row items-center">
+                  <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <MaterialCommunityIcons name="lock" size={22} color="#10B981" />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: theme === 'dark' ? '#FFF' : '#111' }}>Password</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: theme === 'dark' ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>Update your login credentials</Text>
+                  </View>
+                </View>
+                <MaterialCommunityIcons name={showPasswordForm ? 'chevron-up' : 'chevron-down'} size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+              </TouchableOpacity>
+
+              {showPasswordForm && (
+                <View style={{ marginTop: 16 }}>
+                  <TextInput value={currentPassword} onChangeText={setCurrentPassword} placeholder="Current Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 12 }} />
+                  <TextInput value={newPassword} onChangeText={setNewPassword} placeholder="New Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 12 }} />
+                  <TextInput value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm New Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 16 }} />
+                  <TouchableOpacity onPress={handleChangePassword} disabled={savingPassword} style={{ backgroundColor: '#F59E0B', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}>
+                    <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>
+                      {savingPassword ? 'Updating...' : 'Update Password'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Menu Options Hub */}
@@ -177,10 +338,8 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
               className={`p-5 flex-row items-center justify-between ${index !== menuItems.length - 1 ? 'border-b' : ''}`}
               style={{ borderBottomColor: theme === 'dark' ? '#262626' : '#F3F4F6' }}
               onPress={() => {
-                if (item.id === 'theme') {
-                  toggleTheme();
-                } else if (item.id === 'profile') {
-                  navigation.navigate('profile');
+                if (item.id === 'profile') {
+                  setShowProfileForm(!showProfileForm);
                 } else if (item.id === 'notifications') {
                   navigation.navigate('notificationSettings');
                 } else if (item.id === 'about') {
@@ -216,43 +375,12 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
                 </View>
               </View>
 
-              {item.id === 'theme' ? (
-                <View 
-                  className="flex-row items-center px-4 py-1.5 rounded-full border"
-                  style={{ 
-                    backgroundColor: theme === 'dark' ? '#262626' : 'rgba(0, 0, 0, 0.03)',
-                    borderColor: theme === 'dark' ? '#333333' : 'rgba(0, 0, 0, 0.05)'
-                  }}
-                >
-                    <View className="flex-row items-center mr-3">
-                      <MaterialCommunityIcons 
-                        name={theme === 'dark' ? "moon-waning-crescent" : "white-balance-sunny"} 
-                        size={12} 
-                        color={theme === 'dark' ? '#818CF8' : '#F59E0B'} 
-                      />
-                      <Text 
-                        style={{ color: theme === 'dark' ? '#A5B4FC' : '#D97706' }}
-                        className="text-[10px] font-black ml-1.5 uppercase tracking-tighter"
-                      >
-                        {theme === 'dark' ? 'Dark' : 'Light'}
-                      </Text>
-                    </View>
-                    <Switch
-                      value={theme === 'dark'}
-                      onValueChange={toggleTheme}
-                      trackColor={{ false: '#D1D5DB', true: '#F59E0B' }}
-                      thumbColor="#FFFFFF"
-                      style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
-                    />
-                </View>
-              ) : (
-                <View 
-                  className="w-8 h-8 rounded-xl items-center justify-center"
-                  style={{ backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : '#F9FAFB' }}
-                >
-                  <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} opacity={0.5} />
-                </View>
-              )}
+              <View 
+                className="w-8 h-8 rounded-xl items-center justify-center"
+                style={{ backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : '#F9FAFB' }}
+              >
+                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} opacity={0.5} />
+              </View>
             </TouchableOpacity>
           ))}
         </View>

@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
+import SessionExpiredModal from '../components/SessionExpiredModal';
+import { setOnUnauthorized } from '../services/api';
 
 // Import screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -61,7 +63,7 @@ import StudentInfoScreen from '../screens/master_admin/StudentInfoScreen';
 type ScreenType = 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo';
 
 export default function AppNavigator() {
-  const { user, announcements, isLoading } = useAuth();
+  const { user, announcements, isLoading, logout } = useAuth();
   const { theme, colors } = useTheme();
   
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('login');
@@ -69,6 +71,7 @@ export default function AppNavigator() {
   const [params, setParams] = useState<any>(null);
   const [isHomeBlinking, setIsHomeBlinking] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const navigate = useCallback((screen: ScreenType, resetOrParams: boolean | any = false, screenParams: any = null) => {
     setCurrentScreen(screen);
     const finalParams = typeof resetOrParams === 'object' ? resetOrParams : screenParams;
@@ -124,6 +127,21 @@ export default function AppNavigator() {
     };
   }, [navigate]);
 
+  // Session expired handler — only active when user is logged in
+  useEffect(() => {
+    if (user) {
+      setOnUnauthorized(() => setSessionExpired(true));
+    } else {
+      setOnUnauthorized(null);
+    }
+    return () => setOnUnauthorized(null);
+  }, [user]);
+
+  const handleSessionLogin = useCallback(async () => {
+    setSessionExpired(false);
+    logout();
+    navigate('login', true);
+  }, [navigate, logout]);
 
   const insets = useSafeAreaInsets();
   
@@ -306,18 +324,31 @@ export default function AppNavigator() {
   };
 
   if (isLoading || isTransitioning) {
-    return <SplashScreen />;
+    return (
+      <>
+        <SplashScreen />
+        <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
+      </>
+    );
   }
 
   if (!user) {
     if (currentScreen === 'privacyPolicy') {
-        return <PrivacyPolicyScreen navigation={navigation} />;
+        return (
+          <>
+            <PrivacyPolicyScreen navigation={navigation} />
+            <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
+          </>
+        );
     }
     return (
+      <>
         <LoginScreen 
             onLogin={() => navigate('home', true)} 
             onOpenPrivacy={() => navigate('privacyPolicy')}
         />
+        <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
+      </>
     );
   }
 
