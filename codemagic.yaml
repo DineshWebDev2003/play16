@@ -11,10 +11,50 @@ workflows:
           cd my-expo-app
           npm install
           npx expo install expo-build-properties expo-splash-screen
-      - name: Expo Prebuild (clean)
+      - name: Expo Prebuild
         script: |
           cd my-expo-app
-          npx expo prebuild --platform android --clean
+          npx expo prebuild --platform android
+      - name: Configure release signing
+        script: |
+          cd my-expo-app
+          python3 -c "
+import base64, os, sys
+ks = os.environ['CM_KEYSTORE']
+with open('/tmp/keystore.keystore', 'wb') as f:
+    f.write(base64.b64decode(ks))
+
+with open('android/app/build.gradle', 'r') as f:
+    content = f.read()
+
+# 1. Add env-var-based signing config after signingConfigs {
+signing_block = '''        release {
+            storeFile file(System.getenv('KEYSTORE_PATH') ?: '/tmp/keystore.keystore')
+            storePassword System.getenv('KEYSTORE_PASSWORD')
+            keyAlias System.getenv('KEY_ALIAS')
+            keyPassword System.getenv('KEY_PASSWORD')
+        }
+'''
+content = content.replace(
+    'signingConfigs {\n        debug {',
+    'signingConfigs {\n' + signing_block + '        debug {'
+)
+
+# 2. Change release build type to use release signing
+content = content.replace(
+    'signingConfig signingConfigs.debug',
+    'signingConfig signingConfigs.release',
+    1  # only first occurrence (inside release block)
+)
+
+with open('android/app/build.gradle', 'w') as f:
+    f.write(content)
+print('Signing configured successfully')
+"
+          export KEYSTORE_PATH=/tmp/keystore.keystore
+          export KEYSTORE_PASSWORD=$CM_KEYSTORE_PASSWORD
+          export KEY_ALIAS=$CM_KEY_ALIAS
+          export KEY_PASSWORD=$CM_KEY_PASSWORD
       - name: Build Signed Release APK
         script: |
           cd my-expo-app/android
