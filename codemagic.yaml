@@ -20,9 +20,6 @@ workflows:
           cd my-expo-app
           chmod +x scripts/configure-signing.sh
           ./scripts/configure-signing.sh
-      - name: Print SHA-1 fingerprint
-        script: |
-          keytool -list -v -keystore /tmp/keystore.keystore -alias "$CM_KEY_ALIAS" -storepass "$CM_KEYSTORE_PASSWORD" -keypass "$CM_KEY_PASSWORD" 2>&1 | grep -A 1 "SHA1:"
       - name: Build Signed Release APK
         script: |
           cd my-expo-app/android
@@ -31,6 +28,15 @@ workflows:
         script: |
           cd my-expo-app/android
           ./gradlew bundleRelease
+      - name: Print SHA-1 fingerprint
+        script: |
+          APK=$(ls my-expo-app/android/app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)
+          if [ -n "$APK" ]; then
+            echo "APK: $APK"
+            keytool -printcert -jarfile "$APK" 2>&1 | grep -A 1 "SHA1:" || echo "Could not read SHA-1 from APK"
+          else
+            echo "No APK found at expected path"
+          fi
     artifacts:
       - my-expo-app/android/app/build/outputs/apk/release/*.apk
       - my-expo-app/android/app/build/outputs/bundle/release/*.aab
