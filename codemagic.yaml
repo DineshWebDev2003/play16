@@ -23,38 +23,22 @@ workflows:
           echo $CM_KEYSTORE | base64 --decode > /tmp/keystore.jks
       - name: Patch build.gradle for release signing
         script: |
-          python3 << 'EOF'
+          cat > /tmp/patch_build.py << 'PYEOF'
 with open("my-expo-app/android/app/build.gradle", "r") as f:
     content = f.read()
-
 content = content.replace(
-    '''        }
-    }
-    buildTypes {''',
-    '''        }
-        release {
-            storeFile file(System.getenv("KEYSTORE_PATH") ?: "/tmp/keystore.jks")
-            storePassword System.getenv("CM_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("CM_KEY_ALIAS")
-            keyPassword System.getenv("CM_KEY_PASSWORD")
-        }
-    }
-    buildTypes {'''
+    '        }\n    }\n    buildTypes {',
+    '        }\n        release {\n            storeFile file(System.getenv("KEYSTORE_PATH") ?: "/tmp/keystore.jks")\n            storePassword System.getenv("CM_KEYSTORE_PASSWORD")\n            keyAlias System.getenv("CM_KEY_ALIAS")\n            keyPassword System.getenv("CM_KEY_PASSWORD")\n        }\n    }\n    buildTypes {'
 )
-
 content = content.replace(
-    '''        release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug''',
-    '''        release {
-            signingConfig signingConfigs.release'''
+    '        release {\n            // Caution! In production, you need to generate your own keystore file.\n            // see https://reactnative.dev/docs/signed-apk-android.\n            signingConfig signingConfigs.debug',
+    '        release {\n            signingConfig signingConfigs.release'
 )
-
 with open("my-expo-app/android/app/build.gradle", "w") as f:
     f.write(content)
 print("build.gradle patched successfully")
-EOF
+PYEOF
+          python3 /tmp/patch_build.py
       - name: Build Release APK
         script: |
           export KEYSTORE_PATH=/tmp/keystore.jks
