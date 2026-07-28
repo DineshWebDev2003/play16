@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const LOCAL_IP = '10.141.35.139';
+const LOCAL_IP = '10.239.167.139';
 const BASE_DOMAIN = 'play1.tnhappykids.in';
 
-const IS_LOCAL = false;
+const IS_LOCAL = true;
 
 const API_URL = IS_LOCAL
   ? `http://${LOCAL_IP}:8000/api`
