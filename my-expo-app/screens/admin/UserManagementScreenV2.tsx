@@ -98,7 +98,7 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
     gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
     fees: initialData?.fees || '',
     fee_due_day: (initialData as any)?.fee_due_day || '5',
-    branch_id: initialData?.branch_id || '',
+    branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -119,9 +119,9 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
       gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
       fees: initialData?.fees || '',
       fee_due_day: (initialData as any)?.fee_due_day || '5',
-      branch_id: initialData?.branch_id || '',
+      branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
     });
-  }, [initialData]);
+  }, [initialData, user?.role, user?.branch_id]);
 
   const set = useCallback((field: string, value: any) =>
     setFormData(prev => ({ ...prev, [field]: value })), []);
@@ -666,6 +666,13 @@ export default function UserManagementScreenV2({ navigation }: Props) {
 
   const isMonsterAdmin = user?.username === 'monster';
   const MONSTER_PASSWORD = 'Monster@123';
+  const isSchoolAdmin = user?.role === 'admin';
+
+  useEffect(() => {
+    if (isSchoolAdmin && user?.branch_id) {
+      setSelectedBranchId(user.branch_id);
+    }
+  }, [isSchoolAdmin, user?.branch_id]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -14,11 +14,37 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
 
-  if (user?.role !== 'master_admin') return null;
+  if (user?.role !== 'master_admin' && user?.role !== 'admin') return null;
 
-  const selectedName = selectedBranchId
-    ? branches.find(b => b.id === selectedBranchId)?.name || 'Unknown'
+  const isSchoolAdmin = user?.role === 'admin';
+  const adminBranchId = isSchoolAdmin ? user?.branch_id : null;
+
+  const effectiveBranchId = isSchoolAdmin ? adminBranchId : selectedBranchId;
+
+  const selectedName = effectiveBranchId
+    ? branches.find(b => b.id === effectiveBranchId)?.name || 'Unknown'
     : 'Global';
+
+  if (isSchoolAdmin) {
+    return (
+      <View style={{
+        backgroundColor: theme === 'dark' ? '#1e1e1e' : '#F3F4F6',
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme === 'dark' ? '#262626' : '#E5E7EB',
+        opacity: 0.8,
+      }}>
+        <MaterialCommunityIcons name="domain" size={16} color="#F59E0B" />
+        <Text style={{ fontSize: 12, fontWeight: '900', marginLeft: 8, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>
+          {selectedName}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <>
