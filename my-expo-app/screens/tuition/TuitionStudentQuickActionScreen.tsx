@@ -2,54 +2,44 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface NavigationProps {
-  navigate: (screen: string) => void;
-  goBack: () => void;
-}
+interface Props { navigation: { navigate: (s: string) => void; goBack: () => void } }
 
-interface Props {
-  navigation: NavigationProps;
-}
+const actions = [
+  { icon: 'book-open-variant', label: 'Homework', screen: 'homework', color: '#8B5CF6', grad: ['#8B5CF6', '#7C3AED'], gradDark: ['#5b21b6', '#2e1065'], tag: 'Tasks', desc: 'View & submit assignments' },
+  { icon: 'book-education', label: 'Study Materials', screen: 'tuitionStudyMaterials', color: '#F97316', grad: ['#F97316', '#EA580C'], gradDark: ['#9a3412', '#7c2d12'], tag: 'Resources', desc: 'View class resources' },
+  { icon: 'chart-line', label: 'My Progress', screen: 'tuitionMyProgress', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Track', desc: 'Track performance' },
+  { icon: 'calendar-check', label: 'Attendance', screen: 'attendance', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Report', desc: 'View attendance record' },
+  { icon: 'message-text', label: 'Messages', screen: 'parentMessages', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with teachers' },
+];
 
-export default function StudentQuickActionScreen({ navigation }: Props) {
-  const { user } = useAuth();
+export default function TuitionStudentQuickActionScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-
-  const actions = [
-    { label: 'My Attendance', screen: 'attendance', icon: 'calendar-check', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Report', desc: 'View attendance report' },
-    { label: 'Kids Activity', screen: 'activityFeed', icon: 'image-multiple', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Feed', desc: 'View school activities' },
-    { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', grad: ['#6366F1', '#4F46E5'], gradDark: ['#3730a3', '#312e81'], tag: 'Plans', desc: 'Daily school schedule' },
-    { label: 'Live Camera', screen: 'liveCamera', icon: 'broadcast', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Live', desc: 'View classroom live feed' },
-    { label: 'My Fees', screen: 'myFees', icon: 'cash-multiple', color: '#8B5CF6', grad: ['#8B5CF6', '#7C3AED'], gradDark: ['#5b21b6', '#2e1065'], tag: 'Payments', desc: 'View fee details & payments' },
-    { label: 'Emergency Contact', screen: 'emergencyContact', icon: 'phone-alert', color: '#EF4444', grad: ['#EF4444', '#DC2626'], gradDark: ['#7f1d1d', '#450a0a'], tag: 'Call', desc: 'Call guardians quickly' },
-    { label: 'Nanny Voice', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to your nanny' },
-  ];
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-12 pb-2">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                Student Access
+        <View style={{ paddingHorizontal: 24, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                Tuition Student
               </Text>
-              <Text className={`text-3xl font-black tracking-tight mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
                 Quick Actions
               </Text>
             </View>
-            <View className="bg-amber-500 w-16 h-16 rounded-2xl items-center justify-center">
+            <View style={{ backgroundColor: '#F59E0B', width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialCommunityIcons name="flash" size={32} color="white" />
             </View>
           </View>
         </View>
 
-        <View className="px-6 flex-row flex-wrap justify-between">
+        <View style={{ paddingHorizontal: 24, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           {actions.map((action, index) => (
             <TouchableOpacity
               key={index}
@@ -63,7 +53,7 @@ export default function StudentQuickActionScreen({ navigation }: Props) {
                 end={{ x: 1, y: 1 }}
                 style={{ padding: 20, minHeight: 180, justifyContent: 'space-between' }}
               >
-                <View className="flex-row items-center justify-between">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
                     <MaterialCommunityIcons name={action.icon as any} size={24} color="white" />
                   </View>
@@ -88,7 +78,7 @@ export default function StudentQuickActionScreen({ navigation }: Props) {
             </TouchableOpacity>
           ))}
         </View>
-        <View className="h-40" />
+        <View style={{ height: 128 }} />
       </ScrollView>
     </SafeAreaView>
   );

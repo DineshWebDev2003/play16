@@ -10,24 +10,19 @@ import { useAuth, User } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import FormSelect from '../../components/FormSelect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import StatusModal from '../../components/StatusModal';
 import ChoiceModal from '../../components/ChoiceModal';
-import BranchFilter from '../../components/BranchFilter';
 import api from '../../services/api';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import BranchFilter from '../../components/BranchFilter';
 
 interface NavigationProps { navigate: (screen: string) => void; goBack: () => void; }
 interface Props { navigation: NavigationProps; }
 
 const brandColor = '#F59E0B';
-const studentColor = '#3B82F6';
-const teacherColor = '#F59E0B';
-const adminColor = '#7C3AED';
-const TUITION_CATEGORIES = ['Tuition'] as const;
-const STUDENT_CATEGORIES = ['Playschool', 'PreKG', 'Daycare', 'LKG', 'UKG'] as const;
-type CategoryType = typeof STUDENT_CATEGORIES[number] | typeof TUITION_CATEGORIES[number];
+const teacherColor = '#8B5CF6';
+const studentColor = '#10B981';
 
-// ─── Shared Field Label ────────────────────────────────────────────────────────
 function FieldRow({ icon, label, required = false, theme, children }: {
   icon: string; label: string; required?: boolean; theme: string; children: React.ReactNode;
 }) {
@@ -47,8 +42,8 @@ function FieldRow({ icon, label, required = false, theme, children }: {
   );
 }
 
-// ─── User Form (shared for Add & Edit) ─────────────────────────────────────────
-function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
+// ─── Tuition Form ──────────────────────────────────────────────────────────────
+function TuitionFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
   theme: string; onSubmit: (data: any) => void;
   isSubmitting: boolean; initialData?: Partial<User>; isEdit?: boolean;
 }) {
@@ -61,29 +56,18 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
     motherName: initialData?.motherName || '',
     fatherPhone: initialData?.fatherPhone || '',
     motherPhone: initialData?.motherPhone || '',
-    category: (initialData?.category as CategoryType) || 'Playschool',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     password: '',
-    role: (initialData?.role as string) || 'teacher',
+    role: (initialData?.role as string) || 'tuition_student',
     gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
     fees: initialData?.fees || '',
     fee_due_day: (initialData as any)?.fee_due_day || '5',
     branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
-    batch_id: (initialData as any)?.batch_id || '',
+    category: 'Tuition',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showDobPicker, setShowDobPicker] = useState(false);
-  const [batches, setBatches] = useState<any[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get('/batches');
-        setBatches(res.data?.data || (Array.isArray(res.data) ? res.data : []));
-      } catch {}
-    })();
-  }, []);
 
   useEffect(() => {
     setFormData({
@@ -94,16 +78,15 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
       motherName: initialData?.motherName || '',
       fatherPhone: initialData?.fatherPhone || '',
       motherPhone: initialData?.motherPhone || '',
-      category: (initialData?.category as CategoryType) || 'Playschool',
       email: initialData?.email || '',
       phone: initialData?.phone || '',
       password: '',
-      role: (initialData?.role as string) || 'teacher',
+      role: (initialData?.role as string) || 'tuition_student',
       gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
       fees: initialData?.fees || '',
       fee_due_day: (initialData as any)?.fee_due_day || '5',
       branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
-      batch_id: (initialData as any)?.batch_id || '',
+      category: 'Tuition',
     });
   }, [initialData, user?.role, user?.branch_id]);
 
@@ -143,25 +126,13 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
         <FormSelect
           value={formData.role}
           options={[
-            ...(user?.role === 'master_admin' ? [{ label: 'Admin', value: 'admin' }] : []),
-            { label: 'Student', value: 'student' },
-            { label: 'Teacher', value: 'teacher' },
-            { label: 'Nanny', value: 'nanny' },
+            { label: 'Tuition Teacher', value: 'tuition_teacher' },
+            { label: 'Tuition Student', value: 'tuition_student' },
           ]}
-          onSelect={(val) => {
-            set('role', val);
-            if (val === 'tuition_student' || val === 'tuition_teacher') {
-              set('category', 'Tuition');
-            }
-          }}
+          onSelect={(val) => { set('role', val); }}
           placeholder="Select Role"
           theme={theme}
         />
-        {formData.role === 'admin' && formData.branch_id && user?.role === 'master_admin' && (
-          <Text style={{ fontSize: 9, color: adminColor, fontWeight: '700', marginTop: 4 }}>
-            * Max 3 admins per branch
-          </Text>
-        )}
       </FieldRow>
 
       <FieldRow icon="gender-male-female" label="Gender" required theme={theme}>
@@ -197,14 +168,14 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
       </FieldRow>
 
       <FieldRow icon="at" label="Username" required theme={theme}>
-        <TextInput style={inp} placeholder="e.g. rahul_s" placeholderTextColor="#9CA3AF"
+        <TextInput style={inp} placeholder="e.g. rahul.tuition" placeholderTextColor="#9CA3AF"
           autoCapitalize="none" value={formData.username} onChangeText={v => set('username', v)} />
         <Text style={{ fontSize: 9, color: brandColor, marginTop: 4, fontWeight: '700' }}>
           * MUST BE UNIQUE FOR LOGIN
         </Text>
       </FieldRow>
 
-      {(formData.role === 'student' || formData.role === 'tuition_student') && (
+      {formData.role === 'tuition_student' && (
         <>
           <FieldRow icon="cake-variant" label="Date of Birth" theme={theme}>
             <TouchableOpacity activeOpacity={0.7} onPress={() => setShowDobPicker(true)}
@@ -258,28 +229,6 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
               keyboardType="phone-pad" maxLength={10} value={formData.motherPhone}
               onChangeText={v => set('motherPhone', v.replace(/[^0-9]/g, '').slice(0, 10))} />
           </FieldRow>
-
-          <FieldRow icon="shape" label="Category" required theme={theme}>
-            <FormSelect
-              value={formData.category}
-              options={(formData.role === 'tuition_student' || formData.role === 'tuition_teacher' ? TUITION_CATEGORIES : STUDENT_CATEGORIES).map(cat => ({ label: cat, value: cat }))}
-              onSelect={(val) => { Keyboard.dismiss(); set('category', val); }}
-              placeholder="Select Category"
-              theme={theme}
-            />
-          </FieldRow>
-
-          {formData.role === 'tuition_student' && batches.length > 0 && (
-            <FieldRow icon="tag" label="Batch" theme={theme}>
-              <FormSelect
-                value={formData.batch_id ? formData.batch_id.toString() : ''}
-                options={batches.map((b: any) => ({ label: b.name, value: b.id?.toString() }))}
-                onSelect={(val: string) => { Keyboard.dismiss(); set('batch_id', val); }}
-                placeholder="Select Batch"
-                theme={theme}
-              />
-            </FieldRow>
-          )}
 
           <FieldRow icon="currency-inr" label="Fee Details" theme={theme}>
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -392,7 +341,7 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
           <>
             <MaterialCommunityIcons name={isEdit ? 'content-save' : 'account-plus'} size={20} color="white" />
             <Text style={{ fontWeight: '900', fontSize: 16, marginLeft: 8, color: 'white' }}>
-              {isEdit ? 'Save Changes' : (isValid ? 'Register Member' : 'Check Details ⚠️')}
+              {isEdit ? 'Save Changes' : (isValid ? 'Register User' : 'Check Details ⚠️')}
             </Text>
           </>
         )}
@@ -401,10 +350,10 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
   );
 }
 
-const UserForm = memo(UserFormRaw);
+const TuitionForm = memo(TuitionFormRaw);
 
-// ─── User Form Modal ───────────────────────────────────────────────────────────
-const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, initialData, isEdit }: any) => {
+// ─── Tuition Form Modal ─────────────────────────────────────────────────────────
+const TuitionFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, initialData, isEdit }: any) => {
   const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
   return (
@@ -429,7 +378,7 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                   <MaterialCommunityIcons name={isEdit ? 'account-edit-outline' : 'account-plus-outline'} size={22} color={brandColor} />
                   <Text style={{ fontSize: 18, fontWeight: '900', color: brandColor, marginLeft: 6 }}>
-                    {isEdit ? 'Profile ✏️' : 'New Member ✨'}
+                    {isEdit ? 'Profile ✏️' : 'New Tuition User ✨'}
                   </Text>
                 </View>
               </View>
@@ -444,7 +393,7 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
             </View>
 
             <View style={{ paddingHorizontal: 24 }}>
-              <UserForm
+              <TuitionForm
                 key={initialData?.id || 'new-form'}
                 theme={theme}
                 onSubmit={onSubmit}
@@ -461,8 +410,8 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
   );
 });
 
-// ─── User Card ─────────────────────────────────────────────────────────────────
-const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleIcon, isSelecting, isSelected, onToggleSelect }: {
+// ─── Tuition User Card ──────────────────────────────────────────────────────────
+const TuitionUserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleIcon, isSelecting, isSelected, onToggleSelect }: {
   user: User; theme: string;
   onEdit: (u: User) => void;
   onStatusToggle: (id: string) => void;
@@ -475,7 +424,7 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
   const branchName = user.branch?.name || '';
   const [showActions, setShowActions] = useState(false);
 
-  const roleColor = user.role === 'student' ? studentColor : user.role === 'teacher' ? teacherColor : user.role === 'nanny' ? '#06B6D4' : adminColor;
+  const roleColor = user.role === 'tuition_teacher' ? teacherColor : studentColor;
 
   const handlePress = () => {
     if (isSelecting) {
@@ -484,6 +433,8 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
       setShowActions(!showActions);
     }
   };
+
+  const isProtected = user.role === 'admin' || user.role === 'master_admin';
 
   return (
     <TouchableOpacity activeOpacity={0.95} onPress={handlePress}
@@ -508,120 +459,111 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
           </View>
         )}
         <View style={{ width: 6, backgroundColor: roleColor }} />
+
         <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-        <View style={{
-          width: 48, height: 48, borderRadius: 16,
-          backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
-          alignItems: 'center', justifyContent: 'center',
-          borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
-          overflow: 'hidden',
-        }}>
-          {user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-          ) : (
-            <MaterialCommunityIcons name={getRoleIcon(user.role) as any} size={22} color={isDark ? '#9CA3AF' : '#6B7280'} />
-          )}
-        </View>
-
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ fontWeight: '900', fontSize: 15, color: isDark ? '#FFFFFF' : '#111827' }} numberOfLines={1}>
-              {user.name}
-            </Text>
-            <View style={{
-              backgroundColor: isActive ? (isDark ? '#064E3B' : '#F0FFF4') : (isDark ? '#7F1D1D' : '#FFF5F5'),
-              paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-            }}>
-              <Text style={{
-                fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1,
-                color: isActive ? (isDark ? '#6EE7B7' : '#065F46') : (isDark ? '#FCA5A5' : '#991B1B'),
-              }}>
-                {user.status}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>
-              @{user.username}
-            </Text>
-            <Text style={{ fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', marginHorizontal: 4 }}>|</Text>
-            <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 1, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-              {user.studentId || user.teacherId || 'ADMIN'}
-            </Text>
-            {!!branchName && (
-              <>
-                <Text style={{ fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', marginHorizontal: 4 }}>|</Text>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>{branchName}</Text>
-              </>
-            )}
-          </View>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 6 }}>
-            <View style={{
-              backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
-              paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-              borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
-            }}>
-              <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
-                {user.role}
-              </Text>
-            </View>
-            {user.gender && (
-              <View style={{
-                backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
-                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
-              }}>
-                <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
-                  {user.gender}
-                </Text>
-              </View>
-            )}
-            {user.role === 'student' && user.category && (
-              <View style={{
-                backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
-                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
-              }}>
-                <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
-                  {user.category}
-                </Text>
-              </View>
-            )}
-            {(user as any).batch_id && (
-              <View style={{
-                backgroundColor: '#F5F3FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                borderWidth: 1, borderColor: '#DDD6FE',
-              }}>
-                <Text style={{ fontSize: 8, fontWeight: '900', color: '#7C3AED' }}>
-                  Batch #{ (user as any).batch_id }
-                </Text>
-              </View>
-            )}
-            {user.role === 'student' && user.fees && (
-              <View style={{
-                backgroundColor: '#FFFBEB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                borderWidth: 1, borderColor: '#FDE68A',
-              }}>
-                <Text style={{ fontSize: 8, fontWeight: '900', color: '#D97706' }}>
-                  ₹{user.fees}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <TouchableOpacity onPress={() => setShowActions(!showActions)}
-          style={{
-            width: 36, height: 36, borderRadius: 12,
+          <View style={{
+            width: 48, height: 48, borderRadius: 16,
             backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
             alignItems: 'center', justifyContent: 'center',
             borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
+            overflow: 'hidden',
           }}>
-          <MaterialCommunityIcons name={showActions ? 'chevron-up' : 'dots-vertical'} size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
-        </TouchableOpacity>
-      </View>
+            {user.avatar ? (
+              <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            ) : (
+              <MaterialCommunityIcons name={getRoleIcon(user.role) as any} size={22} color={isDark ? '#9CA3AF' : '#6B7280'} />
+            )}
+          </View>
+
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontWeight: '900', fontSize: 15, color: isDark ? '#FFFFFF' : '#111827' }} numberOfLines={1}>
+                {user.name}
+              </Text>
+              <View style={{
+                backgroundColor: isActive ? (isDark ? '#064E3B' : '#F0FFF4') : (isDark ? '#7F1D1D' : '#FFF5F5'),
+                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+              }}>
+                <Text style={{
+                  fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1,
+                  color: isActive ? (isDark ? '#6EE7B7' : '#065F46') : (isDark ? '#FCA5A5' : '#991B1B'),
+                }}>
+                  {user.status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                @{user.username}
+              </Text>
+              <Text style={{ fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', marginHorizontal: 4 }}>|</Text>
+              <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 1, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                {user.studentId || user.teacherId || 'TT-000'}
+              </Text>
+              {!!branchName && (
+                <>
+                  <Text style={{ fontSize: 10, color: isDark ? '#6B7280' : '#9CA3AF', marginHorizontal: 4 }}>|</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>{branchName}</Text>
+                </>
+              )}
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 6 }}>
+              <View style={{
+                backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
+                paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+                borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
+              }}>
+                <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                  {user.role === 'tuition_teacher' ? 'Tuition Teacher' : 'Tuition Student'}
+                </Text>
+              </View>
+              {user.gender && (
+                <View style={{
+                  backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
+                  paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+                  borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
+                }}>
+                  <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                    {user.gender}
+                  </Text>
+                </View>
+              )}
+              {user.category && (
+                <View style={{
+                  backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
+                  paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+                  borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
+                }}>
+                  <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                    {user.category}
+                  </Text>
+                </View>
+              )}
+              {user.role === 'tuition_student' && user.fees && (
+                <View style={{
+                  backgroundColor: '#FFFBEB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+                  borderWidth: 1, borderColor: '#FDE68A',
+                }}>
+                  <Text style={{ fontSize: 8, fontWeight: '900', color: '#D97706' }}>
+                    ₹{user.fees}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <TouchableOpacity onPress={() => setShowActions(!showActions)}
+            style={{
+              width: 36, height: 36, borderRadius: 12,
+              backgroundColor: isDark ? '#2d2d24' : '#F3F4F6',
+              alignItems: 'center', justifyContent: 'center',
+              borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
+            }}>
+            <MaterialCommunityIcons name={showActions ? 'chevron-up' : 'dots-vertical'} size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {showActions && (
@@ -650,9 +592,9 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
           </TouchableOpacity>
 
           <TouchableOpacity
-            disabled={user.role === 'admin' || user.role === 'master_admin'}
+            disabled={isProtected}
             onPress={() => { setShowActions(false); onDelete(user.id, user.name); }}
-            style={{ flex: 1, alignItems: 'center', opacity: (user.role === 'admin' || user.role === 'master_admin') ? 0.3 : 1 }}>
+            style={{ flex: 1, alignItems: 'center', opacity: isProtected ? 0.3 : 1 }}>
             <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' }}>
               <MaterialCommunityIcons name="trash-can-outline" size={16} color="#EF4444" />
             </View>
@@ -665,7 +607,7 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
 });
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
-export default function UserManagementScreenV2({ navigation }: Props) {
+export default function ManageTuitionUsersScreen({ navigation }: Props) {
   const { user, users, branches, addUser, updateUser, deleteUser, toggleUserStatus, fetchData } = useAuth();
   const { theme: appTheme, colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -676,7 +618,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'student' | 'teacher' | 'admin' | 'nanny'>('all');
+  const [filter, setFilter] = useState<'all' | 'tuition_teacher' | 'tuition_student'>('all');
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -684,12 +626,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
   const [choiceModal, setChoiceModal] = useState({ visible: false, title: '', message: '', options: [] as any[], iconName: '', accentColor: '' });
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [showMonsterPanel, setShowMonsterPanel] = useState(false);
-  const [monsterPass, setMonsterPass] = useState('');
 
-  const isMonsterAdmin = user?.username === 'monster';
-  const MONSTER_PASSWORD = 'Monster@123';
   const isSchoolAdmin = user?.role === 'admin';
 
   useEffect(() => {
@@ -709,10 +646,8 @@ export default function UserManagementScreenV2({ navigation }: Props) {
 
   const getRoleIcon = useCallback((role: string) => {
     switch (role) {
-      case 'admin': return 'shield-account';
-      case 'teacher': return 'account-tie';
-      case 'student': return 'school';
-      case 'nanny': return 'baby-face-outline';
+      case 'tuition_teacher': return 'account-tie';
+      case 'tuition_student': return 'school';
       default: return 'account';
     }
   }, []);
@@ -723,31 +658,14 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       setStatusModal({ visible: true, title: 'Form Incomplete 📝', message: 'Please fill in all mandatory fields before saving.', type: 'info' });
       return;
     }
-    if (formData.role === 'admin' && user?.role === 'master_admin') {
-      const branchId = formData.branch_id;
-      if (!branchId) {
-        setStatusModal({ visible: true, title: 'Branch Required 🏫', message: 'Please select a branch for the admin account.', type: 'info' });
-        setIsSubmitting(false);
-        return;
-      }
-      const existingAdmins = users.filter(u => u.role === 'admin' && u.branch_id === branchId && u.status === 'active').length;
-      if (existingAdmins >= 3) {
-        setStatusModal({ visible: true, title: 'Admin Limit Reached 🚫', message: `This branch already has ${existingAdmins} active admins. Maximum 3 allowed per branch.`, type: 'error' });
-        setIsSubmitting(false);
-        return;
-      }
-    }
     setIsSubmitting(true);
     try {
       const branch = branches.find(b => b.id?.toString() === formData.branch_id?.toString());
       const branchPrefix = branch ? branch.name.charAt(0).toUpperCase() : 'X';
-      const roleLetter = (formData.role === 'teacher' || formData.role === 'tuition_teacher') ? 't' : 's';
+      const roleLetter = formData.role === 'tuition_teacher' ? 't' : 's';
       const prefix = `${branchPrefix}${roleLetter}`;
-      const branchRoleUsers = users.filter(u =>
-        u.branch_id?.toString() === formData.branch_id?.toString() &&
-        ((formData.role === 'student' || formData.role === 'tuition_student') ? (u.role === 'student' || u.role === 'tuition_student') : (u.role === 'teacher' || u.role === 'tuition_teacher'))
-      );
-      const maxSeq = branchRoleUsers
+      const sameRoleUsers = users.filter(u => u.role === formData.role);
+      const maxSeq = sameRoleUsers
         .map(u => {
           const id = u.studentId || u.teacherId || '';
           const num = id.replace(prefix, '');
@@ -757,73 +675,73 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       const nextSeq = (maxSeq + 1).toString().padStart(3, '0');
 
       const payload: any = {};
-      Object.entries({
-        name: formData.name,
-        username: formData.username || undefined,
-        date_of_birth: formData.dateOfBirth && formData.role === 'student' || formData.role === 'tuition_student' ? formData.dateOfBirth : undefined,
-        email: formData.email || undefined,
-        phone: formData.phone,
-        role: formData.role,
-        gender: formData.gender,
-        password: formData.password,
-        status: 'active',
-        branch_id: formData.branch_id || undefined,
-        father_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherName : undefined,
-        mother_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherName : undefined,
-        father_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherPhone : undefined,
-        mother_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
-        category: formData.role === 'student' || formData.role === 'tuition_student' ? formData.category : undefined,
-        fees: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees : undefined,
-        fee_due_day: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
-        batch_id: formData.batch_id ? formData.batch_id : undefined,
-      }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
-
-      if (formData.role === 'student' || formData.role === 'tuition_student') payload.student_id = `${prefix}${nextSeq}`;
-      if (formData.role === 'teacher' || formData.role === 'tuition_teacher') payload.teacher_id = `${prefix}${nextSeq}`;
+      const fields: [string, any][] = [
+        ['name', formData.name],
+        ['username', formData.username || undefined],
+        ['email', formData.email || undefined],
+        ['phone', formData.phone],
+        ['role', formData.role],
+        ['gender', formData.gender],
+        ['password', formData.password],
+        ['status', 'active'],
+        ['branch_id', formData.branch_id || undefined],
+        ['category', 'Tuition'],
+      ];
+      if (formData.role === 'tuition_student') {
+        fields.push(['date_of_birth', formData.dateOfBirth || undefined]);
+        fields.push(['father_name', formData.fatherName || undefined]);
+        fields.push(['mother_name', formData.motherName || undefined]);
+        fields.push(['father_phone', formData.fatherPhone || undefined]);
+        fields.push(['mother_phone', formData.motherPhone || undefined]);
+        fields.push(['fees', formData.fees || undefined]);
+        fields.push(['fee_due_day', formData.fee_due_day || undefined]);
+      }
+      fields.forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
+      if (formData.role === 'tuition_student') payload.student_id = `${prefix}${nextSeq}`;
+      if (formData.role === 'tuition_teacher') payload.teacher_id = `${prefix}${nextSeq}`;
 
       await addUser(payload);
+      setStatusModal({ visible: true, title: 'Tuition User Created ✅', message: `${formData.role === 'tuition_teacher' ? 'Tuition Teacher' : 'Tuition Student'} has been registered successfully.`, type: 'success' });
       setShowAddForm(false);
-      setStatusModal({ visible: true, title: 'User Added! 🎉', message: `${formData.name} has been successfully registered in the system.`, type: 'success' });
     } catch (err: any) {
-      console.log('Add User Error:', err?.response?.data || err.message);
-      setStatusModal({ visible: true, title: 'System Error ⚠️', message: err?.response?.data?.message || 'Something went wrong while adding the user.', type: 'error' });
-    } finally { setIsSubmitting(false); }
-  }, [users, addUser, user]);
+      setStatusModal({ visible: true, title: 'Creation Failed ⚠️', message: err?.response?.data?.message || err?.message || 'Could not create user.', type: 'error' });
+    }
+    setIsSubmitting(false);
+  }, [addUser, branches, users]);
 
   // ── Edit ──
   const handleEditSubmit = useCallback(async (formData: any) => {
-    if (!formData) {
+    if (!formData || !editingUser) {
       setStatusModal({ visible: true, title: 'Form Incomplete 📝', message: 'Please fill in all mandatory fields before saving.', type: 'info' });
       return;
     }
-    if (!editingUser) return;
     setIsSubmitting(true);
     try {
       const payload: any = {};
-      Object.entries({
-        name: formData.name,
-        username: formData.username || undefined,
-        email: formData.email || undefined,
-        phone: formData.phone,
-        gender: formData.gender,
-        branch_id: formData.branch_id || undefined,
-        father_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherName : undefined,
-        mother_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherName : undefined,
-        father_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherPhone : undefined,
-        mother_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
-        category: formData.role === 'student' || formData.role === 'tuition_student' ? formData.category : undefined,
-        fees: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees : undefined,
-        fee_due_day: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
-        date_of_birth: formData.role === 'student' || formData.role === 'tuition_student' && formData.dateOfBirth ? formData.dateOfBirth : undefined,
-        batch_id: formData.batch_id ? formData.batch_id : undefined,
-      }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
-
+      const fields: [string, any][] = [
+        ['name', formData.name || undefined],
+        ['username', formData.username || undefined],
+        ['email', formData.email || undefined],
+        ['phone', formData.phone || undefined],
+        ['gender', formData.gender || undefined],
+        ['category', 'Tuition'],
+      ];
+      if (formData.role === 'tuition_student') {
+        fields.push(['date_of_birth', formData.dateOfBirth || undefined]);
+        fields.push(['father_name', formData.fatherName || undefined]);
+        fields.push(['mother_name', formData.motherName || undefined]);
+        fields.push(['father_phone', formData.fatherPhone || undefined]);
+        fields.push(['mother_phone', formData.motherPhone || undefined]);
+        fields.push(['fees', formData.fees || undefined]);
+        fields.push(['fee_due_day', formData.fee_due_day || undefined]);
+      }
+      fields.forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
       if (formData.password) payload.password = formData.password;
+
       await updateUser(editingUser.id, payload);
       setEditingUser(null);
       setStatusModal({ visible: true, title: 'Changes Saved! ✅', message: 'The user profile has been updated successfully.', type: 'success' });
     } catch (err: any) {
-      console.log('Edit User Error:', err?.response?.data || err.message);
       setStatusModal({ visible: true, title: 'Update Failed ⚠️', message: err?.response?.data?.message || 'Could not update user details.', type: 'error' });
     } finally { setIsSubmitting(false); }
   }, [editingUser, updateUser]);
@@ -840,7 +758,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
     const selected = users.filter(u => selectedIds.has(u.id));
     const protectedSelected = selected.filter(u => u.role === 'admin' || u.role === 'master_admin');
     if (protectedSelected.length > 0) {
-      setStatusModal({ visible: true, title: 'Protected Account 🛡️', message: 'Master Administrator accounts are protected and cannot be deleted.', type: 'info' });
+      setStatusModal({ visible: true, title: 'Protected Account 🛡️', message: 'Administrator accounts are protected and cannot be deleted.', type: 'info' });
       return;
     }
     setChoiceModal({
@@ -868,31 +786,43 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       return;
     }
     setChoiceModal({
-      visible: true, title: 'Delete User? 🔒', message: `Are you sure you want to permanently remove ${userName}?`,
+      visible: true, title: `Delete ${userName}? 🔒`, message: `Are you sure you want to permanently remove "${userName}"? This action cannot be undone.`,
       iconName: 'account-remove', accentColor: '#EF4444',
       options: [{
-        label: 'Yes, Delete User', type: 'destructive' as any,
+        label: 'Yes, Delete', type: 'destructive' as any,
         onPress: async () => {
           try {
             await deleteUser(userId);
-            setStatusModal({ visible: true, title: 'Deleted! ✅', message: `User ${userName} has been successfully removed.`, type: 'success' });
-          } catch (e) {
-            setStatusModal({ visible: true, title: 'Error ⚠️', message: 'Failed to delete user. Please try again.', type: 'error' });
+            setStatusModal({ visible: true, title: 'Deleted! ✅', message: `${userName} has been removed.`, type: 'success' });
+          } catch (err: any) {
+            setStatusModal({ visible: true, title: 'Delete Failed ⚠️', message: err?.response?.data?.message || 'Could not delete user.', type: 'error' });
           }
         }
       }]
     });
-  }, [deleteUser, users]);
+  }, [deleteUser]);
+
+  const handleToggleStatus = useCallback(async (userId: string) => {
+    try {
+      await toggleUserStatus(userId);
+      setStatusModal({ visible: true, title: 'Status Updated ✅', message: 'User status has been changed.', type: 'success' });
+    } catch (err: any) {
+      setStatusModal({ visible: true, title: 'Status Update Failed ⚠️', message: err?.response?.data?.message || 'Could not update status.', type: 'error' });
+    }
+  }, [toggleUserStatus]);
+
+  const tuitionUsers = useMemo(() =>
+    users.filter(u => u.role === 'tuition_teacher' || u.role === 'tuition_student'),
+  [users]);
 
   const stats = useMemo(() => ({
-    students: users.filter(u => u.role === 'student' && u.status === 'active').length,
-    teachers: users.filter(u => u.role === 'teacher' && u.status === 'active').length,
-    admins: users.filter(u => u.role === 'admin' && u.status === 'active').length,
-    nannies: users.filter(u => u.role === 'nanny' && u.status === 'active').length,
-  }), [users]);
+    teachers: tuitionUsers.filter(u => u.role === 'tuition_teacher' && u.status === 'active').length,
+    students: tuitionUsers.filter(u => u.role === 'tuition_student' && u.status === 'active').length,
+    total: tuitionUsers.length,
+  }), [tuitionUsers]);
 
   const displayedUsers = useMemo(() => {
-    let list = (filter === 'all' ? users : users.filter(u => u.role === filter)).filter(u => u.role !== 'master_admin' && u.role !== 'tuition_teacher' && u.role !== 'tuition_student');
+    let list = (filter === 'all' ? tuitionUsers : tuitionUsers.filter(u => u.role === filter));
     if (selectedBranchId) {
       list = list.filter(u => u.branch_id === selectedBranchId);
     }
@@ -913,15 +843,15 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       if (a.status !== 'active' && b.status === 'active') return 1;
       return 0;
     });
-  }, [users, filter, search, selectedBranchId, isSelecting, user?.id]);
+  }, [tuitionUsers, filter, search, selectedBranchId, isSelecting, user?.id]);
 
   const renderItem: ListRenderItem<User> = useCallback(({ item }) => (
     <View style={{ paddingHorizontal: 24 }}>
-      <UserCard
+      <TuitionUserCard
         user={item}
         theme={isDark ? 'dark' : 'light'}
         getRoleIcon={getRoleIcon}
-        onStatusToggle={toggleUserStatus}
+        onStatusToggle={handleToggleStatus}
         onDelete={handleDeleteUserPress}
         onEdit={(u: User) => setEditingUser(u)}
         isSelecting={isSelecting}
@@ -929,14 +859,13 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         onToggleSelect={toggleSelect}
       />
     </View>
-  ), [isDark, getRoleIcon, toggleUserStatus, handleDeleteUserPress, isSelecting, selectedIds, toggleSelect]);
+  ), [isDark, getRoleIcon, handleToggleStatus, handleDeleteUserPress, isSelecting, selectedIds, toggleSelect]);
 
   const stickyHeaderStyle = useAnimatedStyle(() => ({}));
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#F8F6F0' }}>
       <StatusBar backgroundColor={isDark ? '#1c1c14' : '#F8F6F0'} barStyle={isDark ? 'light-content' : 'dark-content'} />
-      {/* ── Sticky Header + Stats Cards ── */}
       <Animated.View style={[{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
         backgroundColor: isDark ? '#1c1c14' : '#F8F6F0',
@@ -946,10 +875,10 @@ export default function UserManagementScreenV2({ navigation }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 34, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>
-                Members
+                Tuition
               </Text>
               <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>
-                Directory
+                Members
               </Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -977,7 +906,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
                 }}>
                 <MaterialCommunityIcons name={isSelecting ? 'close' : 'arrow-left'} size={24} color={isSelecting ? (isDark ? '#FFF' : '#374151') : 'white'} />
               </TouchableOpacity>
-              {!isSelecting && user?.role === 'master_admin' && (
+              {!isSelecting && (
                 <TouchableOpacity onPress={() => { setIsSelecting(true); setSelectedIds(new Set()); }}
                   style={{
                     backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
@@ -986,6 +915,17 @@ export default function UserManagementScreenV2({ navigation }: Props) {
                     borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
                   }}>
                   <MaterialCommunityIcons name="checkbox-multiple-marked-outline" size={22} color={isDark ? '#CCC' : '#6B7280'} />
+                </TouchableOpacity>
+              )}
+              {!isSelecting && (
+                <TouchableOpacity onPress={() => { setShowAddForm(true); }}
+                  style={{
+                    backgroundColor: '#7C3AED', width: 50, height: 50, borderRadius: 16,
+                    alignItems: 'center', justifyContent: 'center', elevation: 6,
+                    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3, shadowRadius: 8,
+                  }}>
+                  <MaterialCommunityIcons name="account-plus" size={24} color="white" />
                 </TouchableOpacity>
               )}
             </View>
@@ -1037,12 +977,10 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         <View style={{ paddingHorizontal: 24, paddingBottom: 4, marginTop: 4 }}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
             {[
-              { key: 'student', label: 'Students', short: 'St', icon: 'school-outline', color: studentColor, count: stats.students },
-              { key: 'teacher', label: 'Staff', short: 'Te', icon: 'account-tie-outline', color: teacherColor, count: stats.teachers },
-              { key: 'admin', label: 'Admins', short: 'Ad', icon: 'shield-account-outline', color: adminColor, count: stats.admins },
-              { key: 'nanny', label: 'Nannies', short: 'Na', icon: 'baby-face-outline', color: '#06B6D4', count: stats.nannies },
+              { key: 'tuition_teacher', label: 'Teachers', short: 'Te', icon: 'account-tie-outline', color: teacherColor, count: stats.teachers },
+              { key: 'tuition_student', label: 'Students', short: 'St', icon: 'school-outline', color: studentColor, count: stats.students },
             ].map(card => (
-              <TouchableOpacity key={card.key} onPress={() => setFilter(prev => prev === card.key ? 'all' : card.key as 'all' | 'student' | 'teacher' | 'admin' | 'nanny')}
+              <TouchableOpacity key={card.key} onPress={() => setFilter(prev => prev === card.key ? 'all' : card.key)}
                 activeOpacity={0.9}
                 style={{
                   flex: 1, borderRadius: 20, overflow: 'hidden',
@@ -1065,7 +1003,6 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         </View>
       </Animated.View>
 
-      {/* ── Main Scrollable Content ── */}
       <Animated.FlatList
         data={displayedUsers}
         keyExtractor={item => item.id}
@@ -1074,7 +1011,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         onScroll={(e) => { scrollY.value = e.nativeEvent.contentOffset.y; }}
         scrollEventThrottle={16}
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, 20) + 300,
+          paddingTop: Math.max(insets.top, 20) + 230,
           paddingBottom: 140,
         }}
         refreshControl={
@@ -1094,7 +1031,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
           <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ fontSize: 16, fontWeight: '900', flex: 1, color: isDark ? '#FFFFFF' : '#111827' }}>
-                {search ? `"${search}"` : filter === 'all' ? 'All Members' : filter === 'student' ? 'Students' : filter === 'teacher' ? 'Faculty' : filter === 'admin' ? 'Admins' : 'Nannies'}
+                {search ? `"${search}"` : filter === 'all' ? 'All Tuition Users' : filter === 'tuition_teacher' ? 'Tuition Teachers' : 'Tuition Students'}
                 <Text style={{ color: isDark ? '#6B7280' : '#9CA3AF', fontSize: 13 }}> ({displayedUsers.length})</Text>
               </Text>
               {(filter !== 'all' || search !== '') && (
@@ -1114,13 +1051,12 @@ export default function UserManagementScreenV2({ navigation }: Props) {
           <View style={{ alignItems: 'center', paddingVertical: 80, opacity: 0.4 }}>
             <MaterialCommunityIcons name="account-search-outline" size={72} color={isDark ? '#4B5563' : '#9CA3AF'} />
             <Text style={{ fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#6B7280' : '#9CA3AF', marginTop: 16 }}>
-              No users found
+              No tuition users found
             </Text>
           </View>
         }
       />
 
-      {/* ── Bottom Tab Filter Bar ── */}
       <View style={{
         position: 'absolute', bottom: Math.max(insets.bottom, 10) + 4,
         left: 24, right: 24, zIndex: 11,
@@ -1130,125 +1066,24 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15, shadowRadius: 16,
       }}>
-        {(['all', 'student', 'teacher', 'admin', 'nanny'] as const).map(tab => (
+        {(['all', 'tuition_teacher', 'tuition_student'] as const).map(tab => (
           <TouchableOpacity key={tab} onPress={() => setFilter(tab)}
             style={{
               flex: 1, backgroundColor: filter === tab ? brandColor : 'transparent',
               borderRadius: 14, paddingVertical: 10, alignItems: 'center',
             }}>
             <MaterialCommunityIcons
-              name={tab === 'all' ? 'account-group-outline' : tab === 'student' ? 'school-outline' : tab === 'teacher' ? 'account-tie-outline' : tab === 'admin' ? 'shield-account-outline' : 'baby-face-outline'}
+              name={tab === 'all' ? 'account-group-outline' : tab === 'tuition_teacher' ? 'account-tie-outline' : 'school-outline'}
               size={18} color={filter === tab ? '#FFFFFF' : (isDark ? '#CCC' : '#6B7280')} />
             <Text style={{
               fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 1,
               color: filter === tab ? '#FFFFFF' : (isDark ? '#CCC' : '#6B7280'), marginTop: 2,
             }}>
-              {tab === 'all' ? 'ALL' : tab === 'student' ? 'STUDENTS' : tab === 'teacher' ? 'TEACHERS' : tab === 'admin' ? 'ADMINS' : 'NANNIES'}
+              {tab === 'all' ? 'ALL' : tab === 'tuition_teacher' ? 'TEACHERS' : 'STUDENTS'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* ── Monster Admin Panel ── */}
-      {isMonsterAdmin && (
-        <View style={{
-          position: 'absolute', top: Math.max(insets.top, 20) + 160, right: 24, zIndex: 99,
-        }}>
-          <TouchableOpacity onPress={() => setShowMonsterPanel(!showMonsterPanel)}
-            style={{ backgroundColor: '#DC2626', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', elevation: 8 }}>
-            <MaterialCommunityIcons name="shield-lock" size={22} color="white" />
-          </TouchableOpacity>
-          {showMonsterPanel && (
-            <View style={{
-              position: 'absolute', top: 52, right: 0, width: 240,
-              backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF', borderRadius: 20, padding: 16,
-              borderWidth: 1, borderColor: '#DC2626', elevation: 16,
-            }}>
-              <Text style={{ fontWeight: '900', fontSize: 14, color: '#DC2626', marginBottom: 12 }}>Monster Control</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontWeight: '700', fontSize: 12, color: isDark ? '#FFF' : '#111' }}>Maintenance Mode</Text>
-                <TouchableOpacity
-                  onPress={() => setMaintenanceMode(!maintenanceMode)}
-                  style={{
-                    width: 50, height: 28, borderRadius: 14,
-                    backgroundColor: maintenanceMode ? '#DC2626' : (isDark ? '#333' : '#E5E7EB'),
-                    justifyContent: 'center', paddingHorizontal: 3,
-                  }}>
-                  <View style={{
-                    width: 22, height: 22, borderRadius: 11, backgroundColor: 'white',
-                    alignSelf: maintenanceMode ? 'flex-end' : 'flex-start',
-                  }} />
-                </TouchableOpacity>
-              </View>
-              {maintenanceMode && (
-                <Text style={{ fontSize: 10, color: '#DC2626', fontWeight: '700', marginTop: 8 }}>
-                  ON - All users blocked
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* ── Maintenance Mode Overlay ── */}
-      {maintenanceMode && user?.role !== 'super_admin' && user?.username !== 'monster' && (
-        <View style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
-          backgroundColor: isDark ? '#1c1c14' : '#F8F6F0',
-          justifyContent: 'center', alignItems: 'center', padding: 40,
-        }}>
-          <MaterialCommunityIcons name="shield-off-outline" size={80} color="#DC2626" />
-          <Text style={{ fontSize: 28, fontWeight: '900', color: '#DC2626', marginTop: 20, textAlign: 'center' }}>Maintenance Mode</Text>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 12, textAlign: 'center' }}>
-            The system is currently under maintenance. Please try again later.
-          </Text>
-        </View>
-      )}
-
-      {/* ── FAB - Add User ── */}
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => setShowAddForm(true)}
-        style={{
-          position: 'absolute', bottom: Math.max(insets.bottom, 10) + 95,
-          right: 24, zIndex: 99,
-          backgroundColor: brandColor, width: 60, height: 60, borderRadius: 20,
-          alignItems: 'center', justifyContent: 'center', elevation: 12,
-          shadowColor: brandColor, shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.4, shadowRadius: 12,
-        }}>
-        <MaterialCommunityIcons name="account-plus-outline" size={28} color="white" />
-      </TouchableOpacity>
-
-      {/* ── Modals ── */}
-      <UserFormModal
-        visible={showAddForm}
-        onClose={closeAdd}
-        onSubmit={handleAddSubmit}
-        isSubmitting={isSubmitting}
-        theme={isDark ? 'dark' : 'light'}
-        isEdit={false}
-      />
-
-      <UserFormModal
-        visible={!!editingUser}
-        onClose={closeEdit}
-        onSubmit={handleEditSubmit}
-        isSubmitting={isSubmitting}
-        theme={isDark ? 'dark' : 'light'}
-        initialData={editingUser}
-        isEdit={true}
-      />
-
-      <ChoiceModal
-        visible={choiceModal.visible}
-        title={choiceModal.title}
-        message={choiceModal.message}
-        options={choiceModal.options}
-        onClose={() => setChoiceModal(prev => ({ ...prev, visible: false }))}
-        iconName={choiceModal.iconName}
-        accentColor={choiceModal.accentColor}
-      />
 
       <StatusModal
         visible={statusModal.visible}
@@ -1257,6 +1092,37 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         type={statusModal.type}
         onClose={() => setStatusModal(prev => ({ ...prev, visible: false }))}
       />
+
+      <ChoiceModal
+        visible={choiceModal.visible}
+        title={choiceModal.title}
+        message={choiceModal.message}
+        iconName={choiceModal.iconName}
+        accentColor={choiceModal.accentColor}
+        options={choiceModal.options}
+        onClose={() => setChoiceModal(prev => ({ ...prev, visible: false }))}
+      />
+
+      <TuitionFormModal
+        visible={showAddForm}
+        onClose={closeAdd}
+        onSubmit={handleAddSubmit}
+        isSubmitting={isSubmitting}
+        theme={isDark ? 'dark' : 'light'}
+        isEdit={false}
+      />
+
+      {editingUser && (
+        <TuitionFormModal
+          visible={!!editingUser}
+          onClose={closeEdit}
+          onSubmit={handleEditSubmit}
+          isSubmitting={isSubmitting}
+          theme={isDark ? 'dark' : 'light'}
+          initialData={editingUser}
+          isEdit
+        />
+      )}
     </View>
   );
 }

@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { registerForPushNotificationsAsync, savePushToken } from '../services/notifications';
 
-export type UserRole = 'master_admin' | 'admin' | 'student' | 'teacher';
+export type UserRole = 'master_admin' | 'admin' | 'student' | 'teacher' | 'tuition_teacher' | 'tuition_student' | 'nanny';
 
 export interface Branch {
   id: string;
@@ -130,6 +130,7 @@ export interface Transaction {
   date: string;
   student_id?: string;
   status?: 'pending' | 'approved' | 'rejected';
+  payment_method?: string;
   requested_by?: string;
   branch_id?: string;
   branch?: { id: string; name: string; } | null;
@@ -262,6 +263,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         student_id: (t.student_id || '').toString(),
         status:   t.status || 'approved',
         requested_by: (t.requested_by || '').toString(),
+        payment_method: t.payment_method || '',
         branch_id: t.branch_id?.toString(),
         branch:   t.branch ? { id: t.branch.id.toString(), name: t.branch.name } : undefined,
       }));

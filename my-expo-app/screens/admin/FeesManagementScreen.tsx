@@ -1218,55 +1218,42 @@ export default function FeesManagementScreen({ navigation }: any) {
             <MaterialCommunityIcons name="cash-multiple" size={44} color="white" />
           </View>
         </View>
-      </View>
 
-      {/* Summary Cards */}
-      <View className="px-6 mb-6">
-        <View className="flex-row items-center justify-between mb-4 px-1">
-            <Text className="text-[9px] font-black uppercase tracking-[3px] text-gray-500">Financial Health</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="overflow-visible">
-          <SummaryCard label="COLLECTED" value={`₹${stats.paid.toLocaleString()}`} icon="check-decagram-outline" color="#10B981" />
-          <SummaryCard label="OVERDUE" value={`₹${stats.overdue.toLocaleString()}`} icon="clock-alert-outline" color="#EF4444" />
-          <SummaryCard label="PENDING" value={`₹${stats.pending.toLocaleString()}`} icon="alert-circle-outline" color="#F59E0B" />
-          <SummaryCard label="TOTAL RECORDS" value={stats.count} icon="file-document-outline" color="#3B82F6" />
-        </ScrollView>
-      </View>
-
-
-
-
-      {/* Category Selection Dropdown */}
-      <View className="px-6 mb-6 mt-2">
-        <Text className="text-[9px] font-black uppercase tracking-[3px] mb-4 text-gray-500">Operational Ledger</Text>
-        <TouchableOpacity 
-          onPress={() => setIsTypeDropdownOpen(true)}
-          activeOpacity={0.9}
-          className="bg-white border-gray-100 p-5 rounded-[22px] border-2 shadow-xl flex-row items-center justify-between"
-        >
-          <View className="flex-row items-center">
-            <View 
-              style={{ backgroundColor: '#EC4899' }} 
-              className="w-12 h-12 rounded-[16px] items-center justify-center mr-4 shadow-lg"
-            >
-              <MaterialCommunityIcons 
-                name={activeTab === 'manage' ? 'calendar-month' : (activeTab === 'admission' ? 'account-plus' : 'history')} 
-                size={22} 
-                color="white" 
+        {/* Right-Aligned Financial Health + Ledger Dropdown */}
+        <View className="mt-5 items-end">
+          <TouchableOpacity
+            onPress={() => setIsTypeDropdownOpen(true)}
+            activeOpacity={0.85}
+            className="self-end flex-row items-center rounded-full px-4 py-2.5 border-2 mb-4"
+            style={{ backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }}
+          >
+            <View style={{ backgroundColor: '#EC4899' }} className="w-8 h-8 rounded-full items-center justify-center mr-2">
+              <MaterialCommunityIcons
+                name={activeTab === 'manage' ? 'calendar-month' : (activeTab === 'admission' ? 'account-plus' : 'history')}
+                size={16}
+                color="white"
               />
             </View>
-            <View>
-              <Text className="text-[8px] font-black uppercase tracking-widest text-gray-500">Current View</Text>
-              <Text className="text-lg font-black tracking-tighter text-gray-900">
-                {activeTab === 'manage' ? 'Monthly Dues' : (activeTab === 'admission' ? 'Admissions' : 'Transaction Log')}
-              </Text>
-            </View>
+            <Text className="font-black text-sm tracking-tight text-gray-900">
+              {activeTab === 'manage' ? 'Monthly Dues' : (activeTab === 'admission' ? 'Admissions' : 'Transaction Log')}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={18} color="#EC4899" style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+
+          <View className="flex-row items-center justify-between mb-3 px-1 self-stretch">
+            <Text className="text-[9px] font-black uppercase tracking-[3px] text-gray-500">Financial Health</Text>
           </View>
-          <View style={{ backgroundColor: '#F3F4F6' }} className="w-10 h-10 rounded-[14px] items-center justify-center">
-            <MaterialCommunityIcons name="chevron-down" size={22} color="#6B7280" />
-          </View>
-        </TouchableOpacity>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="self-end overflow-visible">
+            <SummaryCard label="COLLECTED" value={`₹${stats.paid.toLocaleString()}`} icon="check-decagram-outline" color="#10B981" />
+            <SummaryCard label="OVERDUE" value={`₹${stats.overdue.toLocaleString()}`} icon="clock-alert-outline" color="#EF4444" />
+            <SummaryCard label="PENDING" value={`₹${stats.pending.toLocaleString()}`} icon="alert-circle-outline" color="#F59E0B" />
+            <SummaryCard label="TOTAL RECORDS" value={stats.count} icon="file-document-outline" color="#3B82F6" />
+          </ScrollView>
+        </View>
       </View>
+
+
+
 
       {/* Action Line & Month Filter Dropdown */}
       <View className="px-6 mb-4">

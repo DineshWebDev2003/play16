@@ -15,7 +15,7 @@ import BranchFilter from '../../components/BranchFilter';
 interface NavigationProps { navigate: (screen: string) => void; goBack: () => void; }
 interface UserManagementScreenProps { navigation: NavigationProps; }
 
-const STUDENT_CATEGORIES = ['Playschool', 'PreKG', 'Daycare'] as const;
+const STUDENT_CATEGORIES = ['Playschool', 'PreKG', 'Daycare', 'LKG', 'UKG'] as const;
 type CategoryType = typeof STUDENT_CATEGORIES[number];
 
 // ─── Shared field label ────────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
       </FieldRow>
 
       {/* Student-only */}
-      {formData.role === 'student' && (
+      {(formData.role === 'student' || formData.role === 'tuition_student') && (
         <>
           <FieldRow icon="cake-variant" label="Date of Birth" theme={theme}>
             <MiniDatePicker value={formData.dateOfBirth} onChange={v => set('dateOfBirth', v)} theme={theme} />
@@ -656,7 +656,7 @@ export default function UserManagementScreen({ navigation }: UserManagementScree
       Object.entries({
         name:          formData.name,
         username:      formData.username   || undefined,
-        date_of_birth: formData.dateOfBirth && formData.role === 'student' ? formData.dateOfBirth : undefined,
+        date_of_birth: formData.dateOfBirth && formData.role === 'student' || formData.role === 'tuition_student' ? formData.dateOfBirth : undefined,
         email:         formData.email      || undefined,
         phone:         formData.phone,
         role:          formData.role,
@@ -664,17 +664,17 @@ export default function UserManagementScreen({ navigation }: UserManagementScree
         password:      formData.password,
         status:        'active',
         branch_id:     formData.branch_id || undefined,
-        father_name:   formData.role === 'student' ? formData.fatherName : undefined,
-        mother_name:   formData.role === 'student' ? formData.motherName : undefined,
-        father_phone:  formData.role === 'student' ? formData.fatherPhone : undefined,
-        mother_phone:  formData.role === 'student' ? formData.motherPhone : undefined,
-        category:      formData.role === 'student' ? formData.category   : undefined,
-        fees:          formData.role === 'student' ? formData.fees       : undefined,
-        fee_due_day:   formData.role === 'student' ? formData.fee_due_day : undefined,
+        father_name:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherName : undefined,
+        mother_name:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherName : undefined,
+        father_phone:  formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherPhone : undefined,
+        mother_phone:  formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
+        category:      formData.role === 'student' || formData.role === 'tuition_student' ? formData.category   : undefined,
+        fees:          formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees       : undefined,
+        fee_due_day:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
       }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
 
       // Handle custom logic after pruning
-      if (formData.role === 'student') payload.student_id = `tnhk${nextId}`;
+      if (formData.role === 'student' || formData.role === 'tuition_student') payload.student_id = `tnhk${nextId}`;
       if (formData.role === 'teacher') payload.teacher_id = `tnhkt${(users.filter(u => u.role === 'teacher').length + 1).toString().padStart(3,'0')}`;
 
       await addUser(payload);
@@ -721,14 +721,14 @@ export default function UserManagementScreen({ navigation }: UserManagementScree
         phone:         formData.phone,
         gender:        formData.gender,
         branch_id:     formData.branch_id || undefined,
-        father_name:   formData.role === 'student' ? formData.fatherName : undefined,
-        mother_name:   formData.role === 'student' ? formData.motherName : undefined,
-        father_phone:  formData.role === 'student' ? formData.fatherPhone : undefined,
-        mother_phone:  formData.role === 'student' ? formData.motherPhone : undefined,
-        category:      formData.role === 'student' ? formData.category   : undefined,
-        fees:          formData.role === 'student' ? formData.fees       : undefined,
-        fee_due_day:   formData.role === 'student' ? formData.fee_due_day : undefined,
-        date_of_birth: formData.role === 'student' && formData.dateOfBirth ? formData.dateOfBirth : undefined,
+        father_name:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherName : undefined,
+        mother_name:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherName : undefined,
+        father_phone:  formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherPhone : undefined,
+        mother_phone:  formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
+        category:      formData.role === 'student' || formData.role === 'tuition_student' ? formData.category   : undefined,
+        fees:          formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees       : undefined,
+        fee_due_day:   formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
+        date_of_birth: formData.role === 'student' || formData.role === 'tuition_student' && formData.dateOfBirth ? formData.dateOfBirth : undefined,
       }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
 
       if (formData.password) payload.password = formData.password;

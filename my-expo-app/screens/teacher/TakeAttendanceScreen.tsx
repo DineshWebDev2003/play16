@@ -527,7 +527,8 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
 
   // Stabilize students list
   const students = useMemo(() => {
-    let filtered = users.filter(u => u.role === 'student' && u.status === 'active');
+    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : authUser?.role === 'teacher' ? ['student'] : ['student', 'tuition_student'];
+    let filtered = users.filter(u => allowedRoles.includes(u.role) && u.status === 'active');
     if (branchFilterId) {
       filtered = filtered.filter(u => u.branch_id?.toString() === branchFilterId);
     }
@@ -543,7 +544,8 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
   }, [users, branchFilterId, searchQuery, currentPage]);
 
   const totalFilteredCount = useMemo(() => {
-    let filtered = users.filter(u => u.role === 'student' && u.status === 'active');
+    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : authUser?.role === 'teacher' ? ['student'] : ['student', 'tuition_student'];
+    let filtered = users.filter(u => allowedRoles.includes(u.role) && u.status === 'active');
     if (branchFilterId) {
       filtered = filtered.filter(u => u.branch_id?.toString() === branchFilterId);
     }
@@ -931,20 +933,17 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
         style={{ backgroundColor: appTheme === 'dark' ? '#121212' : '#FFFFFF' }}
     >
       {/* Header */}
-      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-2">
-        <View className="flex-row items-center justify-between">
+      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pt-3 pb-2">
+        <View className="flex-row items-center justify-between mb-4">
           <View className="flex-1">
-            <TouchableOpacity 
-              onPress={handleGoBack} 
-              className={`mb-4 ${appTheme === 'dark' ? 'bg-[#1e1e1e]' : colors.surface} w-12 h-12 rounded-2xl items-center justify-center border ${appTheme === 'dark' ? 'border-gray-800' : colors.border} shadow-sm`}
-            >
-              <MaterialCommunityIcons name="arrow-left" size={28} color={appTheme === 'dark' ? '#FFF' : '#000'} />
+            <TouchableOpacity onPress={handleGoBack} className="mb-4 bg-white border-2 border-amber-200 w-12 h-12 rounded-2xl items-center justify-center" activeOpacity={0.7}>
+              <MaterialCommunityIcons name="arrow-left" size={28} color="#000" />
             </TouchableOpacity>
-            <Text className={`text-4xl font-black ${colors.text} tracking-tighter`}>{activeTab === 'day' ? 'Daily' : 'Monthly'}</Text>
-            <Text className="text-2xl font-bold text-brand-pink">Attendance ✓</Text>
+            <Text className="text-4xl font-black text-gray-900 tracking-tighter">Take</Text>
+            <Text className="text-2xl font-bold text-amber-400">Attendance</Text>
           </View>
-          <View style={{ backgroundColor: headerIconColor, width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', elevation: 10, shadowColor: headerIconColor, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12 }}>
-            <MaterialCommunityIcons name="calendar-check" size={36} color="white" />
+          <View className="bg-pink-500 w-16 h-16 rounded-3xl items-center justify-center">
+            <MaterialCommunityIcons name="calendar-check" size={32} color="white" />
           </View>
         </View>
         {isAdminUser && (

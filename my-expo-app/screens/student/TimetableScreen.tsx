@@ -8,7 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import api from '../../services/api';
 
@@ -255,7 +255,7 @@ export default function TimetableScreen({ navigation }: any) {
   };
 
   return (
-    <View className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       <View className="flex-1">
         {/* Header */}
         <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
@@ -569,6 +569,6 @@ export default function TimetableScreen({ navigation }: any) {
             />
         </Modal>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

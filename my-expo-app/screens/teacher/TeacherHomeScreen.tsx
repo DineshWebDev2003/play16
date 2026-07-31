@@ -49,7 +49,7 @@ export default function TeacherHomeScreen({ navigation }: TeacherHomeScreenProps
       const todayRecords = response.data.filter((r: any) => r.date === today && r.user_role === 'student');
       const presentCount = todayRecords.filter((r: any) => r.status === 'present').length;
       
-      const totalStudents = users.filter(u => u.role === 'student').length;
+      const totalStudents = users.filter(u => u.role === 'student' || u.role === 'tuition_student').length;
       setStudentStats({ 
         total: totalStudents || 0,
         present: presentCount 

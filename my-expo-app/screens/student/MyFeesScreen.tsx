@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
@@ -204,7 +204,7 @@ export default function MyFeesScreen({ navigation }: any) {
   );
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-gray-900">
       <View className="flex-1">
         <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-4">
           <View className="flex-row items-center justify-between">
@@ -255,6 +255,6 @@ export default function MyFeesScreen({ navigation }: any) {
            </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

@@ -28,8 +28,6 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
   }), [users, branches]);
 
   const now = new Date();
-  const currentMonth = now.toLocaleString('default', { month: 'long' });
-  const currentYear = now.getFullYear();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
   const monthlyFinance = useMemo(() => {
@@ -87,24 +85,24 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => navigation.navigate('branchManagement')}
-            style={{ borderRadius: 24, overflow: 'hidden', elevation: 15 }}
+            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
           >
-            <View style={{ backgroundColor: '#EC4899', padding: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View style={{ backgroundColor: '#EC4899', padding: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <MaterialCommunityIcons name="domain" size={22} color="white" />
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                    <MaterialCommunityIcons name="domain" size={18} color="white" />
                   </View>
                   <View>
-                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Branch Network</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Franchise Management</Text>
+                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Branch Network</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Franchise Management</Text>
                   </View>
                 </View>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 }}>
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>{stats.branches} Branches</Text>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                  <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>{stats.branches} Branches</Text>
                 </View>
               </View>
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 16, padding: 14 }}>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   {[
                     { label: 'Admins', value: stats.admins, icon: 'account-tie', color: '#FCD34D' },
@@ -112,16 +110,16 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
                     { label: 'Students', value: stats.students, icon: 'school', color: '#93C5FD' },
             ].map((item, i) => (
                     <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
-                      <MaterialCommunityIcons name={item.icon as any} size={28} color="#FFFFFF" style={{ marginBottom: 6 }} />
-                      <Text style={{ color: 'white', fontSize: 18, fontWeight: '900' }}>{item.value}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                      <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                      <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }}>{item.value}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
                     </View>
                   ))}
                 </View>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12 }}>
-                <MaterialCommunityIcons name="arrow-right-circle" size={14} color="rgba(255,255,255,0.5)" />
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Branches</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+                <MaterialCommunityIcons name="arrow-right-circle" size={12} color="rgba(255,255,255,0.5)" />
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Branches</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -129,119 +127,208 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
 
         <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>Quick Actions</Text>
-            <View style={{ backgroundColor: 'rgba(245,158,11,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(245,158,11,0.2)' }}>
-              <Text style={{ color: '#F59E0B', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>5 Actions</Text>
+            <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>Main Operations ⚙️</Text>
+            <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+              <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Controls</Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {[
-              { label: 'Live Monitoring', screen: 'liveCamera', icon: 'broadcast', color: '#EF4444', bg: '#FEF2F2' },
-              { label: 'Kids Feed', screen: 'activityFeed', icon: 'star-face', color: '#3B82F6', bg: '#EFF6FF' },
-              { label: 'User Management', screen: 'userManagementV2', icon: 'account-multiple', color: '#F59E0B', bg: '#FFFBEB' },
-              { label: 'Attendance', screen: 'attendanceSelection', icon: 'calendar-check', color: '#EC4899', bg: '#FDF2F8' },
-              { label: 'Income/Expense', screen: 'incomeExpense', icon: 'finance', color: '#10B981', bg: '#ECFDF5' },
-            ].map((item, i) => {
-              if (item.screen === 'incomeExpense') {
-                return (
-                  <TouchableOpacity
-                    key={item.label}
-                    activeOpacity={0.85}
-                    onPress={() => navigation.navigate(item.screen)}
-                    style={{
-                      width: '100%',
-                      marginBottom: 14,
-                      borderRadius: 24,
-                      overflow: 'hidden',
-                      elevation: 12,
-                      backgroundColor: theme === 'dark' ? '#2a2a28' : item.bg,
-                      borderWidth: 1,
-                      borderColor: theme === 'dark' ? '#3a3a38' : `${item.color}20`,
-                      padding: 20,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{
-                          width: 50, height: 50, borderRadius: 16,
-                          backgroundColor: item.color,
-                          alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                        }}>
-                          <MaterialCommunityIcons name={item.icon as any} size={24} color="white" />
-                        </View>
-                        <View>
-                          <Text style={{ fontSize: 15, fontWeight: '900', color: theme === 'dark' ? '#fff' : '#111827' }}>
-                            {item.label}
-                          </Text>
-                          <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#6B7280', marginTop: 2 }}>
-                            {currentMonth} {currentYear}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ backgroundColor: monthlyFinance.net >= 0 ? '#D1FAE5' : '#FEE2E2', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '900', color: monthlyFinance.net >= 0 ? '#065F46' : '#991B1B' }}>
-                          ₹{(monthlyFinance.net || 0).toLocaleString('en-IN')}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <View style={{ flex: 1, backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF', borderRadius: 12, padding: 10, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 14, fontWeight: '900', color: '#10B981' }}>₹{(monthlyFinance.income || 0).toLocaleString('en-IN')}</Text>
-                        <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#6B7280', marginTop: 2 }}>Income</Text>
-                      </View>
-                      <View style={{ flex: 1, backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF', borderRadius: 12, padding: 10, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 14, fontWeight: '900', color: '#EF4444' }}>₹{(monthlyFinance.expense || 0).toLocaleString('en-IN')}</Text>
-                        <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#6B7280', marginTop: 2 }}>Expense</Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-                      <Text style={{ fontSize: 9, fontWeight: '700', color: item.color, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 1 }}>
-                        Tap to view full report
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }
-              return (
-                <TouchableOpacity
-                  key={item.label}
-                  activeOpacity={0.85}
-                  onPress={() => navigation.navigate(item.screen)}
-                  style={{
-                    width: i < 2 ? '48%' : '48%',
-                    marginBottom: 14,
-                    borderRadius: 24,
-                    overflow: 'hidden',
-                    elevation: 12,
-                    backgroundColor: theme === 'dark' ? '#2a2a28' : item.bg,
-                    borderWidth: 1,
-                    borderColor: theme === 'dark' ? '#3a3a38' : `${item.color}20`,
-                    padding: 20,
-                  }}
-                >
-                  <View style={{
-                    width: 56, height: 56, borderRadius: 18,
-                    backgroundColor: item.color,
-                    alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 14,
-                    shadowColor: item.color, shadowOpacity: 0.3,
-                    shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 8,
-                  }}>
-                    <MaterialCommunityIcons name={item.icon as any} size={28} color="white" />
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('incomeExpense')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']}
+                style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="finance" size={24} color="white" />
                   </View>
-                  <Text style={{ fontSize: 15, fontWeight: '900', color: theme === 'dark' ? '#fff' : '#111827', marginBottom: 4 }}>
-                    {item.label}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: item.color, marginRight: 6 }} />
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: item.color, opacity: 0.7, textTransform: 'uppercase', letterSpacing: 1 }}>
-                      Tap to open
+                  <View style={{ backgroundColor: monthlyFinance.net >= 0 ? '#D1FAE5' : '#FEE2E2', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '900', color: monthlyFinance.net >= 0 ? '#065F46' : '#991B1B' }}>
+                      ₹{(monthlyFinance.net || 0).toLocaleString('en-IN')}
                     </Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>Finance Hub</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Accounts & Budget</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>₹{(monthlyFinance.income || 0).toLocaleString('en-IN')}</Text>
+                    <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Income</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#FECACA' }}>₹{(monthlyFinance.expense || 0).toLocaleString('en-IN')}</Text>
+                    <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Expense</Text>
+                  </View>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="chart-line" size={90} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('userManagementV2')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#1e40af', '#1e1b4b'] : ['#3B82F6', '#2563EB']}
+                style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="account-multiple" size={24} color="white" />
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>{stats.admins} Admins</Text>
+                  </View>
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>User Hub</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>People & Roles</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>{stats.teachers}</Text>
+                    <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Teachers</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>{stats.students}</Text>
+                    <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Students</Text>
+                  </View>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="account-group" size={90} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('liveCamera')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#DC2626', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#7f1d1d', '#450a0a'] : ['#EF4444', '#DC2626']}
+                style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+              >
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                  <MaterialCommunityIcons name="broadcast" size={24} color="white" />
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Live Monitoring</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>CCTV & Cameras</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="cctv" size={80} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('attendanceSelection')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
+                style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+              >
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                  <MaterialCommunityIcons name="calendar-check" size={24} color="white" />
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Attendance</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Daily Register</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="clipboard-check-outline" size={80} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('tuitionConsole')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#8B5CF6', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#5b21b6', '#2e1065'] : ['#8B5CF6', '#7C3AED']}
+                style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+              >
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                  <MaterialCommunityIcons name="school" size={24} color="white" />
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Tuition Console</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>After-School Programs</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="account-school-outline" size={80} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('activityFeed')}
+              style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#D97706', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#92400E', '#78350F'] : ['#F59E0B', '#D97706']}
+                style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+              >
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                  <MaterialCommunityIcons name="star-face" size={24} color="white" />
+                </View>
+                <View>
+                  <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Kids Feed</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Moments & Highlights</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="image-multiple-outline" size={80} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('pettyCash')}
+            style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+          >
+            <LinearGradient
+              colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <View style={{ flex: 1 }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, marginBottom: 8 }}>
+                  <Text style={{ color: 'white', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5 }}>Cash Management</Text>
+                </View>
+                <Text style={{ color: 'white', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>Petty Cash</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700', marginTop: 2 }}>Track add & expense funds 💰</Text>
+              </View>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.3)', padding: 14, borderRadius: 20 }}>
+                <MaterialCommunityIcons name="wallet-outline" size={36} color="white" />
+              </View>
+              <View style={{ position: 'absolute', bottom: -18, right: -10, opacity: 0.1 }}>
+                <MaterialCommunityIcons name="cash-multiple" size={110} color="white" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 128 }} />

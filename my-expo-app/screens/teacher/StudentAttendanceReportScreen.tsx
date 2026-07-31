@@ -30,7 +30,7 @@ export default function StudentAttendanceReportScreen({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const students = useMemo(() => {
-    const list = users.filter(u => u.role === 'student');
+    const list = users.filter(u => u.role === 'student' || u.role === 'tuition_student');
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
     return list.filter(s => s.name.toLowerCase().includes(q) || (s.studentId && s.studentId.toLowerCase().includes(q)));
@@ -100,18 +100,18 @@ export default function StudentAttendanceReportScreen({ navigation }: any) {
         {/* Header */}
         <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
           <View className="flex-row items-center justify-between">
-            <View>
+            <View className="flex-1">
               <TouchableOpacity 
                 onPress={() => selectedStudent ? setSelectedStudent(null) : navigation.goBack()}
-                className={`w-12 h-12 rounded-2xl items-center justify-center border mb-6 ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-indigo-100 shadow-sm'}`}
+                className="mb-4 bg-white border-2 border-amber-200 w-12 h-12 rounded-2xl items-center justify-center"
               >
-                <MaterialCommunityIcons name="arrow-left" size={24} color={isDark ? '#FFF' : '#6366F1'} />
+                <MaterialCommunityIcons name="arrow-left" size={28} color="#000" />
               </TouchableOpacity>
-              <Text className={`text-4xl font-black tracking-tighter ${colors.text}`}>Roster</Text>
-              <Text className="text-2xl font-bold text-brand-pink mt-[-4px]">Analytics 📊</Text>
+              <Text className="text-4xl font-black tracking-tighter text-gray-900">Roster</Text>
+              <Text className="text-2xl font-bold text-amber-400 mt-[-4px]">Analytics 📊</Text>
             </View>
-            <View className="bg-indigo-600 w-20 h-20 rounded-[28px] items-center justify-center border-4 border-white shadow-2xl rotate-3 overflow-hidden">
-               <MaterialCommunityIcons name="database-eye-outline" size={40} color="white" />
+            <View className="bg-pink-500 w-16 h-16 rounded-3xl items-center justify-center">
+               <MaterialCommunityIcons name="database-eye-outline" size={32} color="white" />
             </View>
           </View>
         </View>

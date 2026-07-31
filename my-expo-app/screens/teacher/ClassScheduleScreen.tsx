@@ -25,22 +25,22 @@ export default function ClassScheduleScreen({ navigation }: ClassScheduleScreenP
   ];
 
   return (
-    <SafeAreaView className={`flex-1 ${colors.background}`}>
+    <SafeAreaView className="flex-1 bg-white">
       <View className="px-6 pt-4 pb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <TouchableOpacity 
               onPress={() => navigation.goBack()} 
-              className={`mb-4 ${colors.surface} w-12 h-12 rounded-2xl items-center justify-center border ${colors.border}`}
+              className="mb-4 bg-white border-2 border-amber-200 w-12 h-12 rounded-2xl items-center justify-center"
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons name="arrow-left" size={28} color={theme === 'dark' ? '#FFF' : '#000'} />
+              <MaterialCommunityIcons name="arrow-left" size={28} color="#000" />
             </TouchableOpacity>
-            <Text className={`text-4xl font-black ${colors.text} tracking-tighter`}>Class</Text>
-            <Text className="text-2xl font-bold text-brand-pink">Schedule 📅</Text>
+            <Text className="text-4xl font-black text-gray-900 tracking-tighter">Class</Text>
+            <Text className="text-2xl font-bold text-amber-400">Schedule 📅</Text>
           </View>
-          <View className="bg-brand-yellow w-16 h-16 rounded-3xl items-center justify-center">
-            <MaterialCommunityIcons name="calendar-clock" size={32} color="#92400E" />
+          <View className="bg-pink-500 w-16 h-16 rounded-3xl items-center justify-center">
+            <MaterialCommunityIcons name="calendar-clock" size={32} color="white" />
           </View>
         </View>
       </View>

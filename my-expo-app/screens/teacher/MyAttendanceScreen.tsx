@@ -4,7 +4,7 @@ import {
   Image, Dimensions, Modal, Animated, Easing, RefreshControl
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 
@@ -95,26 +95,26 @@ export default function MyAttendanceScreen({ navigation }: any) {
   }, [selectedMonth, selectedYear, records]);
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white">
       <View className="flex-1">
         {/* Header */}
         <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
           <View className="flex-row items-center justify-between">
-            <View>
+            <View className="flex-1">
               <TouchableOpacity 
                 onPress={() => navigation.goBack()}
-                className="w-12 h-12 rounded-2xl items-center justify-center mb-6 bg-gray-100"
+                className="mb-4 bg-white border-2 border-amber-200 w-12 h-12 rounded-2xl items-center justify-center"
               >
-                <MaterialCommunityIcons name="arrow-left" size={24} color="#4B5563" />
+                <MaterialCommunityIcons name="arrow-left" size={28} color="#000" />
               </TouchableOpacity>
               <Text className="text-4xl font-black tracking-tighter text-gray-900">My Duty</Text>
-              <Text className="text-2xl font-bold text-amber-500 mt-[-4px]">Attendance 🛡️</Text>
+              <Text className="text-2xl font-bold text-amber-400 mt-[-4px]">Attendance 🛡️</Text>
             </View>
             <TouchableOpacity 
               onPress={() => setShowMonthDropdown(true)}
-              className="bg-amber-500 w-20 h-20 rounded-[28px] items-center justify-center border-4 border-white shadow-2xl rotate-3 overflow-hidden"
+              className="bg-pink-500 w-16 h-16 rounded-3xl items-center justify-center"
             >
-               <MaterialCommunityIcons name="calendar-account" size={40} color="white" />
+               <MaterialCommunityIcons name="calendar-account" size={32} color="white" />
             </TouchableOpacity>
           </View>
 
@@ -264,6 +264,6 @@ export default function MyAttendanceScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

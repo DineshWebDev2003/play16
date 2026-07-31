@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 
 const MONTHS = [
@@ -102,23 +102,23 @@ export default function AttendanceScreen({ navigation }: any) {
   }, [attendanceData]);
 
   const renderItem = ({ item }: { item: any }) => (
-    <View className="bg-white dark:bg-gray-800 p-4 rounded-2xl mb-3 flex-row items-center justify-between shadow-sm">
-      <View className="flex-row items-center">
-        <View className={`${item.status === 'present' ? 'bg-emerald-500' : (item.status === 'absent' ? 'bg-red-500' : 'bg-gray-200 dark:bg-gray-600')} w-10 h-10 rounded-xl items-center justify-center mr-3`}>
-          <Text className="text-white font-bold text-base">{item.day}</Text>
+    <View style={{ backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#F3F4F6' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ backgroundColor: item.status === 'present' ? '#10B981' : (item.status === 'absent' ? '#EF4444' : '#E5E7EB'), width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>{item.day}</Text>
         </View>
         <View>
-          <Text className="font-bold text-gray-900 dark:text-white text-sm">{item.dayName}, {item.date}</Text>
-          <Text className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${item.status === 'present' ? 'text-emerald-600 dark:text-emerald-400' : (item.status === 'absent' ? 'text-red-500' : 'text-gray-400')}`}>
+          <Text style={{ fontWeight: '800', color: '#111827', fontSize: 13 }}>{item.dayName}, {item.date}</Text>
+          <Text style={{ fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2, color: item.status === 'present' ? '#059669' : (item.status === 'absent' ? '#EF4444' : '#9CA3AF') }}>
             {item.status.replace('_', ' ')}
           </Text>
         </View>
       </View>
       {item.status === 'present' && (
-        <View className="bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-xl">
-          <View className="flex-row items-center">
+        <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <MaterialCommunityIcons name="clock-check-outline" size={12} color="#10B981" />
-            <Text className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold ml-1.5">{item.clockIn || '--:--'}</Text>
+            <Text style={{ color: '#059669', fontSize: 10, fontWeight: '700', marginLeft: 4 }}>{item.clockIn || '--:--'}</Text>
           </View>
         </View>
       )}
@@ -126,52 +126,46 @@ export default function AttendanceScreen({ navigation }: any) {
   );
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
-      <View className="flex-1">
-        <View style={{ paddingTop: Math.max(insets.top, 10) }} className="px-6 pb-4">
-          <View className="flex-row items-center justify-between">
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ flex: 1 }}>
+        <View style={{ paddingTop: Math.max(insets.top, 10), paddingHorizontal: 24, paddingBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl items-center justify-center mb-4"
-              >
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ width: 40, height: 40, backgroundColor: '#F3F4F6', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <MaterialCommunityIcons name="arrow-left" size={22} color="#374151" />
               </TouchableOpacity>
-              <Text className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">My</Text>
-              <Text className="text-lg font-bold text-emerald-500 mt-[-2px]">Attendance</Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', color: '#111827', letterSpacing: -0.5 }}>My</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#10B981', marginTop: -2 }}>Attendance</Text>
             </View>
-            <View className="bg-emerald-500 w-16 h-16 rounded-2xl items-center justify-center">
+            <View style={{ backgroundColor: '#10B981', width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialCommunityIcons name="calendar-check" size={32} color="white" />
             </View>
           </View>
         </View>
 
-        <View className="px-6 mb-6 flex-row gap-3">
-          <View className="bg-gray-50 dark:bg-gray-800 flex-1 p-4 rounded-2xl items-center">
-            <Text className="text-2xl font-black text-emerald-500">{stats.present}</Text>
-            <Text className="text-[8px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mt-1">Present</Text>
+        <View style={{ paddingHorizontal: 24, marginBottom: 20, flexDirection: 'row', gap: 10 }}>
+          <View style={{ backgroundColor: '#F9FAFB', flex: 1, padding: 16, borderRadius: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: '#10B981' }}>{stats.present}</Text>
+            <Text style={{ fontSize: 8, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#9CA3AF', marginTop: 4 }}>Present</Text>
           </View>
-          <View className="bg-gray-50 dark:bg-gray-800 flex-1 p-4 rounded-2xl items-center">
-            <Text className="text-2xl font-black text-red-500">{stats.absent}</Text>
-            <Text className="text-[8px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mt-1">Absent</Text>
+          <View style={{ backgroundColor: '#F9FAFB', flex: 1, padding: 16, borderRadius: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: '#EF4444' }}>{stats.absent}</Text>
+            <Text style={{ fontSize: 8, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#9CA3AF', marginTop: 4 }}>Absent</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowPicker(true)}
-            className="bg-gray-50 dark:bg-gray-800 flex-[1.4] p-4 rounded-2xl items-center"
-          >
-            <Text className="text-base font-bold text-gray-900 dark:text-white">{MONTHS[selectedMonth].substring(0, 3)} {selectedYear}</Text>
-            <View className="flex-row items-center mt-1">
-              <Text className="text-[8px] font-bold uppercase tracking-widest text-amber-500">Change</Text>
+          <TouchableOpacity onPress={() => setShowPicker(true)} style={{ backgroundColor: '#F9FAFB', flex: 1.4, padding: 16, borderRadius: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#111827' }}>{MONTHS[selectedMonth].substring(0, 3)} {selectedYear}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ fontSize: 8, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, color: '#F59E0B' }}>Change</Text>
               <MaterialCommunityIcons name="chevron-down" size={12} color="#F59E0B" style={{ marginLeft: 2 }} />
             </View>
           </TouchableOpacity>
         </View>
 
-        <View className="px-6 mb-3 flex-row items-center justify-between">
-          <Text className="font-bold text-gray-900 dark:text-white text-base">Daily Records</Text>
-          <View className="flex-row items-center">
-            <View className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1" />
-            <Text className="text-[9px] font-bold text-gray-400 mr-3 uppercase tracking-wider">{stats.percentage}%</Text>
+        <View style={{ paddingHorizontal: 24, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontWeight: '800', color: '#111827', fontSize: 15 }}>Daily Records</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981', marginRight: 4 }} />
+            <Text style={{ fontSize: 9, fontWeight: '700', color: '#9CA3AF', marginRight: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{stats.percentage}%</Text>
             {loading && <ActivityIndicator color="#10B981" size="small" />}
           </View>
         </View>
@@ -180,49 +174,40 @@ export default function AttendanceScreen({ navigation }: any) {
           data={attendanceData}
           keyExtractor={(item) => item.day.toString()}
           renderItem={renderItem}
-          className="px-6"
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              colors={['#10B981']}
-              tintColor="#10B981"
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={['#10B981']} tintColor="#10B981" />
           }
-          contentContainerStyle={{ paddingBottom: 100 }}
           ListEmptyComponent={
-            <View className="items-center py-20 opacity-30">
+            <View style={{ alignItems: 'center', paddingVertical: 80, opacity: 0.3 }}>
               <MaterialCommunityIcons name="calendar-blank-outline" size={64} color="#D1D5DB" />
-              <Text className="font-bold text-gray-400 uppercase tracking-widest mt-4 text-xs">No Records</Text>
+              <Text style={{ fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, fontSize: 11 }}>No Records</Text>
             </View>
           }
         />
       </View>
 
       {showPicker && (
-        <View className="absolute inset-0 z-50 justify-center items-center bg-black/60 px-6">
-          <View className="bg-white dark:bg-gray-800 w-full rounded-3xl p-6 shadow-lg max-h-[80%]">
-            <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-lg font-bold text-gray-900 dark:text-white">Select Month & Year</Text>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: '#FFFFFF', width: '100%', borderRadius: 24, padding: 24, maxHeight: '80%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: '#111827' }}>Select Month & Year</Text>
               <TouchableOpacity onPress={() => setShowPicker(false)}>
                 <MaterialCommunityIcons name="close" size={22} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
-
             <ScrollView showsVerticalScrollIndicator={false}>
               {YEARS.map((year) => (
-                <View key={year} className="mb-4">
-                  <Text className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-3 px-1">{year}</Text>
-                  <View className="flex-row flex-wrap">
+                <View key={year} style={{ marginBottom: 14 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, paddingHorizontal: 4 }}>{year}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                     {MONTHS.map((m, i) => (
                       <TouchableOpacity
                         key={m}
                         onPress={() => { setSelectedMonth(i); setSelectedYear(year); setShowPicker(false); }}
-                        className={`w-[31%] py-3 rounded-xl mb-2 mr-[3.5%] items-center ${selectedMonth === i && selectedYear === year ? 'bg-amber-500' : 'bg-gray-100 dark:bg-gray-700'}`}
-                        style={{ marginRight: 0 }}
-                      >
-                        <Text className={`font-bold text-xs ${selectedMonth === i && selectedYear === year ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                        style={{ width: '31%', paddingVertical: 12, borderRadius: 12, marginBottom: 8, marginRight: '3.5%', alignItems: 'center', backgroundColor: selectedMonth === i && selectedYear === year ? '#F59E0B' : '#F3F4F6' }}>
+                        <Text style={{ fontWeight: '700', fontSize: 11, color: selectedMonth === i && selectedYear === year ? '#FFFFFF' : '#6B7280' }}>
                           {m.substring(0, 3)}
                         </Text>
                       </TouchableOpacity>
@@ -234,6 +219,6 @@ export default function AttendanceScreen({ navigation }: any) {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

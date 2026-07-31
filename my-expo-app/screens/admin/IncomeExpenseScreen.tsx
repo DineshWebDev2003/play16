@@ -121,6 +121,8 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const isDark = appTheme === 'dark';
   const scrollY = useSharedValue(0);
+  const isAdmin = user?.role === 'admin';
+  const isMasterAdmin = user?.role === 'master_admin';
 
   const [activeTab, setActiveTab] = useState<'history' | 'entry' | 'pending'>('history');
   const [editingItem, setEditingItem] = useState<Transaction | null>(null);
@@ -140,11 +142,12 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [pettyCashBalance, setPettyCashBalance] = useState<number | null>(null);
+  const [pettyCashPending, setPettyCashPending] = useState<number>(0);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const isAdmin = user?.role === 'admin';
-  const isMasterAdmin = user?.role === 'master_admin';
   const pendingCount = transactions.filter(t => t.status === 'pending').length;
 
   useEffect(() => {
@@ -154,12 +157,33 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
       setCategory(editingItem.category);
       setEntryType(editingItem.type);
       setEntryDate(editingItem.date);
+      setPaymentMethod(editingItem.payment_method || '');
     } else {
-      setName(''); setAmount(''); setCategory(''); setEntryType('income');
+      setName(''); setAmount(''); setCategory(''); setEntryType('income'); setPaymentMethod('');
       const d = new Date();
       setEntryDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
     }
   }, [editingItem]);
+
+  useEffect(() => {
+    if (activeTab === 'entry' && paymentMethod === 'Petty Cash') {
+      (async () => {
+        try {
+          const bid = branchFilterId || user?.branch_id?.toString();
+          if (!bid) { setPettyCashBalance(null); setPettyCashPending(0); return; }
+          const res = await api.get(`/petty-cash/balance?branch_id=${bid}`);
+          setPettyCashBalance(res.data?.available ?? res.data?.balance ?? res.data?.data?.available ?? res.data?.data?.balance ?? null);
+          setPettyCashPending(res.data?.pending ?? res.data?.data?.pending ?? 0);
+        } catch { setPettyCashBalance(null); setPettyCashPending(0); }
+      })();
+    }
+  }, [activeTab, paymentMethod, branchFilterId, user?.branch_id]);
+
+  const paymentMethods = ['Cash', 'Bank', 'UPI', 'Petty Cash'];
+  const amtVal = parseFloat(amount) || 0;
+  const isPettyCash = paymentMethod === 'Petty Cash' && entryType === 'expense';
+  const pettyCashAvailable = pettyCashBalance !== null ? pettyCashBalance - amtVal : null;
+  const balanceOk = pettyCashBalance !== null && amtVal > pettyCashBalance;
 
   const filtered = useMemo(() => {
     let list = [...transactions];
@@ -190,14 +214,35 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
   const masterShareAmount = net - adminShareAmount;
   const showShare = !!branchFilterId && net !== 0;
 
+  const showPettyCashInfo = useCallback(async () => {
+    const bid = branchFilterId || user?.branch_id?.toString();
+    if (!bid) { Alert.alert('Petty Cash', 'No branch selected.'); return; }
+    try {
+      const res = await api.get(`/petty-cash/balance?branch_id=${bid}`);
+      const bal = res.data?.available ?? res.data?.balance ?? res.data?.data?.available ?? res.data?.data?.balance ?? null;
+      const pend = res.data?.pending ?? res.data?.data?.pending ?? 0;
+      setPettyCashBalance(bal);
+      setPettyCashPending(pend);
+      if (bal === null) { Alert.alert('Petty Cash', 'Could not load balance.'); return; }
+      const msg = `Available: ₹${bal.toLocaleString('en-IN')}` + (pend > 0 ? `\nPending approval: ₹${pend.toLocaleString('en-IN')}` : '');
+      Alert.alert('Petty Cash Available', msg);
+    } catch {
+      Alert.alert('Petty Cash', 'Could not load balance.');
+    }
+  }, [branchFilterId, user?.branch_id]);
+
   const handleSubmit = async () => {
     if (!name.trim() || !amount || !category.trim()) {
       setStatusModal({ visible: true, title: 'Missing', message: 'Please fill all fields.', type: 'error' });
       return;
     }
+    if (isPettyCash && balanceOk) {
+      setStatusModal({ visible: true, title: 'Insufficient Balance', message: 'Insufficient Petty Cash Balance. Available is less than this amount.', type: 'error' });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const data = { name: name.trim(), amount: parseFloat(amount), category: category.trim(), type: entryType, date: entryDate };
+      const data = { name: name.trim(), amount: parseFloat(amount), category: category.trim(), type: entryType, date: entryDate, payment_method: paymentMethod || undefined };
       if (editingItem) {
         await updateTransaction(editingItem.id, data);
         setStatusModal({ visible: true, title: 'Updated', message: 'Transaction updated.', type: 'success' });
@@ -211,8 +256,9 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
         } else {
           setActiveTab('history');
         }
-    } catch {
-      setStatusModal({ visible: true, title: 'Error', message: 'Failed to save.', type: 'error' });
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'Failed to save.';
+      setStatusModal({ visible: true, title: 'Error', message: msg, type: 'error' });
     } finally { setIsSubmitting(false); }
   };
 
@@ -544,6 +590,51 @@ export default function IncomeExpenseScreen({ navigation }: Props) {
                     <MaterialCommunityIcons name="chevron-down" size={18} color="#6B7280" />
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280', marginBottom: 8 }}>Payment Method</Text>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {paymentMethods.map(m => (
+                    <TouchableOpacity key={m} onPress={() => { setPaymentMethod(m); if (m === 'Petty Cash') showPettyCashInfo(); }}
+                      style={{ flex: 1, backgroundColor: paymentMethod === m ? '#10B981' : '#F9FAFB', borderRadius: 12, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: paymentMethod === m ? '#10B981' : '#E5E7EB' }}>
+                      <MaterialCommunityIcons name={m === 'Cash' ? 'cash' : m === 'Bank' ? 'bank' : m === 'UPI' ? 'qrcode' : 'wallet-outline'} size={16} color={paymentMethod === m ? '#FFFFFF' : '#6B7280'} />
+                      <Text style={{ fontWeight: '800', fontSize: 8, textTransform: 'uppercase', letterSpacing: 0.5, color: paymentMethod === m ? '#FFFFFF' : '#6B7280', marginTop: 4 }}>{m}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {isPettyCash && (
+                  <View style={{ marginTop: 8, backgroundColor: pettyCashBalance !== null ? (balanceOk ? '#FEE2E2' : '#DCFCE7') : '#F3F4F6', borderRadius: 12, padding: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ fontWeight: '700', fontSize: 12, color: isDark ? '#FFF' : '#374151' }}>Petty Cash Available</Text>
+                      <Text style={{ fontWeight: '900', fontSize: 14, color: pettyCashBalance !== null ? '#10B981' : '#9CA3AF' }}>
+                        {pettyCashBalance !== null ? `₹${pettyCashBalance.toLocaleString('en-IN')}` : '—'}
+                      </Text>
+                    </View>
+                    {pettyCashPending > 0 && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                        <Text style={{ fontWeight: '700', fontSize: 12, color: isDark ? '#FBBF24' : '#B45309' }}>Pending approval</Text>
+                        <Text style={{ fontWeight: '900', fontSize: 14, color: '#F59E0B' }}>-₹{pettyCashPending.toLocaleString('en-IN')}</Text>
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                      <Text style={{ fontWeight: '700', fontSize: 12, color: isDark ? '#FFF' : '#374151' }}>Balance after this</Text>
+                      <Text style={{ fontWeight: '900', fontSize: 14, color: balanceOk ? '#EF4444' : '#10B981' }}>
+                        {pettyCashAvailable !== null ? `₹${Math.max(0, pettyCashAvailable).toLocaleString('en-IN')}` : '—'}
+                      </Text>
+                    </View>
+                    {balanceOk && (
+                      <View style={{ backgroundColor: '#FEE2E2', borderRadius: 8, padding: 8, marginTop: 8 }}>
+                        <Text style={{ color: '#991B1B', fontWeight: '800', fontSize: 10, textAlign: 'center' }}>Insufficient Petty Cash Balance</Text>
+                      </View>
+                    )}
+                    {isAdmin && (
+                      <Text style={{ color: '#9CA3AF', fontWeight: '700', fontSize: 9, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Deducted after master admin approves
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
 
               <View style={{ marginBottom: 20 }}>

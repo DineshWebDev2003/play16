@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -14,45 +15,40 @@ interface Props {
   navigation: NavigationProps;
 }
 
-export default function SuperAdminQuickActionScreen({ navigation }: Props) {
+export default function TuitionTeacherQuickActionScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const actions = [
-    { label: 'Manage Branches', screen: 'branchManagement', icon: 'domain', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Franchise', desc: 'Create & manage franchise branches' },
-    { label: 'Live Monitoring', screen: 'liveCamera', icon: 'broadcast', color: '#EF4444', grad: ['#EF4444', '#DC2626'], gradDark: ['#7f1d1d', '#450a0a'], tag: 'Live', desc: 'Secure surveillance' },
-    { label: 'User Management', screen: 'userManagementV2', icon: 'account-multiple', color: '#3B82F6', grad: ['#3B82F6', '#2563EB'], gradDark: ['#1e40af', '#1e1b4b'], tag: 'Users', desc: 'Add/edit users across branches' },
-    { label: 'Announcements', screen: 'announcements', icon: 'bullhorn', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Alerts', desc: 'Post global announcements' },
-    { label: 'Fees Management', screen: 'feesManagement', icon: 'cash-register', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Fees', desc: 'View all fee records' },
-    { label: 'Income/Expense', screen: 'incomeExpense', icon: 'finance', color: '#6366F1', grad: ['#6366F1', '#4F46E5'], gradDark: ['#3730a3', '#312e81'], tag: 'Budget', desc: 'Financial transactions' },
-    { label: 'Petty Cash', screen: 'pettyCash', icon: 'wallet-outline', color: '#10B981', grad: ['#14B8A6', '#0D9488'], gradDark: ['#0f766e', '#134e4a'], tag: 'Cash', desc: 'Cash management' },
-    { label: 'Backup & Restore', screen: 'backup', icon: 'backup-restore', color: '#14B8A6', grad: ['#14B8A6', '#0D9488'], gradDark: ['#0f766e', '#134e4a'], tag: 'Vault', desc: 'Data backup management' },
-    { label: 'Student Info', screen: 'studentInfo', icon: 'account-details', color: '#3B82F6', grad: ['#3B82F6', '#2563EB'], gradDark: ['#1e40af', '#1e1b4b'], tag: 'Students', desc: 'View all student profiles' },
-    { label: 'Tuition Console', screen: 'tuitionConsole', icon: 'school', color: '#8B5CF6', grad: ['#8B5CF6', '#7C3AED'], gradDark: ['#5b21b6', '#2e1065'], tag: 'Tuition', desc: 'Full tuition management' },
-    { label: 'Post Activity', screen: 'postActivity', icon: 'creation', color: '#D97706', grad: ['#D97706', '#B45309'], gradDark: ['#92400E', '#78350F'], tag: 'Share', desc: 'Post student activities with branch selection' },
+    { label: 'Post Homework', screen: 'postHomework', icon: 'book-plus', color: '#8B5CF6', grad: ['#8B5CF6', '#7C3AED'], gradDark: ['#5b21b6', '#2e1065'], tag: 'Assign', desc: 'Assign homework to students' },
+    { label: 'Study Materials', screen: 'tuitionStudyMaterials', icon: 'book-open-variant', color: '#F97316', grad: ['#F97316', '#EA580C'], gradDark: ['#9a3412', '#7c2d12'], tag: 'Upload', desc: 'Upload & manage resources' },
+    { label: 'Post Progress', screen: 'tuitionPostProgress', icon: 'chart-line', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Track', desc: 'Track student progress' },
+    { label: 'Attendance', screen: 'tuitionAttendance', icon: 'calendar-check', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Mark', desc: 'Mark daily attendance' },
+    { label: 'View Submissions', screen: 'viewSubmissions', icon: 'clipboard-list', color: '#3B82F6', grad: ['#3B82F6', '#2563EB'], gradDark: ['#1e40af', '#1e1b4b'], tag: 'Review', desc: 'Review submitted work' },
+    { label: 'Messages', screen: 'parentMessages', icon: 'message-text', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with parents & students' },
   ];
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-[#1c1c14]' : 'bg-white'}`}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-12 pb-2">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-xs font-bold uppercase tracking-widest text-gray-400">
-                All Admin Access
+        <View style={{ paddingHorizontal: 24, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                Tuition Teacher
               </Text>
-              <Text className={`text-3xl font-black tracking-tight mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
                 Quick Actions
               </Text>
             </View>
-            <View className="bg-amber-500 w-16 h-16 rounded-2xl items-center justify-center">
+            <View style={{ backgroundColor: '#F59E0B', width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialCommunityIcons name="flash" size={32} color="white" />
             </View>
           </View>
         </View>
 
-        <View className="px-6 flex-row flex-wrap justify-between">
+        <View style={{ paddingHorizontal: 24, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           {actions.map((action, index) => (
             <TouchableOpacity
               key={index}
@@ -66,7 +62,7 @@ export default function SuperAdminQuickActionScreen({ navigation }: Props) {
                 end={{ x: 1, y: 1 }}
                 style={{ padding: 20, minHeight: 180, justifyContent: 'space-between' }}
               >
-                <View className="flex-row items-center justify-between">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
                     <MaterialCommunityIcons name={action.icon as any} size={24} color="white" />
                   </View>
@@ -91,8 +87,8 @@ export default function SuperAdminQuickActionScreen({ navigation }: Props) {
             </TouchableOpacity>
           ))}
         </View>
-        <View className="h-32" />
+        <View style={{ height: 128 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

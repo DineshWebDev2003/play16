@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Linking, Refres
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LogoutModal from '../../components/LogoutModal';
 
 
@@ -66,7 +66,7 @@ export default function StudentAccountScreen({ navigation }: StudentAccountScree
   const insets = useSafeAreaInsets();
 
   return (
-    <View className={`flex-1 ${colors.background}`}>
+    <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background }} className="flex-1">
       <ScrollView 
         className="flex-1" 
         showsVerticalScrollIndicator={false}
@@ -200,6 +200,6 @@ export default function StudentAccountScreen({ navigation }: StudentAccountScree
       onConfirm={logout} 
       onCancel={() => setShowLogoutModal(false)} 
     />
-    </View>
+    </SafeAreaView>
   );
 }

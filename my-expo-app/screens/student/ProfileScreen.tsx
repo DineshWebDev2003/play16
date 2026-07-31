@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth, User } from '../../contexts/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -337,7 +337,7 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
   const insets = useSafeAreaInsets();
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
+    <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-gray-900">
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -654,6 +654,6 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
             </View>
          </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

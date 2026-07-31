@@ -463,6 +463,54 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
   const progress = useRef(new Animated.Value(0)).current;
   const [reelHeight, setReelHeight] = useState(0);
   const [branchFilterId, setBranchFilterId] = useState<string | null>(null);
+  const [tuitionAttendance, setTuitionAttendance] = useState<Record<string, 'present' | 'absent'>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [showTuitionAttendance, setShowTuitionAttendance] = useState(false);
+
+  const canManageTuitionAttendance = user?.role === 'tuition_teacher' || user?.role === 'admin' || user?.role === 'master_admin';
+  const tuitionStudents = useMemo(() =>
+    users.filter((u: any) => u.role === 'tuition_student' && u.status === 'active' && (!branchFilterId || u.branch_id?.toString() === branchFilterId)),
+  [users, branchFilterId]);
+
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  const fetchTuitionAttendance = useCallback(async () => {
+    if (!canManageTuitionAttendance || tuitionStudents.length === 0) return;
+    setAttendanceLoading(true);
+    try {
+      const res = await api.get(`/attendance?date=${todayStr}`);
+      const records: any[] = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+      const attMap: Record<string, 'present' | 'absent'> = {};
+      tuitionStudents.forEach((s: any) => {
+        const record = records.find((r: any) => r.student_id?.toString() === s.id.toString());
+        attMap[s.id] = record?.status === 'present' ? 'present' : 'absent';
+      });
+      setTuitionAttendance(attMap);
+    } catch { /* silently fail */ }
+    finally { setAttendanceLoading(false); }
+  }, [canManageTuitionAttendance, tuitionStudents, todayStr]);
+
+  const toggleTuitionAttendance = useCallback(async (studentId: string, currentStatus: 'present' | 'absent') => {
+    const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+    setTuitionAttendance(prev => ({ ...prev, [studentId]: newStatus }));
+    try {
+      await api.post('/attendance', {
+        student_id: studentId,
+        date: todayStr,
+        status: newStatus,
+        user_role: 'tuition_student',
+      });
+    } catch {
+      setTuitionAttendance(prev => ({ ...prev, [studentId]: currentStatus }));
+    }
+  }, [todayStr]);
+
+  useEffect(() => {
+    fetchTuitionAttendance();
+  }, [fetchTuitionAttendance]);
 
   useEffect(() => {
     const loadSavedData = async () => {
@@ -709,6 +757,71 @@ export default function ActivityFeedScreen({ navigation, route }: ActivityFeedSc
           </View>
         )}
       </View>
+
+      {/* Tuition Attendance Quick Toggle */}
+      {canManageTuitionAttendance && tuitionStudents.length > 0 && (
+        <View className="px-6 mb-4">
+          <TouchableOpacity
+            onPress={() => setShowTuitionAttendance(!showTuitionAttendance)}
+            activeOpacity={0.8}
+            className="flex-row items-center justify-between bg-purple-50 rounded-2xl p-3 border border-purple-200"
+          >
+            <View className="flex-row items-center">
+              <MaterialCommunityIcons name="calendar-check" size={18} color="#8B5CF6" />
+              <Text className="text-purple-800 font-black text-xs ml-2 uppercase tracking-widest">
+                Tuition Attendance {showTuitionAttendance ? '▲' : '▼'}
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              {attendanceLoading && <ActivityIndicator size="small" color="#8B5CF6" />}
+              <Text className="text-purple-500 text-[10px] font-bold ml-2">{todayStr}</Text>
+            </View>
+          </TouchableOpacity>
+
+          {showTuitionAttendance && (
+            <View className="bg-white rounded-2xl mt-2 border border-purple-100 overflow-hidden">
+              {tuitionStudents.map((s: any) => {
+                const status = tuitionAttendance[s.id] || 'absent';
+                const isPresent = status === 'present';
+                return (
+                  <View key={s.id} className="flex-row items-center justify-between px-4 py-3 border-b border-gray-50">
+                    <View className="flex-row items-center flex-1">
+                      <View className="w-8 h-8 rounded-full bg-purple-100 items-center justify-center mr-3">
+                        <MaterialCommunityIcons name="school" size={16} color="#8B5CF6" />
+                      </View>
+                      <View>
+                        <Text className="text-gray-900 font-bold text-sm">{s.name}</Text>
+                        <Text className="text-gray-400 text-[10px] font-bold">@{s.username}</Text>
+                      </View>
+                    </View>
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggleTuitionAttendance(s.id, status)}
+                        className={`px-4 py-2 rounded-xl border ${isPresent ? 'bg-green-500 border-green-500' : 'bg-white border-gray-200'}`}
+                      >
+                        <Text className={`font-black text-xs ${isPresent ? 'text-white' : 'text-gray-400'}`}>P</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggleTuitionAttendance(s.id, status)}
+                        className={`px-4 py-2 rounded-xl border ${!isPresent ? 'bg-red-500 border-red-500' : 'bg-white border-gray-200'}`}
+                      >
+                        <Text className={`font-black text-xs ${!isPresent ? 'text-white' : 'text-gray-400'}`}>A</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+              <View className="px-4 py-2 bg-gray-50">
+                <Text className="text-gray-400 text-[9px] font-bold text-center uppercase tracking-widest">
+                  Today only · Tap P/A to toggle
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Instagram-style 3-column Grid */}
       <FlatList

@@ -21,7 +21,7 @@ interface AdminHomeScreenProps {
 }
 
 export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
-  const { user, users, fees, branches, updateAvatar, announcements, fetchData } = useAuth();
+  const { user, users, fees, branches, transactions, updateAvatar, announcements, fetchData } = useAuth();
   const { colors, theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [bannerQueue, setBannerQueue] = useState<any[]>([]);
@@ -72,6 +72,18 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
   const adminShare = userBranch?.share ?? 70;
   const netShareAmount = useMemo(() => Math.round(collectedAmount * adminShare / 100), [collectedAmount, adminShare]);
   const masterShareAmount = collectedAmount - netShareAmount;
+
+  const monthlyFinance = useMemo(() => {
+    const now = new Date();
+    const monthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const approved = transactions.filter(t =>
+      (t.status === 'approved' || !t.status) &&
+      t.date && t.date.startsWith(monthPrefix)
+    );
+    const income = approved.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
+    const expense = approved.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+    return { income, expense, net: income - expense };
+  }, [transactions]);
 
   const [presentToday, setPresentToday] = useState<number>(0);
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
@@ -292,121 +304,94 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
 
 
         {/* ── Modern Header ── */}
-        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 20) }} className="px-6 pb-6">
-            <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                    <Text className={`text-xl font-black ${colors.textSecondary} uppercase tracking-widest`}>
-                        Admin Hub 🔐
-                    </Text>
-                    <Text className={`text-4xl font-black ${colors.text} tracking-tighter mt-1`}>
-                        {user?.name || 'Administrator'}
-                    </Text>
-                    <View className="bg-brand-violet/20 self-start px-4 py-1.5 rounded-full mt-3 border border-brand-violet/10 shadow-sm">
-                        <Text className="text-brand-violet text-[10px] font-black uppercase tracking-[2px]">Master Control Panel</Text>
-            </View>
-            <View className="mt-4 rounded-2xl" style={{ elevation: 4, backgroundColor: theme === 'dark' ? '#1e3a2f' : '#E8F5E9' }}>
-              <View className="p-4 flex-row items-center justify-between">
-                <View className="flex-1">
-                  <View className="flex-row items-center">
-                    <MaterialCommunityIcons name="handshake" size={16} color={theme === 'dark' ? '#86EFAC' : '#166534'} />
-                    <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Your Share ({adminShare}%)</Text>
-                  </View>
-                  <Text style={{ color: theme === 'dark' ? '#BBF7D0' : '#14532D', fontSize: 24, fontWeight: '900', marginTop: 4 }}>₹{netShareAmount.toLocaleString('en-IN')}</Text>
-                </View>
-                <View style={{ width: 1, height: 32, backgroundColor: theme === 'dark' ? '#166534' : '#86EFAC', marginHorizontal: 16 }} />
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ color: theme === 'dark' ? '#4ADE80' : '#15803D', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Share</Text>
-                  <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 18, fontWeight: '900', marginTop: 2 }}>₹{masterShareAmount.toLocaleString('en-IN')}</Text>
-                </View>
+        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 50), paddingHorizontal: 24, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#D1D5DB' : '#6B7280' }}>
+                TN HAPPYKIDS
+              </Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>
+                {user?.name || 'Administrator'}
+              </Text>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.1)' }}>
+                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Admin Console</Text>
               </View>
             </View>
+            <TouchableOpacity activeOpacity={0.85} onPress={updateAvatar}
+              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}>
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <MaterialCommunityIcons name="shield-crown" size={36} color="#92400E" />
+              )}
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                <MaterialCommunityIcons name="camera" size={12} color="white" />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
-                <TouchableOpacity
-                    className="bg-brand-yellow w-20 h-20 rounded-2xl items-center justify-center shadow-2xl border-4 border-white rotate-3 relative overflow-hidden"
-                    onPress={updateAvatar}
-                >
-                    {user?.avatar ? (
-                    <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
-                    ) : (
-                    <MaterialCommunityIcons name="shield-crown-outline" size={36} color="#92400E" />
-                    )}
-                    <View className="absolute -bottom-1 -right-1 bg-brand-violet p-1.5 rounded-xl border-2 border-white">
-                        <MaterialCommunityIcons name="camera" size={12} color="white" />
-                    </View>
-                </TouchableOpacity>
+        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
+          <View style={{ borderRadius: 16, overflow: 'hidden', elevation: 4, backgroundColor: theme === 'dark' ? '#1e3a2f' : '#E8F5E9' }}>
+            <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="handshake" size={16} color={theme === 'dark' ? '#86EFAC' : '#166534'} />
+                  <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Your Share ({adminShare}%)</Text>
+                </View>
+                <Text style={{ color: theme === 'dark' ? '#BBF7D0' : '#14532D', fontSize: 24, fontWeight: '900', marginTop: 4 }}>₹{netShareAmount.toLocaleString('en-IN')}</Text>
+              </View>
+              <View style={{ width: 1, height: 32, backgroundColor: theme === 'dark' ? '#166534' : '#86EFAC', marginHorizontal: 16 }} />
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ color: theme === 'dark' ? '#4ADE80' : '#15803D', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Share</Text>
+                <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 18, fontWeight: '900', marginTop: 2 }}>₹{masterShareAmount.toLocaleString('en-IN')}</Text>
+              </View>
             </View>
+          </View>
         </View>
 
-        {/* ── Premium Unified Stats Card ── */}
-        <View className="px-6 py-4">
+        {/* ── Campus Hub (pink counter card) ── */}
+        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
           <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => handleQuickAction('userManagementV2')}
-              className="rounded-[30px] overflow-hidden shadow-2xl"
-              style={{ elevation: 20 }}
+            activeOpacity={0.9}
+            onPress={() => handleQuickAction('userManagementV2')}
+            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
           >
-              <LinearGradient
-                  colors={theme === 'dark' ? ['#3d2d31', '#1c1c14'] : ['#FFFFFF', '#FDF2F8']}
-                  className="p-7"
-              >
-                  <View className="flex-row items-center justify-between mb-8">
-                      <View>
-                          <Text className={`text-2xl font-black tracking-tighter ${colors.text}`}>Campus Hub 🏫</Text>
-                          <Text className={`text-[10px] font-black uppercase tracking-[2px] ${colors.textSecondary} opacity-60`}>Faculty & Enrollment</Text>
-                      </View>
-                      <View className={`${theme === 'dark' ? 'bg-white/10 border-white/10' : 'bg-brand-violet/10 border-brand-violet/20'} px-3 py-1.5 rounded-full border`}>
-                          <Text className={`${theme === 'dark' ? 'text-white' : 'text-brand-violet'} text-[10px] font-black uppercase`}>Live Updates</Text>
-                      </View>
+            <View style={{ backgroundColor: '#EC4899', padding: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                    <MaterialCommunityIcons name="school" size={18} color="white" />
                   </View>
-
-                  <View className="flex-row justify-between items-center">
-                      {/* Students Stats */}
-                      <TouchableOpacity 
-                        onPress={() => handleQuickAction('userManagementV2')}
-                        className={`${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-brand-yellow/10 border-brand-yellow/20'} rounded-[20px] p-4 w-[46%] border`}
-                      >
-                          <View className="flex-row items-center mb-4">
-                              <View className="bg-brand-yellow w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg">
-                                  <MaterialCommunityIcons name="school-outline" size={22} color="#92400E" />
-                              </View>
-                              <View>
-                                  <Text className={`font-black text-2xl leading-none ${colors.text}`}>{studentCount}</Text>
-                                  <Text className={`text-[9px] font-black uppercase ${colors.textSecondary} opacity-60`}>Students</Text>
-                              </View>
-                          </View>
-                          <View className={`${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-brand-yellow/20 border-brand-yellow/30'} px-2 py-1.5 rounded-xl border`}>
-                            <Text className={`${theme === 'dark' ? 'text-white' : 'text-amber-900'} text-[9px] font-black uppercase text-center`}>Active Learners</Text>
-                          </View>
-                      </TouchableOpacity>
-
-                      {/* Staff Stats */}
-                      <TouchableOpacity 
-                         onPress={() => handleQuickAction('userManagementV2')}
-                         className={`${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-brand-violet/10 border-brand-violet/20'} rounded-[20px] p-4 w-[46%] border`}
-                      >
-                          <View className="flex-row items-center mb-4">
-                              <View className="bg-brand-violet w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg">
-                                  <MaterialCommunityIcons name="account-group" size={22} color="white" />
-                              </View>
-                              <View>
-                                  <Text className={`font-black text-2xl leading-none ${colors.text}`}>{teacherCount}</Text>
-                                  <Text className={`text-[9px] font-black uppercase ${colors.textSecondary} opacity-60`}>Staff</Text>
-                              </View>
-                          </View>
-                          <View className={`${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-brand-violet/20 border-brand-violet/30'} px-2 py-1.5 rounded-xl border`}>
-                            <Text className={`${theme === 'dark' ? 'text-white' : 'text-brand-violet'} text-[9px] font-black uppercase text-center`}>Active Faculty</Text>
-                          </View>
-                      </TouchableOpacity>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Campus Hub</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Faculty & Enrollment</Text>
                   </View>
-
-                  {/* Decorative Background Patterns */}
-                  <View className="absolute -top-10 -right-10 w-32 h-32 bg-brand-violet/5 rounded-full blur-3xl" />
-                  <View className="absolute -bottom-10 -left-10 w-32 h-32 bg-brand-yellow/5 rounded-full blur-3xl" />
-                  <View className="absolute -bottom-6 -right-6 opacity-10">
-                      <MaterialCommunityIcons name="shield-check-outline" size={100} color={theme === 'dark' ? 'white' : '#F59E0B'} />
-                  </View>
-              </LinearGradient>
+                </View>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                  <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>{studentCount + teacherCount} Total</Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  {[
+                    { label: 'Students', value: studentCount, icon: 'school', color: '#FCD34D' },
+                    { label: 'Teachers', value: teacherCount, icon: 'account-group', color: '#6EE7B7' },
+                    { label: 'Active', value: studentCount + teacherCount, icon: 'check-circle', color: '#93C5FD' },
+                  ].map((item, i) => (
+                    <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
+                      <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                      <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }}>{item.value}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+                <MaterialCommunityIcons name="arrow-right-circle" size={12} color="rgba(255,255,255,0.5)" />
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Users</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
       {/* ── School Metrics ── */}
@@ -490,22 +475,38 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => handleQuickAction('incomeExpense')}
-                    className="w-[48%] rounded-2xl overflow-hidden shadow-xl"
-                    style={{ elevation: 12 }}
+                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
                 >
                     <LinearGradient
                         colors={theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']}
-                        className="p-6 h-48 justify-between"
+                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
                     >
-                        <View className="bg-white/20 self-start p-3.5 rounded-2xl shadow-sm">
-                            <MaterialCommunityIcons name="finance" size={28} color="white" />
+                        <View className="flex-row items-center justify-between">
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                                <MaterialCommunityIcons name="finance" size={24} color="white" />
+                            </View>
+                            <View style={{ backgroundColor: monthlyFinance.net >= 0 ? '#D1FAE5' : '#FEE2E2', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '900', color: monthlyFinance.net >= 0 ? '#065F46' : '#991B1B' }}>
+                                    ₹{(monthlyFinance.net || 0).toLocaleString('en-IN')}
+                                </Text>
+                            </View>
                         </View>
                         <View>
-                            <Text className="text-white text-2xl font-black tracking-tighter">Finance Hub</Text>
-                            <Text className="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Accounts & Budget</Text>
+                            <Text className="text-white text-xl font-black tracking-tight">Finance Hub</Text>
+                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Accounts & Budget</Text>
                         </View>
-                        <View className="absolute -bottom-4 -right-4 opacity-10">
-                            <MaterialCommunityIcons name="leaf" size={100} color="white" />
+                        <View className="flex-row gap-2">
+                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>₹{(monthlyFinance.income || 0).toLocaleString('en-IN')}</Text>
+                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Income</Text>
+                            </View>
+                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#FECACA' }}>₹{(monthlyFinance.expense || 0).toLocaleString('en-IN')}</Text>
+                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Expense</Text>
+                            </View>
+                        </View>
+                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
+                            <MaterialCommunityIcons name="chart-line" size={90} color="white" />
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -513,54 +514,112 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => handleQuickAction('feesManagement')}
-                    className="w-[48%] rounded-2xl overflow-hidden shadow-xl"
-                    style={{ elevation: 12 }}
+                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
                 >
                     <LinearGradient
                         colors={theme === 'dark' ? ['#1e40af', '#1e1b4b'] : ['#3B82F6', '#2563EB']}
-                        className="p-6 h-48 justify-between"
+                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
                     >
-                        <View className="bg-white/20 self-start p-3.5 rounded-2xl shadow-sm">
-                            <MaterialCommunityIcons name="cash-register" size={28} color="white" />
+                        <View className="flex-row items-center justify-between">
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                                <MaterialCommunityIcons name="cash-register" size={24} color="white" />
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>{paidFeeCount}/{totalFeeCount}</Text>
+                            </View>
                         </View>
                         <View>
-                            <Text className="text-white text-2xl font-black tracking-tighter">Fee Portal</Text>
-                            <Text className="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-widest">Collections Info</Text>
+                            <Text className="text-white text-xl font-black tracking-tight">Fee Portal</Text>
+                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Collections Info</Text>
                         </View>
-                        <View className="absolute -bottom-4 -right-4 opacity-10">
-                            <MaterialCommunityIcons name="credit-card-chip" size={100} color="white" />
+                        <View className="flex-row gap-2">
+                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>₹{collectedAmount.toLocaleString('en-IN')}</Text>
+                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Collected</Text>
+                            </View>
+                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>{paidFeeCount}</Text>
+                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Paid</Text>
+                            </View>
+                        </View>
+                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
+                            <MaterialCommunityIcons name="account-group" size={90} color="white" />
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => handleQuickAction('postActivity')}
-                className="rounded-2xl overflow-hidden shadow-xl"
-                style={{ elevation: 12 }}
-            >
-                <LinearGradient
-                    colors={theme === 'dark' ? ['#92400E', '#78350F'] : ['#F59E0B', '#D97706']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="p-6 flex-row items-center justify-between"
+            <View className="flex-row justify-between">
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => handleQuickAction('pettyCash')}
+                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
                 >
-                    <View className="flex-1">
-                        <View className="bg-white/20 self-start px-3 py-1 rounded-full mb-3">
-                            <Text className="text-white text-[9px] font-black uppercase tracking-widest">Broadcast Tool</Text>
+                    <LinearGradient
+                        colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                    >
+                        <View className="flex-row items-center justify-between">
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                                <MaterialCommunityIcons name="wallet-outline" size={24} color="white" />
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Petty Cash</Text>
+                            </View>
                         </View>
-                        <Text className="text-white text-3xl font-black tracking-tighter">Post Highlights</Text>
-                        <Text className="text-white/80 text-sm font-bold mt-1">Share school moments with parents ✨</Text>
-                    </View>
-                    <View className="bg-white/30 p-4 rounded-3xl ml-4">
-                        <MaterialCommunityIcons name="camera-iris" size={42} color="white" />
-                    </View>
-                    <View className="absolute -bottom-10 -right-10 opacity-10">
-                        <MaterialCommunityIcons name="image-multiple-outline" size={150} color="white" />
-                    </View>
-                </LinearGradient>
-            </TouchableOpacity>
+                        <View>
+                            <Text className="text-white text-xl font-black tracking-tight">Petty Cash</Text>
+                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Cash Management</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)', marginRight: 6 }} />
+                            <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                Track add & expense
+                            </Text>
+                        </View>
+                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
+                            <MaterialCommunityIcons name="cash-multiple" size={90} color="white" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => handleQuickAction('postActivity')}
+                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#D97706', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+                >
+                    <LinearGradient
+                        colors={theme === 'dark' ? ['#92400E', '#78350F'] : ['#F59E0B', '#D97706']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                    >
+                        <View className="flex-row items-center justify-between">
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                                <MaterialCommunityIcons name="camera-iris" size={24} color="white" />
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Highlights</Text>
+                            </View>
+                        </View>
+                        <View>
+                            <Text className="text-white text-xl font-black tracking-tight">Post Highlights</Text>
+                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Broadcast Tool</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)', marginRight: 6 }} />
+                            <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                Share moments
+                            </Text>
+                        </View>
+                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
+                            <MaterialCommunityIcons name="image-multiple-outline" size={90} color="white" />
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
         </View>
 
         {/* ── Today's Pulse Card ── */}
