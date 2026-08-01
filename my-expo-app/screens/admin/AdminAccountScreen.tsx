@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Linking, TextIn
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoutModal from '../../components/LogoutModal';
 
@@ -19,7 +19,9 @@ interface AdminAccountScreenProps {
 
 export default function AdminAccountScreen({ navigation }: AdminAccountScreenProps) {
   const { user, logout, updateAvatar, updateProfile } = useAuth();
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const insets = useSafeAreaInsets();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -85,17 +87,17 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
   };
 
   const inputStyle = {
-    backgroundColor: theme === 'dark' ? '#262626' : '#F3F4F6',
+    backgroundColor: isDark ? '#262626' : '#F3F4F6',
     borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
     fontSize: 16, fontWeight: '700' as const,
-    color: theme === 'dark' ? '#FFF' : '#111',
-    borderWidth: 1, borderColor: theme === 'dark' ? '#333' : '#E5E7EB',
+    color: isDark ? '#FFF' : '#111',
+    borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
   };
 
   const cardStyle = {
-    backgroundColor: theme === 'dark' ? '#1e1e1e' : '#FFFFFF',
-    borderRadius: 32, padding: 20,
-    borderWidth: 1, borderColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
+    borderRadius: 16, padding: 18,
+    borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
   };
 
   const menuItems = [
@@ -104,7 +106,7 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       title: 'Profile Settings',
       subtitle: 'Update your profile information',
       icon: 'account-cog',
-      iconColor: '#F59E0B', // Amber
+      iconColor: '#F59E0B',
       bgColor: 'rgba(245, 158, 11, 0.15)',
     },
     {
@@ -112,7 +114,7 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       title: 'Notifications',
       subtitle: 'Manage notification settings',
       icon: 'bell-outline',
-      iconColor: '#F59E0B', // Pink
+      iconColor: '#F59E0B',
       bgColor: 'rgba(244, 114, 182, 0.15)',
     },
     {
@@ -120,7 +122,7 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       title: 'App Settings',
       subtitle: 'Configure app preferences',
       icon: 'cog-outline',
-      iconColor: '#6366F1', // Indigo
+      iconColor: '#6366F1',
       bgColor: 'rgba(99, 102, 241, 0.15)',
     },
     {
@@ -128,7 +130,7 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       title: 'Support & Help',
       subtitle: 'Get help and contact support',
       icon: 'help-circle-outline',
-      iconColor: '#10B981', // Green
+      iconColor: '#10B981',
       bgColor: 'rgba(16, 185, 129, 0.15)',
     },
     {
@@ -136,7 +138,7 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       title: 'About',
       subtitle: 'App version and information',
       icon: 'information-outline',
-      iconColor: '#EC4899', // Pinkish
+      iconColor: '#EC4899',
       bgColor: 'rgba(236, 72, 153, 0.15)',
     },
   ];
@@ -145,92 +147,95 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
     setShowLogoutModal(true);
   };
 
-  const insets = useSafeAreaInsets();
-
   return (
-    <View 
-        className={`flex-1 ${theme === 'dark' ? 'bg-[#1c1c14]' : 'bg-white'}`}
-        style={{ backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF' }}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-
-
-      {/* Header */}
-      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1">
-            <Text className={`text-xl font-black ${colors.textSecondary} uppercase tracking-[3px]`}>
-              Admin Hub 🔐
-            </Text>
-            <View className="flex-row items-center mt-1">
-              <Text className={`text-4xl font-black ${colors.text} tracking-tighter`}>
-                 {user?.name || 'Admin'}
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        {/* ── Modern Header (matches Home) ── */}
+        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                TN HAPPYKIDS
               </Text>
-            </View>
-            <View className="bg-brand-violet/20 self-start px-4 py-1.5 rounded-full mt-3 border border-brand-violet/10 shadow-sm flex-row items-center">
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
+                {user?.name?.split(' ')[0] || 'Admin'}
+              </Text>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.1)', flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialCommunityIcons name="shield-check" size={12} color="#F59E0B" />
-                <Text className="text-brand-violet text-[9px] font-black uppercase tracking-[2px] ml-1.5">System Administrator</Text>
+                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Admin Console</Text>
+              </View>
             </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={updateAvatar}
+              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: isDark ? '#333' : '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}
+            >
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <MaterialCommunityIcons name="shield-crown" size={36} color="#92400E" />
+              )}
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                <MaterialCommunityIcons name="camera" size={12} color="white" />
+              </View>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity 
-            className="bg-brand-yellow w-24 h-24 rounded-[36px] items-center justify-center shadow-2xl border-4 border-white rotate-3 relative overflow-hidden"
-            onPress={updateAvatar}
-          >
-            {user?.avatar ? (
-              <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
-            ) : (
-              <MaterialCommunityIcons name="shield-account-outline" size={48} color="#92400E" />
-            )}
-            <View className="absolute -bottom-1 -right-1 bg-brand-violet p-2 rounded-xl border-2 border-white">
-              <MaterialCommunityIcons name="camera" size={14} color="white" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      {/* Profile Card */}
-      <View className="px-6 py-4">
-        <TouchableOpacity 
+
+          {/* ── Profile Hero Card (cyan gradient, matches Campus Hub) ── */}
+        <View style={{ paddingVertical: 8 }}>
+          <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => setShowProfileForm(!showProfileForm)}
-            className="rounded-[40px] overflow-hidden shadow-2xl"
-            style={{ elevation: 25 }}
-        >
+            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
+          >
             <LinearGradient
-                colors={theme === 'dark' ? ['#0f172a', '#1e293b'] : ['#FFFFFF', '#F9FAFB']}
-                className={`p-8 border ${theme === 'dark' ? 'border-white/10' : 'border-gray-50'}`}
+              colors={isDark ? ['#0E7490', '#155E75'] : ['#06B6D4', '#0891B2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 16 }}
             >
-                <View className="flex-row items-center">
-                    <View className="bg-brand-violet/10 p-5 rounded-3xl mr-5">
-                        <MaterialCommunityIcons name="security" size={36} color="#F59E0B" />
-                    </View>
-                    <View className="flex-1">
-                        <View className="mb-2">
-                             <Text className="text-brand-violet text-[9px] font-black uppercase tracking-widest leading-3">Security Level: High</Text>
-                        </View>
-                        <Text className={`text-2xl font-black ${colors.text} tracking-tight`}>{user?.name || 'Administrator'}</Text>
-                        <Text className={`text-sm ${colors.textSecondary} font-bold opacity-70`}>{user?.email || 'Not provided'}</Text>
-                        <View className={`${theme === 'dark' ? 'bg-brand-yellow/10 border-brand-yellow/20' : 'bg-brand-yellow/20 border-brand-yellow/10'} px-4 py-1.5 rounded-full self-start mt-3 border`}>
-                            <Text className={`${theme === 'dark' ? 'text-brand-yellow' : 'text-amber-900'} text-[10px] font-black uppercase tracking-widest`}>Verified Badge</Text>
-                        </View>
-                    </View>
-                    <MaterialCommunityIcons name={showProfileForm ? 'chevron-up' : 'chevron-right'} size={24} color="#F59E0B" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <MaterialCommunityIcons name="shield-account-outline" size={20} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Admin Profile</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Identity & Security</Text>
+                  </View>
                 </View>
-                <View className="absolute -bottom-10 -right-10 opacity-5">
-                    <MaterialCommunityIcons name="key-chain-variant" size={120} color={colors.text} />
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialCommunityIcons name="shield-check" size={11} color="white" />
+                  <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>Verified</Text>
                 </View>
+              </View>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 12 }}>
+                <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>{user?.name || 'Administrator'}</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '700', marginTop: 3 }}>{user?.email || 'Not provided'}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+                <MaterialCommunityIcons name={showProfileForm ? 'chevron-up' : 'chevron-down'} size={12} color="rgba(255,255,255,0.5)" />
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>
+                  {showProfileForm ? 'Hide Details' : 'Edit Profile'}
+                </Text>
+              </View>
+              <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                <MaterialCommunityIcons name="share-variant" size={90} color="white" />
+              </View>
             </LinearGradient>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
 
         {showProfileForm && (
-          <View style={{ marginTop: 12 }}>
+          <View style={{ paddingVertical: 8 }}>
             {/* Name */}
             <View style={cardStyle}>
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                     <MaterialCommunityIcons name="account" size={22} color="#F59E0B" />
                   </View>
-                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>Full Name</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Full Name</Text>
                 </View>
                 {!editingName && (
                   <TouchableOpacity onPress={() => { setEditingName(true); setName(user?.name || ''); }}>
@@ -245,22 +250,22 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
                     {savingName ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setEditingName(false); setName(user?.name || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
-                    <MaterialCommunityIcons name="close" size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+                    <MaterialCommunityIcons name="close" size={22} color={isDark ? '#FFF' : '#111'} />
                   </TouchableOpacity>
                 </View>
               ) : (
-                <Text style={{ fontSize: 20, fontWeight: '900', color: theme === 'dark' ? '#FFF' : '#111', marginTop: 4 }}>{user?.name || 'Admin'}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.name || 'Admin'}</Text>
               )}
             </View>
 
             {/* Email */}
             <View style={[cardStyle, { marginTop: 12 }]}>
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                     <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
                   </View>
-                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>Email</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Email</Text>
                 </View>
                 {!editingEmail && (
                   <TouchableOpacity onPress={() => { setEditingEmail(true); setEmail(user?.email || ''); }}>
@@ -275,27 +280,27 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
                     {savingEmail ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setEditingEmail(false); setEmail(user?.email || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
-                    <MaterialCommunityIcons name="close" size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+                    <MaterialCommunityIcons name="close" size={22} color={isDark ? '#FFF' : '#111'} />
                   </TouchableOpacity>
                 </View>
               ) : (
-                <Text style={{ fontSize: 16, fontWeight: '700', color: theme === 'dark' ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
               )}
             </View>
 
             {/* Password */}
             <View style={[cardStyle, { marginTop: 12 }]}>
               <TouchableOpacity onPress={() => setShowPasswordForm(!showPasswordForm)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View className="flex-row items-center">
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                     <MaterialCommunityIcons name="lock" size={22} color="#10B981" />
                   </View>
                   <View>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: theme === 'dark' ? '#FFF' : '#111' }}>Password</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: theme === 'dark' ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>Update your login credentials</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FFF' : '#111' }}>Password</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>Update your login credentials</Text>
                   </View>
                 </View>
-                <MaterialCommunityIcons name={showPasswordForm ? 'chevron-up' : 'chevron-down'} size={22} color={theme === 'dark' ? '#FFF' : '#111'} />
+                <MaterialCommunityIcons name={showPasswordForm ? 'chevron-up' : 'chevron-down'} size={22} color={isDark ? '#FFF' : '#111'} />
               </TouchableOpacity>
 
               {showPasswordForm && (
@@ -313,104 +318,91 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
             </View>
           </View>
         )}
-      </View>
 
-      {/* Menu Options Hub */}
-      <View className="flex-1 px-6 py-8">
-        <View className="flex-row items-center justify-between mb-6 px-1">
-            <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>Settings & Controls ✨</Text>
-            <View className="bg-brand-violet/10 px-3 py-1 rounded-full">
-                <Text className="text-brand-violet text-[9px] font-black uppercase tracking-widest">Management</Text>
+        {/* ── Settings & Controls (matches Home Main Operations) ── */}
+        <View style={{ paddingVertical: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Settings & Controls ⚙️</Text>
+            <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+              <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Management</Text>
             </View>
-        </View>
+          </View>
 
-        <View 
-          className="rounded-[40px] overflow-hidden border shadow-2xl"
-          style={{ 
-            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#FFFFFF',
-            borderColor: theme === 'dark' ? '#262626' : '#F3F4F6'
-          }}
-        >
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.7}
-              className={`p-5 flex-row items-center justify-between ${index !== menuItems.length - 1 ? 'border-b' : ''}`}
-              style={{ borderBottomColor: theme === 'dark' ? '#262626' : '#F3F4F6' }}
-              onPress={() => {
-                if (item.id === 'profile') {
-                  setShowProfileForm(!showProfileForm);
-                } else if (item.id === 'notifications') {
-                  navigation.navigate('notificationSettings');
-                } else if (item.id === 'about') {
-                  Linking.openURL('https://tnhappykids.in').catch(err => 
-                    Alert.alert('Error', 'Could not open website')
-                  );
-                } else if (item.id === 'settings') {
-                  navigation.navigate('settings');
-                } else if (item.id === 'backup') {
+          <View
+            style={{
+              borderRadius: 16, overflow: 'hidden',
+              backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
+              borderColor: isDark ? '#262626' : '#F3F4F6',
+              borderWidth: 1,
+            }}
+          >
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.7}
+                style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== menuItems.length - 1 ? 1 : 0, borderBottomColor: isDark ? '#262626' : '#F3F4F6' }}
+                onPress={() => {
+                  if (item.id === 'profile') {
+                    setShowProfileForm(!showProfileForm);
+                  } else if (item.id === 'notifications') {
+                    navigation.navigate('notificationSettings');
+                  } else if (item.id === 'about') {
+                    Linking.openURL('https://tnhappykids.in').catch(err =>
+                      Alert.alert('Error', 'Could not open website')
+                    );
+                  } else if (item.id === 'settings') {
+                    navigation.navigate('settings');
+                  } else if (item.id === 'backup') {
                     navigation.navigate('backup');
-                } else {
-                  console.log(`Navigate to ${item.id}`);
-                  Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
-                }
-              }}
-            >
-              <View className="flex-row items-center flex-1">
-                <View 
-                  className={`p-3.5 rounded-[22px] mr-4 shadow-sm relative overflow-hidden`}
-                  style={{ 
-                    backgroundColor: theme === 'dark' ? '#262626' : item.bgColor,
-                  }}
-                >
-                  <MaterialCommunityIcons 
-                    name={item.icon as any} 
-                    size={22} 
-                    color={item.iconColor} 
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className={`text-base font-black ${colors.text} tracking-tight`}>{item.title}</Text>
-                  <Text className={`text-[11px] ${colors.textSecondary} font-bold opacity-60 mt-0.5`}>{item.subtitle}</Text>
-                </View>
-              </View>
-
-              <View 
-                className="w-8 h-8 rounded-xl items-center justify-center"
-                style={{ backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : '#F9FAFB' }}
+                  } else {
+                    console.log(`Navigate to ${item.id}`);
+                    Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
+                  }
+                }}
               >
-                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} opacity={0.5} />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
- 
-        {/* Sign Out Button */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={handleLogout}
-          className="mt-8 mb-16 overflow-hidden rounded-[32px] shadow-2xl"
-          style={{ elevation: 15 }}
-        >
-            <LinearGradient
-                colors={['#EF4444', '#B91C1C']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-6 flex-row items-center justify-center border border-red-200/20"
-            >
-                <MaterialCommunityIcons name="power" size={28} color="white" />
-                <Text className="text-white font-black text-xl ml-3 uppercase tracking-tighter">Secure Sign Out</Text>
-            </LinearGradient>
-        </TouchableOpacity>
-        <View className="h-32" />
-      </View>
-    </ScrollView>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={{ backgroundColor: isDark ? '#262626' : item.bgColor, padding: 12, borderRadius: 14, marginRight: 14 }}>
+                    <MaterialCommunityIcons name={item.icon as any} size={22} color={item.iconColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '900', letterSpacing: -0.3, color: isDark ? '#FFFFFF' : '#111827' }}>{item.title}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', opacity: 0.6, marginTop: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>{item.subtitle}</Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="chevron-right" size={18} color={isDark ? '#9CA3AF' : '#6B7280'} opacity={0.5} />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-    <LogoutModal 
-      visible={showLogoutModal} 
-      onConfirm={logout} 
-      onCancel={() => setShowLogoutModal(false)} 
-    />
+          {/* Sign Out */}
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleLogout}
+            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15, marginTop: 20 }}
+          >
+            <LinearGradient
+              colors={['#EF4444', '#B91C1C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <MaterialCommunityIcons name="power" size={24} color="white" />
+              <Text style={{ color: 'white', fontWeight: '900', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+          <View style={{ height: 96 }} />
+        </View>
+      </ScrollView>
+
+      <LogoutModal
+        visible={showLogoutModal}
+        onConfirm={logout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </View>
   );
 }

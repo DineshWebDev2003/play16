@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import LogoutModal from '../../components/LogoutModal';
 
@@ -59,100 +60,164 @@ export default function NannyAccountScreen({ navigation }: Props) {
   }, [name, email, password, updateProfile]);
 
   const inputStyle: any = {
-    borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13,
-    fontSize: 14, fontWeight: '700', color: '#111827',
+    borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
+    fontSize: 15, fontWeight: '700', color: '#111827',
     backgroundColor: '#F9FAFB', borderColor: '#E5E7EB',
   };
 
+  const fieldStyle = {
+    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18,
+    borderWidth: 1, borderColor: '#F3F4F6',
+  };
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
-          <View className="flex-row items-center justify-between mb-6">
-            <TouchableOpacity onPress={() => navigation.goBack()} className="w-12 h-12 rounded-[14px] bg-gray-100 items-center justify-center">
-              <MaterialCommunityIcons name="arrow-left" size={24} color="#111827" />
-            </TouchableOpacity>
-            <View style={{ backgroundColor: '#CFFAFE' }} className="rounded-full px-3 py-1">
-              <Text className="text-[9px] font-black uppercase tracking-[2px] text-cyan-700">Nanny Profile</Text>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+          {/* ── Modern Header (matches Home) ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>
+                TN HAPPYKIDS
+              </Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: '#111827' }}>
+                {user?.name?.split(' ')[0] || 'Nanny'}
+              </Text>
+              <View style={{ backgroundColor: '#CFFAFE', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="baby-face-outline" size={12} color="#0891B2" />
+                <Text style={{ color: '#0891B2', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Nanny Console</Text>
+              </View>
             </View>
-            <TouchableOpacity onPress={() => setShowLogoutModal(true)} className="w-12 h-12 rounded-[14px] bg-red-50 items-center justify-center">
-              <MaterialCommunityIcons name="logout" size={22} color="#EF4444" />
-            </TouchableOpacity>
-          </View>
-
-          <Text className="text-3xl font-black tracking-tighter text-gray-900">My</Text>
-          <Text className="text-xl font-black text-cyan-500 mt-[-4px]">Account</Text>
-
-          {/* Avatar */}
-          <View className="items-center mt-6">
-            <TouchableOpacity onPress={handlePickImage} activeOpacity={0.85} style={{ backgroundColor: '#06B6D4' }} className="w-28 h-28 rounded-[32px] items-center justify-center border-4 border-white shadow-xl overflow-hidden">
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handlePickImage}
+              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}
+            >
               {user?.avatar ? (
                 <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
               ) : (
-                <MaterialCommunityIcons name="baby-face-outline" size={52} color="white" />
+                <MaterialCommunityIcons name="baby-face-outline" size={36} color="#92400E" />
               )}
-              <View className="absolute -bottom-1 -right-1 bg-cyan-600 p-2 rounded-xl">
-                <MaterialCommunityIcons name="camera" size={14} color="white" />
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                <MaterialCommunityIcons name="camera" size={12} color="white" />
               </View>
             </TouchableOpacity>
-            <Text className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-3">Tap to change photo</Text>
           </View>
 
-          {/* Info card */}
-          <View style={{ backgroundColor: '#06B6D4' }} className="rounded-[24px] p-5 mt-6">
-            <View className="flex-row items-center">
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} className="w-12 h-12 rounded-2xl items-center justify-center mr-4">
-                <MaterialCommunityIcons name="account-badge-outline" size={24} color="white" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white text-lg font-black">{user?.name}</Text>
-                <Text className="text-white/70 text-xs font-bold mt-0.5">@{user?.username}</Text>
-              </View>
+          {/* ── Profile Hero Card (cyan gradient) ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}>
+              <LinearGradient
+                colors={['#06B6D4', '#0891B2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 16 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <MaterialCommunityIcons name="account-badge-outline" size={20} color="white" />
+                    </View>
+                    <View>
+                      <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Nanny Profile</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Childcare Staff</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="shield-check" size={11} color="white" />
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>On Duty</Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 12 }}>
+                  <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>{user?.name || 'Nanny'}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '700', marginTop: 3 }}>@{user?.username || 'nanny'}</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="share-variant" size={90} color="white" />
+                </View>
+              </LinearGradient>
             </View>
           </View>
 
-          {/* Edit form */}
-          <Text className="text-[9px] font-black uppercase tracking-[3px] text-gray-500 mt-8 mb-4">Edit Details</Text>
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#F3F4F6', padding: 18 }}>
-            <Text className="text-[9px] font-black uppercase tracking-[2px] text-gray-400 mb-2">Name</Text>
-            <TextInput style={inputStyle} placeholder="Your name" placeholderTextColor="#9CA3AF" value={name} onChangeText={setName} />
+          {/* ── Edit Details ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: '#111827' }}>Edit Details ⚙️</Text>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Account</Text>
+              </View>
+            </View>
 
-            <Text className="text-[9px] font-black uppercase tracking-[2px] text-gray-400 mb-2 mt-5">Email / Gmail</Text>
-            <TextInput style={inputStyle} placeholder="email@example.com" placeholderTextColor="#9CA3AF" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+            <View style={fieldStyle}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <MaterialCommunityIcons name="account" size={22} color="#F59E0B" />
+                </View>
+                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>Name</Text>
+              </View>
+              <TextInput style={inputStyle} placeholder="Your name" placeholderTextColor="#9CA3AF" value={name} onChangeText={setName} />
+            </View>
 
-            <Text className="text-[9px] font-black uppercase tracking-[2px] text-gray-400 mb-2 mt-5">New Password</Text>
-            <TextInput style={inputStyle} placeholder="Leave blank to keep current" placeholderTextColor="#9CA3AF" secureTextEntry value={password} onChangeText={setPassword} />
+            <View style={[fieldStyle, { marginTop: 12 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
+                </View>
+                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>Email / Gmail</Text>
+              </View>
+              <TextInput style={inputStyle} placeholder="email@example.com" placeholderTextColor="#9CA3AF" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+            </View>
+
+            <View style={[fieldStyle, { marginTop: 12 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <MaterialCommunityIcons name="lock" size={22} color="#10B981" />
+                </View>
+                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>New Password</Text>
+              </View>
+              <TextInput style={inputStyle} placeholder="Leave blank to keep current" placeholderTextColor="#9CA3AF" secureTextEntry value={password} onChangeText={setPassword} />
+            </View>
 
             <TouchableOpacity
               activeOpacity={0.85}
               disabled={saving}
               onPress={handleSave}
-              style={{ backgroundColor: saving ? '#67E8F9' : '#06B6D4' }}
-              className="mt-6 rounded-2xl py-4 items-center flex-row justify-center"
+              style={{ backgroundColor: saving ? '#67E8F9' : '#06B6D4', borderRadius: 16, marginTop: 20, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
             >
               {saving ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <>
                   <MaterialCommunityIcons name="content-save-outline" size={20} color="white" />
-                  <Text className="text-white font-black text-sm ml-2">Save Changes</Text>
+                  <Text style={{ color: 'white', fontWeight: '900', fontSize: 15, marginLeft: 8 }}>Save Changes</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => setShowLogoutModal(true)}
-            style={{ backgroundColor: '#FEF2F2', borderWidth: 1.5, borderColor: '#FECACA' }}
-            className="mt-6 rounded-2xl py-4 items-center flex-row justify-center"
-          >
-            <MaterialCommunityIcons name="logout" size={20} color="#EF4444" />
-            <Text className="text-red-600 font-black text-sm ml-2">Logout</Text>
-          </TouchableOpacity>
+          {/* Sign Out */}
+          <View style={{ paddingVertical: 8 }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setShowLogoutModal(true)}
+              style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
+            >
+              <LinearGradient
+                colors={['#EF4444', '#B91C1C']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MaterialCommunityIcons name="power" size={24} color="white" />
+                <Text style={{ color: 'white', fontWeight: '900', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ height: 96 }} />
         </View>
       </ScrollView>
       <LogoutModal visible={showLogoutModal} onConfirm={logout} onCancel={() => setShowLogoutModal(false)} />
-    </KeyboardAvoidingView>
+    </View>
   );
 }

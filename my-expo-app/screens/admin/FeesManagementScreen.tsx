@@ -166,15 +166,16 @@ const MonthDropdown = memo(({ activeMonth, activeYear, onSelectMonth, onSelectYe
 });
 
 const SummaryCard = memo(({ label, value, icon, color }: any) => (
-  <View 
-    className="bg-white border-gray-100 p-5 rounded-[22px] border flex-row items-center mr-4 min-w-[170px] shadow-xl"
+  <View
+    className="bg-white border-gray-100 p-4 rounded-[20px] border flex-row items-center mb-3"
+    style={{ width: '48.5%', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
   >
-    <View style={{ backgroundColor: color }} className="w-12 h-12 rounded-[18px] items-center justify-center mr-4">
-      <MaterialCommunityIcons name={icon} size={22} color="white" />
+    <View style={{ backgroundColor: color }} className="w-10 h-10 rounded-[14px] items-center justify-center mr-3">
+      <MaterialCommunityIcons name={icon} size={18} color="white" />
     </View>
-    <View>
+    <View className="flex-1">
       <Text className="text-[8px] font-black tracking-widest leading-loose text-gray-500 uppercase">{label}</Text>
-      <Text className="text-xl font-black tracking-tighter text-gray-900">{value}</Text>
+      <Text className="text-base font-black tracking-tighter text-gray-900" numberOfLines={1}>{value}</Text>
     </View>
   </View>
 ));
@@ -508,7 +509,6 @@ export default function FeesManagementScreen({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [branchFilterId, setBranchFilterId] = useState<string | null>(null);
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [feeStructures, setFeeStructures] = useState<any[]>([]);
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
@@ -634,7 +634,7 @@ export default function FeesManagementScreen({ navigation }: any) {
     try {
       setIsProcessingPdf(true);
       
-      const student = users.find(u => u.id?.toString() === item.student_id?.toString() || u.studentId === item.student_id);
+      const student = findUserByFeeId(item.student_id);
       const resolvedItem = {
         ...item,
         student_id: student?.studentId || item.student_id,
@@ -717,6 +717,21 @@ export default function FeesManagementScreen({ navigation }: any) {
 
   const students = useMemo(() => users.filter(u => u.role === 'student' && u.status === 'active'), [users]);
 
+  // O(1) lookups for fee records → user matching (avoids nested .find() freezes on large datasets)
+  const userById = useMemo(() => {
+    const m = new Map<string, any>();
+    users.forEach(u => { if (u.id != null) m.set(u.id.toString(), u); });
+    return m;
+  }, [users]);
+  const userByStudentId = useMemo(() => {
+    const m = new Map<string, any>();
+    users.forEach(u => { if (u.studentId != null) m.set(u.studentId.toString(), u); });
+    return m;
+  }, [users]);
+  const findUserByFeeId = useCallback((feeId: string | undefined) =>
+    feeId == null ? undefined : (userById.get(feeId.toString()) || userByStudentId.get(feeId.toString())),
+  [userById, userByStudentId]);
+
   const filteredFees = useMemo(() => {
     let list = [...fees];
     const sq = searchQuery.toLowerCase();
@@ -739,10 +754,7 @@ export default function FeesManagementScreen({ navigation }: any) {
             const isOverdue = f.status === 'unpaid' && f.due_date && f.due_date < todayStr;
             if (!isSelectedMonth && !isOverdue) return;
 
-            const matchedStudent = users.find(u =>
-                (u.role === 'student' || u.role === 'active') &&
-                (u.id?.toString() === f.student_id?.toString() || u.studentId === f.student_id)
-            );
+            const matchedStudent = findUserByFeeId(f.student_id);
             if (matchedStudent) {
                 // Keep the FIRST (newest) fee per student; ignore older duplicates
                 if (!feeByStudentDbId.has(matchedStudent.id)) {
@@ -785,11 +797,7 @@ export default function FeesManagementScreen({ navigation }: any) {
         // Deduplicate: keep only the latest fee record per (matched student + normalized type)
         const seen = new Map<string, any>();
         for (const f of historyList) {
-          const matchedStudent = users.find(u =>
-            u.id?.toString() === f.student_id?.toString() ||
-            u.studentId === f.student_id ||
-            u.name === f.student_name
-          );
+          const matchedStudent = findUserByFeeId(f.student_id) || users.find(u => u.name === f.student_name);
           const uid = matchedStudent?.id || f.student_id || f.student_name;
           const typeKey = (f.type || '').toLowerCase().trim();
           const key = `${uid}|${typeKey}`;
@@ -809,13 +817,13 @@ export default function FeesManagementScreen({ navigation }: any) {
     }
 
     const result = baseList.filter(f => {
-      const student = users.find(u => u.id?.toString() === f.student_id?.toString() || u.studentId === f.student_id);
+      const student = findUserByFeeId(f.student_id);
       if (!student || student.status !== 'active') return false;
       if (isMasterAdmin && branchFilterId && student.branch_id?.toString() !== branchFilterId) return false;
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date));
     return result;
-  }, [fees, activeTab, activeMonth, activeYear, searchQuery, students, users, isMasterAdmin, branchFilterId]);
+  }, [fees, activeTab, activeMonth, activeYear, searchQuery, students, users, isMasterAdmin, branchFilterId, findUserByFeeId]);
 
   const stats = useMemo(() => {
     const total = filteredFees.reduce((acc, f) => acc + (f.amount || 0), 0);
@@ -860,9 +868,10 @@ export default function FeesManagementScreen({ navigation }: any) {
         await api.put(`/fees/${updatedItem.id}`, payload);
       }
       
-      const student = users.find(u => u.id?.toString() === updatedItem.student_id?.toString() || u.studentId === updatedItem.student_id);
+      const student = findUserByFeeId(updatedItem.student_id);
       
-      await refreshFees();
+      // Reload fees + transactions so the ledger sync below sees what the backend just created/removed
+      await fetchData();
       
       // SYNC: Update the student's profile fee_due_day if the due date was changed in this record
       if (updatedItem.due_date && student) {
@@ -886,7 +895,7 @@ export default function FeesManagementScreen({ navigation }: any) {
       const txName = isAdmission 
         ? `Admission: ${updatedItem.student_name}` 
         : `Monthly Fee: ${updatedItem.student_name}`;
-      const saveStudent = users.find(u => u.id?.toString() === updatedItem.student_id?.toString() || u.studentId === updatedItem.student_id);
+      const saveStudent = findUserByFeeId(updatedItem.student_id);
       const saveBranchId = saveStudent?.branch_id;
 
       const findFeeTx = () => {
@@ -973,11 +982,11 @@ export default function FeesManagementScreen({ navigation }: any) {
     try {
       setIsLocalLoading(true);
 
+      const feeStudent = findUserByFeeId(item.student_id);
+      const feeBranchId = feeStudent?.branch_id;
+
       if (item.id.toString().startsWith('VIRTUAL_')) {
-        const matchedStudent = users.find(u =>
-            u.id?.toString() === item.student_id?.toString() ||
-            u.studentId === item.student_id
-        );
+        const matchedStudent = findUserByFeeId(item.student_id);
         const realStudentId = matchedStudent?.id || item.student_id;
         // Check if a fee record already exists for this student+type+due_date to avoid duplicates
         const existingFee = fees.find(f =>
@@ -1017,52 +1026,8 @@ export default function FeesManagementScreen({ navigation }: any) {
         });
       }
 
-      // Sync income/expense ledger
-      const today = new Date().toISOString().split('T')[0];
-      const txName = (item.type || '').toLowerCase().includes('admission')
-        ? `Admission: ${item.student_name}`
-        : `Monthly Fee: ${item.student_name}`;
-      const feeStudent = users.find(u => u.id?.toString() === item.student_id?.toString() || u.studentId === item.student_id);
-      const feeBranchId = feeStudent?.branch_id;
-
-      const findFeeTx = () => {
-        const exact = (transactions || []).find(t =>
-          t.category === 'Fees' && t.type === 'income' &&
-          t.name === txName &&
-          t.student_id === item.student_id?.toString()
-        );
-        if (exact) return exact;
-        return (transactions || []).find(t =>
-          t.category === 'Fees' && t.type === 'income' &&
-          t.name === txName && !t.student_id
-        );
-      };
-
-      if (targetStatus === 'paid') {
-        const existingTx = findFeeTx();
-        if (existingTx) {
-          await updateTransaction(existingTx.id, { amount: item.amount, name: txName, date: today, branch_id: feeBranchId, student_id: item.student_id?.toString() });
-        } else {
-          await addTransaction({
-            id: Date.now().toString(),
-            name: txName,
-            amount: item.amount,
-            category: 'Fees',
-            type: 'income',
-            date: today,
-            student_id: item.student_id?.toString(),
-            branch_id: feeBranchId
-          });
-        }
-      } else {
-        const existingTx = findFeeTx();
-        if (existingTx) {
-          await deleteTransaction(existingTx.id);
-        }
-      }
-
-      // fetchData is already called inside addTransaction/updateTransaction/deleteTransaction, so only call refreshFees here
-      await refreshFees();
+      // Backend already creates/removes the matching income ledger entry for paid/unpaid.
+      await fetchData();
       setIsLocalLoading(false);
     } catch (err) {
       console.error('Toggle error:', err);
@@ -1075,7 +1040,7 @@ export default function FeesManagementScreen({ navigation }: any) {
   const renderFeeItem = ({ item }: any) => {
     const isOverdue = item.status === 'unpaid' && item.due_date && new Date(item.due_date) < new Date(new Date().toISOString().split('T')[0]);
     
-    const student = users.find(u => u.id?.toString() === item.student_id?.toString() || u.studentId === item.student_id);
+    const student = findUserByFeeId(item.student_id);
     const displayId = student?.studentId || item.student_id;
     const branchName = item.branch?.name || student?.branch?.name || branches.find(b => b.id === (item.branch_id || student?.branch_id))?.name;
 
@@ -1179,7 +1144,7 @@ export default function FeesManagementScreen({ navigation }: any) {
     <View style={{ backgroundColor: '#FFFFFF' }}>
 
       {/* Header */}
-      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-6">
+      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-5">
         <View className="flex-row items-center justify-between mb-6">
           <TouchableOpacity onPress={() => navigation.goBack()} 
             className="w-12 h-12 rounded-[14px] bg-gray-100 items-center justify-center">
@@ -1218,66 +1183,60 @@ export default function FeesManagementScreen({ navigation }: any) {
             <MaterialCommunityIcons name="cash-multiple" size={44} color="white" />
           </View>
         </View>
+      </View>
 
-        {/* Right-Aligned Financial Health + Ledger Dropdown */}
-        <View className="mt-5 items-end">
-          <TouchableOpacity
-            onPress={() => setIsTypeDropdownOpen(true)}
-            activeOpacity={0.85}
-            className="self-end flex-row items-center rounded-full px-4 py-2.5 border-2 mb-4"
-            style={{ backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }}
-          >
-            <View style={{ backgroundColor: '#EC4899' }} className="w-8 h-8 rounded-full items-center justify-center mr-2">
-              <MaterialCommunityIcons
-                name={activeTab === 'manage' ? 'calendar-month' : (activeTab === 'admission' ? 'account-plus' : 'history')}
-                size={16}
-                color="white"
-              />
-            </View>
-            <Text className="font-black text-sm tracking-tight text-gray-900">
-              {activeTab === 'manage' ? 'Monthly Dues' : (activeTab === 'admission' ? 'Admissions' : 'Transaction Log')}
-            </Text>
-            <MaterialCommunityIcons name="chevron-down" size={18} color="#EC4899" style={{ marginLeft: 6 }} />
-          </TouchableOpacity>
-
-          <View className="flex-row items-center justify-between mb-3 px-1 self-stretch">
-            <Text className="text-[9px] font-black uppercase tracking-[3px] text-gray-500">Financial Health</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="self-end overflow-visible">
-            <SummaryCard label="COLLECTED" value={`₹${stats.paid.toLocaleString()}`} icon="check-decagram-outline" color="#10B981" />
-            <SummaryCard label="OVERDUE" value={`₹${stats.overdue.toLocaleString()}`} icon="clock-alert-outline" color="#EF4444" />
-            <SummaryCard label="PENDING" value={`₹${stats.pending.toLocaleString()}`} icon="alert-circle-outline" color="#F59E0B" />
-            <SummaryCard label="TOTAL RECORDS" value={stats.count} icon="file-document-outline" color="#3B82F6" />
-          </ScrollView>
+      {/* Segmented Tabs */}
+      <View className="px-6 mb-5">
+        <View className="flex-row bg-gray-100 rounded-[20px] p-1.5">
+          {FEES_TABS.map(t => (
+            <TouchableOpacity
+              key={t.id}
+              onPress={() => setActiveTab(t.id)}
+              className={`flex-1 py-3 rounded-[16px] items-center ${activeTab === t.id ? 'bg-white shadow-md' : ''}`}
+            >
+              <Text className={`font-black text-[11px] uppercase tracking-widest ${activeTab === t.id ? 'text-gray-900' : 'text-gray-400'}`}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
+      {/* Month/Year Filter */}
+      {(activeTab === 'manage' || activeTab === 'history') && (
+        <MonthDropdown activeMonth={activeMonth} activeYear={activeYear} onSelectMonth={setActiveMonth} onSelectYear={setActiveYear} />
+      )}
 
-
-
-      {/* Action Line & Month Filter Dropdown */}
+      {/* Financial Health Summary */}
       <View className="px-6 mb-4">
-        <View className="flex-row justify-between items-center mb-4 px-1">
-            <Text className="text-[9px] font-black uppercase tracking-[4px] text-gray-500">{activeTab.toUpperCase()} LEDGER</Text>
-            {activeTab === 'admission' && (
-              <TouchableOpacity 
-                  onPress={() => setEditModal({ visible: true, item: { id: 'NEW', student_id: '', student_name: '', amount: 0, type: activeTab === 'admission' ? 'Admission' : 'Monthly Fee', status: 'unpaid', date: new Date().toISOString().split('T')[0], due_date: new Date().toISOString().split('T')[0] } as any })}
-                  className="bg-brand-pink w-11 h-11 rounded-[16px] items-center justify-center shadow-lg"
-              >
-                  <MaterialCommunityIcons name="plus" size={24} color="white" />
-              </TouchableOpacity>
-            )}
+        <Text className="text-[9px] font-black uppercase tracking-[3px] text-gray-500 mb-3">Financial Health</Text>
+        <View className="flex-row flex-wrap justify-between">
+          <SummaryCard label="COLLECTED" value={`₹${stats.paid.toLocaleString()}`} icon="check-decagram-outline" color="#10B981" />
+          <SummaryCard label="PENDING" value={`₹${stats.pending.toLocaleString()}`} icon="alert-circle-outline" color="#F59E0B" />
+          <SummaryCard label="OVERDUE" value={`₹${stats.overdue.toLocaleString()}`} icon="clock-alert-outline" color="#EF4444" />
+          <SummaryCard label="RECORDS" value={stats.count} icon="file-document-outline" color="#3B82F6" />
         </View>
-        {(activeTab === 'manage' || activeTab === 'history') && (
-            <MonthDropdown activeMonth={activeMonth} activeYear={activeYear} onSelectMonth={setActiveMonth} onSelectYear={setActiveYear} />
+      </View>
+
+      {/* Action Line */}
+      <View className="px-6 mb-4 flex-row items-center justify-between">
+        <Text className="text-[9px] font-black uppercase tracking-[4px] text-gray-500">{activeTab.toUpperCase()} LEDGER</Text>
+        {activeTab === 'admission' && (
+          <TouchableOpacity 
+            onPress={() => setEditModal({ visible: true, item: { id: 'NEW', student_id: '', student_name: '', amount: 0, type: 'Admission', status: 'unpaid', date: new Date().toISOString().split('T')[0], due_date: new Date().toISOString().split('T')[0] } as any })}
+            className="bg-brand-pink w-11 h-11 rounded-[16px] items-center justify-center shadow-lg"
+          >
+            <MaterialCommunityIcons name="plus" size={24} color="white" />
+          </TouchableOpacity>
         )}
       </View>
     </View>
-  ), [activeTab, activeMonth, activeYear, stats, isTypeDropdownOpen, insets]);
+  ), [activeTab, activeMonth, activeYear, stats, insets, isResyncing, isMasterAdmin, branchFilterId, handleResyncLedger]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <FlatList
+        key={activeTab}
         data={activeTab === 'list' ? [] : filteredFees}
         keyExtractor={(item) => item.id}
         renderItem={renderFeeItem}
@@ -1305,8 +1264,10 @@ export default function FeesManagementScreen({ navigation }: any) {
                 <Text className="text-gray-400 font-bold">No records found</Text>
             </View>
         )}
-        initialNumToRender={10}
-        windowSize={5}
+        initialNumToRender={8}
+        windowSize={10}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={false}
         ListFooterComponent={<View className="h-32" />}
       />
 
@@ -1323,7 +1284,7 @@ export default function FeesManagementScreen({ navigation }: any) {
         visible={invoiceModalVisible}
         onClose={() => setInvoiceModalVisible(false)}
         payment={selectedInvoice}
-        student={users.find(u => u.id?.toString() === selectedInvoice?.student_id?.toString() || u.studentId === selectedInvoice?.student_id)}
+        student={findUserByFeeId(selectedInvoice?.student_id)}
         onDownload={handleInvoiceAction}
       />
       
@@ -1355,43 +1316,7 @@ export default function FeesManagementScreen({ navigation }: any) {
         </TouchableOpacity>
       </Modal>
 
-      {isTypeDropdownOpen && (
-        <Modal visible={isTypeDropdownOpen} transparent animationType="fade">
-          <TouchableOpacity 
-            activeOpacity={1} 
-            onPress={() => setIsTypeDropdownOpen(false)} 
-            className="flex-1 bg-black/60 items-center justify-center px-6"
-          >
-            <View className="bg-white w-full rounded-[40px] p-8 shadow-2xl">
-              <Text className="text-xl font-black text-gray-900 mb-6 text-center">Choose Ledger Category</Text>
-              
-              {[
-                { id: 'manage', label: 'Monthly Fees', icon: 'calendar-month' },
-                { id: 'admission', label: 'Admission Fees', icon: 'account-plus' },
-                { id: 'history', label: 'Transaction History', icon: 'history' }
-              ].map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  onPress={() => { setActiveTab(opt.id); setIsTypeDropdownOpen(false); }}
-                  className={`flex-row items-center p-5 rounded-[24px] mb-3 ${activeTab === opt.id ? 'bg-brand-pink shadow-lg shadow-brand-pink/30' : 'bg-gray-50'}`}
-                >
-                  <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${activeTab === opt.id ? 'bg-white/20' : 'bg-brand-pink/10'}`}>
-                    <MaterialCommunityIcons name={opt.icon as any} size={22} color={activeTab === opt.id ? 'white' : '#F59E0B'} />
-                  </View>
-                  <Text className={`font-black text-base ${activeTab === opt.id ? 'text-white' : 'text-gray-900'}`}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-              
-              <TouchableOpacity 
-                onPress={() => setIsTypeDropdownOpen(false)}
-                className="mt-4 py-4 rounded-3xl bg-gray-100 items-center"
-              >
-                <Text className="font-black text-gray-500 uppercase tracking-widest text-[10px]">Cancel Selection</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      )}
+
 
       {/* ── Payment Details Modal ── */}
       <Modal visible={paymentModal.visible} transparent animationType="fade" onRequestClose={() => setPaymentModal({ visible: false, item: null })}>

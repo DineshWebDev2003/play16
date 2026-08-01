@@ -81,13 +81,18 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
+        <View style={{ paddingVertical: 8 }}>
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => navigation.navigate('branchManagement')}
             style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
           >
-            <View style={{ backgroundColor: '#EC4899', padding: 12 }}>
+            <LinearGradient
+              colors={theme === 'dark' ? ['#0E7490', '#155E75'] : ['#06B6D4', '#0891B2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 12 }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
@@ -121,11 +126,14 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
                 <MaterialCommunityIcons name="arrow-right-circle" size={12} color="rgba(255,255,255,0.5)" />
                 <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Branches</Text>
               </View>
-            </View>
+              <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                <MaterialCommunityIcons name="share-variant" size={90} color="white" />
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
+        <View style={{ paddingVertical: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
             <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>Main Operations ⚙️</Text>
             <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>

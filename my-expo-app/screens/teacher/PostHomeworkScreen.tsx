@@ -156,12 +156,14 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
   const [dueDate, setDueDate] = useState('');
   const [selectedBatch, setSelectedBatch] = useState<number | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showClassPicker, setShowClassPicker] = useState(false);
+  const [showHomeworkStudentPicker, setShowHomeworkStudentPicker] = useState(false);
 
   // Subject form state
   const [newSubjectName, setNewSubjectName] = useState('');
@@ -300,6 +302,10 @@ export default function PostHomeworkScreen({ navigation }: Props) {
     ]);
   }, [loadHomeworks]);
 
+  const toggleStudent = useCallback((id: number) => {
+    setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  }, []);
+
   // ── Attachments ──
   const pickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -323,13 +329,14 @@ export default function PostHomeworkScreen({ navigation }: Props) {
       fd.append('class_name', selectedBatch ? batches.find(b => b.id === selectedBatch)?.name || '' : '');
       fd.append('due_date', dueDate); fd.append('teacher_id', user?.id?.toString() || '');
       if (selectedBatch) fd.append('batch_id', selectedBatch.toString());
+      selectedStudents.forEach(id => fd.append('student_ids[]', id.toString()));
       attachments.forEach(a => { const p = a.uri.split('.'); const e = p[p.length - 1]; fd.append('attachment_files[]', { uri: a.uri, name: a.name, type: a.type || (e === 'pdf' ? 'application/pdf' : 'image/jpeg') } as any); });
       await api.post('/homework', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      Alert.alert('Success!', 'Homework posted.'); setTitle(''); setDescription(''); setSubject(''); setSelectedSubjectId(null); setDueDate(''); setSelectedBatch(null); setAttachments([]);
+      Alert.alert('Success!', 'Homework posted.'); setTitle(''); setDescription(''); setSubject(''); setSelectedSubjectId(null); setDueDate(''); setSelectedBatch(null); setSelectedStudents([]); setAttachments([]);
       navigation.goBack();
     } catch (err: any) { Alert.alert('Error', err?.response?.data?.message || 'Failed.'); }
     setSubmitting(false);
-  }, [title, description, subject, dueDate, selectedBatch, attachments, user, batches, navigation]);
+  }, [title, description, subject, dueDate, selectedBatch, selectedStudents, attachments, user, batches, navigation]);
 
   const selectedSubjectObj = subjects.find(s => s.id === selectedSubjectId);
   const batchStudents = selectedManageBatch ? allStudents.filter(s => s.batch_id === selectedManageBatch.id) : [];
@@ -551,6 +558,62 @@ export default function PostHomeworkScreen({ navigation }: Props) {
         </SafeAreaView>
       </Modal>
 
+      {/* ── FULL-SCREEN STUDENT PICKER (homework assignment) ── */}
+      <Modal transparent visible={showHomeworkStudentPicker} onRequestClose={() => setShowHomeworkStudentPicker(false)} animationType="slide">
+        <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+          <View className="flex-row items-center justify-between px-6 py-4 border-b-2" style={{ borderColor: isDark ? '#374151' : '#E5E7EB' }}>
+            <TouchableOpacity onPress={() => setShowHomeworkStudentPicker(false)} className="w-10 h-10 rounded-xl bg-red-50 items-center justify-center">
+              <MaterialCommunityIcons name="close" size={22} color="#EF4444" />
+            </TouchableOpacity>
+            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Assign to Students</Text>
+            <TouchableOpacity onPress={() => { setSelectedStudents([]); setShowHomeworkStudentPicker(false); }} className="px-4 py-2 rounded-xl bg-amber-100">
+              <Text className="text-amber-700 font-black text-xs">Clear</Text>
+            </TouchableOpacity>
+          </View>
+          {allStudents.length === 0 ? (
+            <View className="flex-1 items-center justify-center">
+              <MaterialCommunityIcons name="account-off" size={48} color="#9CA3AF" />
+              <Text className="text-gray-400 font-bold text-sm mt-3">No students available</Text>
+              <Text className="text-gray-400 text-xs mt-1">Create tuition students in Manage Users</Text>
+            </View>
+          ) : (
+            <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
+              <View className="mb-3">
+                <Text className={`text-xs font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {selectedStudents.length > 0 ? `${selectedStudents.length} selected` : 'Tap students to assign this homework to them'}
+                </Text>
+              </View>
+              {allStudents.map(st => {
+                const active = selectedStudents.includes(st.id);
+                const batch = batches.find(b => b.id === st.batch_id);
+                return (
+                  <TouchableOpacity key={st.id} activeOpacity={0.7} onPress={() => toggleStudent(st.id)}
+                    className={`flex-row items-center p-4 rounded-2xl mb-3 ${active ? 'bg-amber-400' : isDark ? 'bg-gray-800' : 'bg-white'}`}
+                    style={{ borderWidth: 2, borderColor: active ? '#D97706' : isDark ? '#4B5563' : '#F3F4F6' }}>
+                    <View className="w-11 h-11 rounded-2xl items-center justify-center mr-4" style={{ backgroundColor: active ? '#92400E' : '#8B5CF6' }}>
+                      <MaterialCommunityIcons name="account" size={22} color="white" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className={`font-black text-base ${active ? 'text-amber-900' : isDark ? 'text-white' : 'text-gray-900'}`}>{st.name}</Text>
+                      <Text className={`text-xs font-bold mt-0.5 ${active ? 'text-amber-800' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {batch?.name || 'No class'}
+                      </Text>
+                    </View>
+                    <View className={`w-6 h-6 rounded-lg items-center justify-center ${active ? 'bg-white' : isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      {active && <MaterialCommunityIcons name="check" size={16} color="#D97706" />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity onPress={() => setShowHomeworkStudentPicker(false)} activeOpacity={0.7}
+                className="py-4 rounded-2xl items-center bg-amber-400 mt-2 mb-8" >
+                <Text className="text-amber-900 font-black text-base">Done ({selectedStudents.length} selected)</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
       {/* ── FULL-SCREEN LINK TO CLASS ── */}
       <Modal transparent visible={showNewBatchPicker} onRequestClose={() => setShowNewBatchPicker(false)} animationType="slide">
         <SafeAreaView className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
@@ -729,6 +792,24 @@ export default function PostHomeworkScreen({ navigation }: Props) {
                 ) : (
                   <MaterialCommunityIcons name="chevron-down" size={20} color={isDark ? '#6B7280' : '#9CA3AF'} />
                 )}
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => setShowHomeworkStudentPicker(true)}
+                className={`flex-row items-center px-4 py-4 rounded-2xl mt-3 ${selectedStudents.length > 0 ? 'bg-amber-400' : isDark ? 'bg-gray-800' : 'bg-amber-50'}`}
+                style={{ borderWidth: 2, borderColor: selectedStudents.length > 0 ? '#D97706' : isDark ? '#4B5563' : '#E5E7EB' }}>
+                <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: selectedStudents.length > 0 ? '#92400E20' : (isDark ? '#374151' : '#FEF3C7') }}>
+                  <MaterialCommunityIcons name="account-multiple" size={18} color={selectedStudents.length > 0 ? '#92400E' : '#8B5CF6'} />
+                </View>
+                <View className="flex-1 ml-1.5">
+                  <Text className={`font-bold text-sm ${selectedStudents.length > 0 ? 'text-amber-900' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {selectedStudents.length > 0 ? `${selectedStudents.length} student${selectedStudents.length > 1 ? 's' : ''} assigned` : 'Assign to Students (optional)'}
+                  </Text>
+                  {selectedStudents.length > 0 && (
+                    <Text className="text-[11px] font-semibold text-amber-800 mt-0.5" numberOfLines={1}>
+                      {selectedStudents.map(id => allStudents.find(s => s.id === id)?.name || `#${id}`).join(', ')}
+                    </Text>
+                  )}
+                </View>
+                <MaterialCommunityIcons name="chevron-down" size={20} color={isDark ? '#6B7280' : '#9CA3AF'} />
               </TouchableOpacity>
             </Card>
 

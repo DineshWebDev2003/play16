@@ -32,7 +32,7 @@ export default function AdminQuickActionScreen({ navigation }: Props) {
     { label: 'Post Activity', screen: 'postActivity', icon: 'creation', color: '#D97706', grad: ['#D97706', '#B45309'], gradDark: ['#92400E', '#78350F'], tag: 'Share', desc: 'Post student activities' },
     { label: 'Backup', screen: 'backup', icon: 'database', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Vault', desc: 'System vault' },
     { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', grad: ['#6366F1', '#4F46E5'], gradDark: ['#3730a3', '#312e81'], tag: 'Plans', desc: 'Daily plans' },
-    { label: 'Nanny Voice', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to nannies' },
+    { label: 'Messages', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to nannies' },
   ];
 
   const renderSection = (actions: typeof schoolActions) => (

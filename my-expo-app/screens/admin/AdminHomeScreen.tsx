@@ -1,15 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, RefreshControl } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import PremiumPopup from '../../components/PremiumPopup';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import api from '../../services/api';
-
-const DISMISSED_KEY = 'announcement_banner_dismissed';
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -21,11 +16,9 @@ interface AdminHomeScreenProps {
 }
 
 export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
-  const { user, users, fees, branches, transactions, updateAvatar, announcements, fetchData } = useAuth();
-  const { colors, theme } = useTheme();
+  const { user, users, fees, transactions, fetchData, updateAvatar } = useAuth();
+  const { theme } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
-  const [bannerQueue, setBannerQueue] = useState<any[]>([]);
-  const [bannerIndex, setBannerIndex] = useState(0);
 
   const getTodayDateString = useCallback(() => {
     const d = new Date();
@@ -68,11 +61,6 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
   const paidFeeCount  = feeStats.paid;
   const collectedAmount = feeStats.collected;
 
-  const userBranch = useMemo(() => branches.find(b => b.id === user?.branch_id), [branches, user]);
-  const adminShare = userBranch?.share ?? 70;
-  const netShareAmount = useMemo(() => Math.round(collectedAmount * adminShare / 100), [collectedAmount, adminShare]);
-  const masterShareAmount = collectedAmount - netShareAmount;
-
   const monthlyFinance = useMemo(() => {
     const now = new Date();
     const monthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -85,112 +73,16 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
     return { income, expense, net: income - expense };
   }, [transactions]);
 
-  const [presentToday, setPresentToday] = useState<number>(0);
-  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
-  const [todaySchedule, setTodaySchedule] = useState<any>(null);
-  const [selectedNotice, setSelectedNotice] = useState<any>(null);
-
-  const todayStr = useMemo(() => getTodayDateString(), [getTodayDateString]);
-
-  const fetchTodayAttendance = useCallback(async () => {
-    try {
-      const studentIds = users.filter(u => u.role === 'student' && u.status === 'active').map(u => u.id.toString());
-      const res = await api.get('/attendance');
-      const data = res.data?.data || (Array.isArray(res.data) ? res.data : []);
-      const todayPresent = data.filter(
-        (r: any) => 
-          r.date === todayStr && 
-          r.status === 'present' &&
-          studentIds.includes(r.student_id?.toString())
-      ).length;
-      setPresentToday(todayPresent);
-    } catch {
-      // silently fail
-    } finally {
-      setAttendanceLoaded(true);
-    }
-  }, [todayStr, users]);
-
-  const fetchTimetable = useCallback(async () => {
-    try {
-      const response = await api.get('/timetable');
-      const todayNum = new Date().getDay();
-      const dayIndex = todayNum === 0 ? 6 : todayNum - 1;
-      const data = response.data?.data || (Array.isArray(response.data) ? response.data : []);
-      const filtered = data.filter((s: any) => s.day === dayIndex);
-      
-      if (filtered.length > 0) {
-        const timeToMinutes = (timeStr: string) => {
-          const [time, period] = timeStr.split(' ');
-          let [hours, minutes] = time.split(':').map(Number);
-          if (period === 'PM' && hours !== 12) hours += 12;
-          if (period === 'AM' && hours === 12) hours = 0;
-          return hours * 60 + minutes;
-        };
-        const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-        const sorted = filtered.sort((a: any, b: any) => timeToMinutes(a.time) - timeToMinutes(b.time));
-        const currentOrNext = sorted.find((s: any) => timeToMinutes(s.time) >= nowMinutes - 30);
-        setTodaySchedule(currentOrNext || null);
-      } else {
-        setTodaySchedule(null);
-      }
-    } catch (err) {
-      console.error('Fetch Timetable Error:', err);
-    }
-  }, []);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await fetchData();
-      await Promise.all([fetchTodayAttendance(), fetchTimetable()]);
     } catch (error) {
       console.error('Refresh Error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchData, fetchTodayAttendance, fetchTimetable]);
-
-  useEffect(() => { 
-    fetchTodayAttendance(); 
-    fetchTimetable();
-  }, [fetchTodayAttendance, fetchTimetable]);
-
-  // ── Announcement Banner Popup ──
-  useEffect(() => {
-    const today = getTodayDateString();
-    const eligible = announcements.filter(a => {
-      if (a.id.startsWith('ann_')) return false;
-      if (a.end_date && a.end_date < today) return false;
-      if (a.start_date && a.start_date > today) return false;
-      return true;
-    });
-    if (eligible.length === 0) return;
-    AsyncStorage.getItem(DISMISSED_KEY).then(saved => {
-      const dismissed: string[] = saved ? JSON.parse(saved) : [];
-      const unseen = eligible.filter(a => !dismissed.includes(a.id)).slice(0, 3);
-      if (unseen.length > 0) {
-        setBannerQueue(unseen);
-        setBannerIndex(0);
-      }
-    });
-  }, [announcements, getTodayDateString]);
-
-  const dismissBanner = useCallback((id: string, dontShowAgain = false) => {
-    if (dontShowAgain) {
-      AsyncStorage.getItem(DISMISSED_KEY).then(saved => {
-        const dismissed: string[] = saved ? JSON.parse(saved) : [];
-        dismissed.push(id);
-        AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
-      });
-    }
-    if (bannerIndex < bannerQueue.length - 1) {
-      setBannerIndex(prev => prev + 1);
-    } else {
-      setBannerQueue([]);
-      setBannerIndex(0);
-    }
-  }, [bannerIndex, bannerQueue]);
+  }, [fetchData]);
 
   const handleQuickAction = (screen: string | null) => {
     if (screen) {
@@ -200,96 +92,9 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
     }
   };
 
-  const renderAnnouncements = (list: any[], sectionTitle: string, hint: string) => {
-    const screenWidth = Dimensions.get('window').width;
-    const cardWidth = screenWidth - 48;
-
-    return (
-      <View className="mt-8">
-        <View className="flex-row items-center justify-between mb-5 px-1">
-          <Text className={`text-xl font-black ${colors.text} uppercase tracking-widest opacity-60 ml-6`}>{sectionTitle} 📢</Text>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('announcements')}
-            className="bg-brand-violet/10 px-4 py-1.5 rounded-full border border-brand-violet/20"
-          >
-             <Text className="text-brand-violet text-[9px] font-black uppercase tracking-widest">See All</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {list.length > 0 ? (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-            snapToInterval={cardWidth + 12} // card width + margin
-            snapToAlignment="center"
-            decelerationRate="fast"
-            disableIntervalMomentum={true}
-          >
-            {list.map((item) => (
-              <TouchableOpacity 
-                key={item.id}
-                activeOpacity={0.9}
-                style={{ width: cardWidth, aspectRatio: 16 / 9 }}
-                className="mr-3 bg-brand-violet relative overflow-hidden rounded-2xl border-2 border-white shadow-2xl"
-                onPress={() => setSelectedNotice(item)}
-              >
-                {item.image ? (
-                  <Image 
-                    source={{ uri: item.image }} 
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center bg-brand-violet/20">
-                    <MaterialCommunityIcons name="bullhorn-outline" size={80} color="#F59E0B" />
-                  </View>
-                )}
-                
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.8)']}
-                  className="absolute inset-x-0 bottom-0 h-40 justify-end p-8"
-                >
-                  <View className="bg-white/20 self-start px-3 py-1.5 rounded-xl mb-3 flex-row items-center border border-white/10">
-                    <MaterialCommunityIcons name="calendar-clock" size={14} color="white" />
-                    <Text className="text-white text-[10px] font-black uppercase tracking-widest ml-2">{item.date}</Text>
-                  </View>
-                  <Text className="text-white text-3xl font-black tracking-tighter" numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                  <View className="flex-row items-center mt-2">
-                    <View className="bg-brand-yellow w-5 h-5 rounded-full items-center justify-center mr-2">
-                        <MaterialCommunityIcons name="account-tie" size={12} color="#92400E" />
-                    </View>
-                    <Text className="text-white/80 text-[11px] font-black uppercase tracking-[2px]">{item.author || 'Admin Headquarters'}</Text>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View className="px-6">
-            <LinearGradient
-              colors={theme === 'dark' ? ['#1e1e1e', '#1a1a14'] : ['#FFF5F8', '#FFFFFF']}
-              style={{ width: '100%', aspectRatio: 16 / 9 }}
-              className="items-center justify-center rounded-2xl border-2 border-brand-violet/10 border-dashed"
-            >
-              <View className="bg-brand-violet/10 w-20 h-20 rounded-full items-center justify-center mb-4">
-                <MaterialCommunityIcons name="bullhorn-variant-outline" size={42} color="#F59E0B" />
-              </View>
-              <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>Mission Complete! ✨</Text>
-              <Text className="mt-1 font-black text-brand-violet/40 uppercase text-[8px] tracking-[3px]">No Active {hint}</Text>
-            </LinearGradient>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   return (
-    <View className={`flex-1 ${theme === 'dark' ? 'bg-[#1c1c14]' : 'bg-white'}`}>
-        <ScrollView
-        className="flex-1"
+    <View style={{ flex: 1, backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF' }}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -300,11 +105,9 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
             progressBackgroundColor={theme === 'dark' ? '#1c1c14' : '#FFFFFF'}
           />
         }
-        >
-
-
-        {/* ── Modern Header ── */}
-        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 50), paddingHorizontal: 24, paddingBottom: 8 }}>
+      >
+        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+          {/* ── Modern Header ── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#D1D5DB' : '#6B7280' }}>
@@ -329,429 +132,270 @@ export default function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
               </View>
             </TouchableOpacity>
           </View>
-        </View>
 
-        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
-          <View style={{ borderRadius: 16, overflow: 'hidden', elevation: 4, backgroundColor: theme === 'dark' ? '#1e3a2f' : '#E8F5E9' }}>
-            <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialCommunityIcons name="handshake" size={16} color={theme === 'dark' ? '#86EFAC' : '#166534'} />
-                  <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Your Share ({adminShare}%)</Text>
+          {/* ── Campus Hub (cyan counter card) ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => handleQuickAction('userManagementV2')}
+              style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
+            >
+              <LinearGradient
+                colors={theme === 'dark' ? ['#0E7490', '#155E75'] : ['#06B6D4', '#0891B2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 12 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                      <MaterialCommunityIcons name="school" size={18} color="white" />
+                    </View>
+                    <View>
+                      <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Campus Hub</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Faculty & Enrollment</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>{studentCount + teacherCount} Total</Text>
+                  </View>
                 </View>
-                <Text style={{ color: theme === 'dark' ? '#BBF7D0' : '#14532D', fontSize: 24, fontWeight: '900', marginTop: 4 }}>₹{netShareAmount.toLocaleString('en-IN')}</Text>
-              </View>
-              <View style={{ width: 1, height: 32, backgroundColor: theme === 'dark' ? '#166534' : '#86EFAC', marginHorizontal: 16 }} />
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: theme === 'dark' ? '#4ADE80' : '#15803D', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Share</Text>
-                <Text style={{ color: theme === 'dark' ? '#86EFAC' : '#166534', fontSize: 18, fontWeight: '900', marginTop: 2 }}>₹{masterShareAmount.toLocaleString('en-IN')}</Text>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {[
+                      { label: 'Students', value: studentCount, icon: 'school', color: '#FCD34D' },
+                      { label: 'Teachers', value: teacherCount, icon: 'account-group', color: '#6EE7B7' },
+                      { label: 'Active', value: studentCount + teacherCount, icon: 'check-circle', color: '#93C5FD' },
+                    ].map((item, i) => (
+                      <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
+                        <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                        <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }}>{item.value}</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+                  <MaterialCommunityIcons name="arrow-right-circle" size={12} color="rgba(255,255,255,0.5)" />
+                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Users</Text>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="share-variant" size={90} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Main Operations ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>Main Operations ⚙️</Text>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Master Controls</Text>
               </View>
             </View>
-          </View>
-        </View>
 
-        {/* ── Campus Hub (pink counter card) ── */}
-        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => handleQuickAction('userManagementV2')}
-            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
-          >
-            <View style={{ backgroundColor: '#EC4899', padding: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                    <MaterialCommunityIcons name="school" size={18} color="white" />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('incomeExpense')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']}
+                  style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                      <MaterialCommunityIcons name="finance" size={24} color="white" />
+                    </View>
+                    <View style={{ backgroundColor: monthlyFinance.net >= 0 ? '#D1FAE5' : '#FEE2E2', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: monthlyFinance.net >= 0 ? '#065F46' : '#991B1B' }}>
+                        ₹{(monthlyFinance.net || 0).toLocaleString('en-IN')}
+                      </Text>
+                    </View>
                   </View>
                   <View>
-                    <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Campus Hub</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Faculty & Enrollment</Text>
+                    <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>Finance Hub</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Accounts & Budget</Text>
                   </View>
-                </View>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
-                  <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>{studentCount + teacherCount} Total</Text>
-                </View>
-              </View>
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  {[
-                    { label: 'Students', value: studentCount, icon: 'school', color: '#FCD34D' },
-                    { label: 'Teachers', value: teacherCount, icon: 'account-group', color: '#6EE7B7' },
-                    { label: 'Active', value: studentCount + teacherCount, icon: 'check-circle', color: '#93C5FD' },
-                  ].map((item, i) => (
-                    <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
-                      <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
-                      <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }}>{item.value}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>₹{(monthlyFinance.income || 0).toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Income</Text>
                     </View>
-                  ))}
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
-                <MaterialCommunityIcons name="arrow-right-circle" size={12} color="rgba(255,255,255,0.5)" />
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>Manage Users</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      {/* ── School Metrics ── */}
-        <View className="px-6 mt-4">
-            <View className="flex-row items-center justify-between mb-3 px-1">
-                <Text className={`text-lg font-black tracking-tighter ${colors.text}`}>Today's Overview</Text>
-                <View className="bg-brand-violet/10 px-2 py-1 rounded-full">
-                    <Text className="text-brand-violet text-[8px] font-black uppercase tracking-widest">Live</Text>
-                </View>
-            </View>
-
-            <View className="flex-row justify-between">
-                <TouchableOpacity 
-                   activeOpacity={0.9}
-                   onPress={() => handleQuickAction('feesManagement')}
-                   style={{ elevation: 8 }}
-                   className="w-[48%] rounded-2xl overflow-hidden shadow-md"
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#78350f', '#451a03'] : ['#F59E0B', '#D97706']}
-                        className="p-5"
-                    >
-                        <View className="flex-row items-center justify-between mb-4">
-                            <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center">
-                                <MaterialCommunityIcons name="currency-inr" size={20} color="white" />
-                            </View>
-                            <Text className="text-white font-black text-[18px]">{paidFeeCount}</Text>
-                        </View>
-                        <Text className="text-white/70 text-[9px] font-bold uppercase tracking-wider">Collected</Text>
-                        <Text className="text-white font-black text-xl mt-1">₹{collectedAmount.toLocaleString('en-IN')}</Text>
-                        <View className="mt-3 h-1.5 bg-white/15 rounded-full overflow-hidden">
-                            <View 
-                                style={{ width: `${totalFeeCount > 0 ? (paidFeeCount / totalFeeCount) * 100 : 0}%`, height: '100%' }} 
-                                className="bg-white rounded-full" 
-                            />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                   activeOpacity={0.9}
-                   onPress={() => handleQuickAction('takeAttendance')}
-                   style={{ elevation: 8 }}
-                   className="w-[48%] rounded-2xl overflow-hidden shadow-md"
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']}
-                        className="p-5"
-                    >
-                        <View className="flex-row items-center justify-between mb-4">
-                            <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center">
-                                <MaterialCommunityIcons name="account-check-outline" size={20} color="white" />
-                            </View>
-                            <Text className="text-white font-black text-[18px]">{presentToday}</Text>
-                        </View>
-                        <Text className="text-white/70 text-[9px] font-bold uppercase tracking-wider">Present Today</Text>
-                        <Text className="text-white font-black text-xl mt-1">{Math.round(studentCount > 0 ? (presentToday / studentCount) * 100 : 0)}%</Text>
-                        <View className="mt-3 h-1.5 bg-white/15 rounded-full overflow-hidden">
-                            <View 
-                                style={{ width: `${studentCount > 0 ? (presentToday / studentCount) * 100 : 0}%`, height: '100%' }} 
-                                className="bg-white rounded-full" 
-                            />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        {announcements.length > 0 && renderAnnouncements(announcements, 'Central Notices', 'announcements')}
-
-        {/* ── Modern Management Portal ── */}
-        <View className="px-6 py-8">
-            <View className="flex-row items-center justify-between mb-6 px-1">
-                <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>Main Operations ⚙️</Text>
-                <View className="bg-brand-violet/10 px-3 py-1 rounded-full">
-                    <Text className="text-brand-violet text-[9px] font-black uppercase font-bold tracking-widest">Master Controls</Text>
-                </View>
-            </View>
-
-            <View className="flex-row justify-between mb-4">
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => handleQuickAction('incomeExpense')}
-                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']}
-                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
-                    >
-                        <View className="flex-row items-center justify-between">
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
-                                <MaterialCommunityIcons name="finance" size={24} color="white" />
-                            </View>
-                            <View style={{ backgroundColor: monthlyFinance.net >= 0 ? '#D1FAE5' : '#FEE2E2', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '900', color: monthlyFinance.net >= 0 ? '#065F46' : '#991B1B' }}>
-                                    ₹{(monthlyFinance.net || 0).toLocaleString('en-IN')}
-                                </Text>
-                            </View>
-                        </View>
-                        <View>
-                            <Text className="text-white text-xl font-black tracking-tight">Finance Hub</Text>
-                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Accounts & Budget</Text>
-                        </View>
-                        <View className="flex-row gap-2">
-                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>₹{(monthlyFinance.income || 0).toLocaleString('en-IN')}</Text>
-                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Income</Text>
-                            </View>
-                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#FECACA' }}>₹{(monthlyFinance.expense || 0).toLocaleString('en-IN')}</Text>
-                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Expense</Text>
-                            </View>
-                        </View>
-                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
-                            <MaterialCommunityIcons name="chart-line" size={90} color="white" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => handleQuickAction('feesManagement')}
-                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#1e40af', '#1e1b4b'] : ['#3B82F6', '#2563EB']}
-                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
-                    >
-                        <View className="flex-row items-center justify-between">
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
-                                <MaterialCommunityIcons name="cash-register" size={24} color="white" />
-                            </View>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>{paidFeeCount}/{totalFeeCount}</Text>
-                            </View>
-                        </View>
-                        <View>
-                            <Text className="text-white text-xl font-black tracking-tight">Fee Portal</Text>
-                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Collections Info</Text>
-                        </View>
-                        <View className="flex-row gap-2">
-                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>₹{collectedAmount.toLocaleString('en-IN')}</Text>
-                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Collected</Text>
-                            </View>
-                            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>{paidFeeCount}</Text>
-                                <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Paid</Text>
-                            </View>
-                        </View>
-                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
-                            <MaterialCommunityIcons name="account-group" size={90} color="white" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-
-            <View className="flex-row justify-between">
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => handleQuickAction('pettyCash')}
-                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
-                    >
-                        <View className="flex-row items-center justify-between">
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
-                                <MaterialCommunityIcons name="wallet-outline" size={24} color="white" />
-                            </View>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Petty Cash</Text>
-                            </View>
-                        </View>
-                        <View>
-                            <Text className="text-white text-xl font-black tracking-tight">Petty Cash</Text>
-                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Cash Management</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)', marginRight: 6 }} />
-                            <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                Track add & expense
-                            </Text>
-                        </View>
-                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
-                            <MaterialCommunityIcons name="cash-multiple" size={90} color="white" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={() => handleQuickAction('postActivity')}
-                    style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#D97706', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
-                >
-                    <LinearGradient
-                        colors={theme === 'dark' ? ['#92400E', '#78350F'] : ['#F59E0B', '#D97706']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
-                    >
-                        <View className="flex-row items-center justify-between">
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
-                                <MaterialCommunityIcons name="camera-iris" size={24} color="white" />
-                            </View>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
-                                <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Highlights</Text>
-                            </View>
-                        </View>
-                        <View>
-                            <Text className="text-white text-xl font-black tracking-tight">Post Highlights</Text>
-                            <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-widest">Broadcast Tool</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.6)', marginRight: 6 }} />
-                            <Text style={{ fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                                Share moments
-                            </Text>
-                        </View>
-                        <View className="absolute -bottom-3.5 -right-3.5 opacity-10">
-                            <MaterialCommunityIcons name="image-multiple-outline" size={90} color="white" />
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        {/* ── Today's Pulse Card ── */}
-        <View className="px-6 pb-12">
-            <View className="flex-row items-center justify-between mb-8 px-1">
-                <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>Daily Pulse 📡</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('timetable')}>
-                    <Text className="text-brand-violet font-bold text-xs">Full View</Text>
-                </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity 
-                activeOpacity={0.9}
-                onPress={() => navigation.navigate('timetable')}
-                className="rounded-2xl overflow-hidden shadow-2xl"
-                style={{ elevation: 20 }}
-            >
-                <LinearGradient
-                    colors={theme === 'dark' ? ['#701a75', '#4c1d95'] : ['#F59E0B', '#DB2777']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="p-7"
-                >
-                    <View className="flex-row items-center justify-between relative z-10">
-                        <View className="flex-1 mr-4">
-                            <View className="flex-row items-center mb-1">
-                                <View className="bg-white/20 p-1.5 rounded-lg mr-2">
-                                    <MaterialCommunityIcons name="timeline-clock-outline" size={14} color="white" />
-                                </View>
-                                <Text className="text-white font-black uppercase text-[10px] tracking-[2px] opacity-80">
-                                    {todaySchedule ? "Ongoing Activity" : "Operations Ready"}
-                                </Text>
-                            </View>
-                            <Text className="text-white text-3xl font-black mt-2 tracking-tighter" numberOfLines={1}>
-                                {todaySchedule ? todaySchedule.activity : "No Scheduled Events"}
-                            </Text>
-                            <View className="flex-row items-center mt-4">
-                                <View className="bg-white/20 self-start px-4 py-2 rounded-2xl flex-row items-center mr-3 border border-white/10">
-                                    <MaterialCommunityIcons name="clock-fast" size={16} color="white" />
-                                    <Text className="text-white text-[12px] font-black ml-2">
-                                        {todaySchedule ? todaySchedule.time : "Standby"}
-                                    </Text>
-                                </View>
-                                <View className="bg-white/20 self-start px-4 py-2 rounded-2xl flex-row items-center border border-white/10">
-                                    <MaterialCommunityIcons name="map-marker-outline" size={16} color="white" />
-                                    <Text className="text-white text-[12px] font-black ml-2">
-                                        {todaySchedule ? (todaySchedule.room || 'All Class') : "Main Site"}
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                        <View className="bg-white/30 w-18 h-18 rounded-[28px] items-center justify-center border-4 border-white/10 shadow-lg rotate-6">
-                            <MaterialCommunityIcons 
-                                name={todaySchedule ? (todaySchedule.icon || "bullseye-arrow") : "checkbox-marked-circle-outline"} 
-                                size={42} 
-                                color="white" 
-                            />
-                        </View>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#FECACA' }}>₹{(monthlyFinance.expense || 0).toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Expense</Text>
                     </View>
-                    <View className="absolute -bottom-10 -right-10 opacity-10">
-                        <MaterialCommunityIcons name="toy-brick-plus" size={180} color="white" />
-                    </View>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="chart-line" size={90} color="white" />
+                  </View>
                 </LinearGradient>
-            </TouchableOpacity>
-        </View>
+              </TouchableOpacity>
 
-        <View className="h-32" />
-        </ScrollView>
-
-        <PremiumPopup
-          visible={!!selectedNotice}
-          onClose={() => setSelectedNotice(null)}
-          title={selectedNotice?.title || ''}
-          message={selectedNotice?.content}
-          type="info"
-          icon="bullhorn"
-        >
-          {selectedNotice?.date && (
-            <View className="bg-blue-50/50 dark:bg-blue-500/10 self-center px-4 py-1.5 rounded-full border border-blue-100 dark:border-blue-500/20 mb-4 flex-row items-center">
-              <MaterialCommunityIcons name="calendar-clock" size={12} color="#3B82F6" />
-              <Text className="text-blue-500 text-[10px] font-black uppercase tracking-widest ml-2">{selectedNotice.date}</Text>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('feesManagement')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#1e40af', '#1e1b4b'] : ['#3B82F6', '#2563EB']}
+                  style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                      <MaterialCommunityIcons name="cash-register" size={24} color="white" />
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>{paidFeeCount}/{totalFeeCount}</Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>Fee Portal</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Collections Info</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>₹{collectedAmount.toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Collected</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#BFDBFE' }}>{paidFeeCount}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Paid</Text>
+                    </View>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="account-group" size={90} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-          )}
-          {selectedNotice?.image && (
-            <Image 
-              source={{ uri: selectedNotice.image }} 
-              style={{ width: '100%', height: 200, borderRadius: 24 }}
-              resizeMode="cover"
-            />
-          )}
-        </PremiumPopup>
 
-        {/* ── Auto-show Announcement Banner ── */}
-        {bannerQueue.length > 0 && bannerIndex < bannerQueue.length && (
-          <PremiumPopup
-            visible
-            onClose={() => dismissBanner(bannerQueue[bannerIndex].id, false)}
-            title={bannerQueue[bannerIndex].title || ''}
-            message={bannerQueue[bannerIndex].content}
-            type="info"
-            icon="bullhorn"
-          >
-            {bannerQueue[bannerIndex]?.date && (
-              <View className="bg-blue-50/50 dark:bg-blue-500/10 self-center px-4 py-1.5 rounded-full border border-blue-100 dark:border-blue-500/20 mb-4 flex-row items-center">
-                <MaterialCommunityIcons name="calendar-clock" size={12} color="#3B82F6" />
-                <Text className="text-blue-500 text-[10px] font-black uppercase tracking-widest ml-2">{bannerQueue[bannerIndex].date}</Text>
-              </View>
-            )}
-            {bannerQueue[bannerIndex]?.image && (
-              <Image
-                source={{ uri: bannerQueue[bannerIndex].image }}
-                style={{ width: '100%', height: 200, borderRadius: 24 }}
-                resizeMode="cover"
-              />
-            )}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('liveCamera')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#DC2626', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#7f1d1d', '#450a0a'] : ['#EF4444', '#DC2626']}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="broadcast" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Live Monitoring</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>CCTV & Cameras</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="cctv" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('takeAttendance')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="calendar-check" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Attendance</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Daily Register</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="clipboard-check-outline" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('tuitionConsole')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#8B5CF6', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#5b21b6', '#2e1065'] : ['#8B5CF6', '#7C3AED']}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="school" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Tuition Console</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>After-School Programs</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="account-school-outline" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleQuickAction('postActivity')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#D97706', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={theme === 'dark' ? ['#92400E', '#78350F'] : ['#F59E0B', '#D97706']}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="star-face" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Kids Feed</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Moments & Highlights</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="image-multiple-outline" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              onPress={() => dismissBanner(bannerQueue[bannerIndex].id, true)}
-              className="flex-row items-center justify-center mt-2 mb-1"
-              activeOpacity={0.7}
+              activeOpacity={0.9}
+              onPress={() => handleQuickAction('pettyCash')}
+              style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#0D9488', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
             >
-              <MaterialCommunityIcons name="checkbox-blank-off-outline" size={18} color="#9CA3AF" />
-              <Text className="text-gray-400 text-[11px] font-bold uppercase tracking-wide ml-2">
-                Don't show this again
-              </Text>
+              <LinearGradient
+                colors={theme === 'dark' ? ['#0f766e', '#134e4a'] : ['#14B8A6', '#0D9488']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, marginBottom: 8 }}>
+                    <Text style={{ color: 'white', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5 }}>Cash Management</Text>
+                  </View>
+                  <Text style={{ color: 'white', fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>Petty Cash</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700', marginTop: 2 }}>Track add & expense funds 💰</Text>
+                </View>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.3)', padding: 14, borderRadius: 20 }}>
+                  <MaterialCommunityIcons name="wallet-outline" size={36} color="white" />
+                </View>
+                <View style={{ position: 'absolute', bottom: -18, right: -10, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="cash-multiple" size={110} color="white" />
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
-            {bannerIndex < bannerQueue.length - 1 && (
-              <Text className="text-gray-500 text-[10px] font-bold text-center mt-3">
-                {bannerIndex + 1} of {bannerQueue.length}
-              </Text>
-            )}
-          </PremiumPopup>
-        )}
+          </View>
+
+          <View style={{ height: 128 }} />
+        </View>
+      </ScrollView>
     </View>
   );
 }

@@ -10,6 +10,10 @@ const API_URL = IS_LOCAL
   : `https://${BASE_DOMAIN}/api`;
 
 
+export const DEFAULT_AVATAR = IS_LOCAL
+  ? `http://${LOCAL_IP}:8000/icon.png`
+  : `https://${BASE_DOMAIN}/icon.png`;
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {

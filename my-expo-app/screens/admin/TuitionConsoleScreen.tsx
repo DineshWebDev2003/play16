@@ -20,7 +20,7 @@ const tuitionActions = [
   { label: 'View Submissions', screen: 'viewSubmissions', icon: 'clipboard-list', color: '#3B82F6', desc: 'Check assignments' },
   { label: 'Messages', screen: 'parentMessages', icon: 'message-text', color: '#EC4899', desc: 'Parent communication' },
   { label: 'Manage Users', screen: 'manageTuitionUsers', icon: 'account-group', color: '#14B8A6', desc: 'Create & manage tuition users' },
-  { label: 'Study Materials', screen: 'postHomework', icon: 'book-open-variant', color: '#F97316', desc: 'Upload resources' },
+  { label: 'Study Materials', screen: 'tuitionStudyMaterials', icon: 'book-open-variant', color: '#F97316', desc: 'Upload resources' },
   { label: 'Tests & Marks', screen: 'tuitionPostProgress', icon: 'clipboard-check', color: '#A855F7', desc: 'Assessments' },
 ];
 
@@ -51,19 +51,27 @@ export default function TuitionConsoleScreen({ navigation }: TuitionConsoleScree
           </View>
 
           <View className="flex-row gap-3 mb-8">
-            <View className="bg-amber-50 flex-1 p-5 rounded-[28px] border-l-4 border-l-amber-500">
-              <View className="bg-amber-100 w-12 h-12 rounded-2xl items-center justify-center mb-3">
-                <MaterialCommunityIcons name="account-tie" size={24} color="#D97706" />
+            <View style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }} className="flex-1 p-5 rounded-[28px] border overflow-hidden">
+              <View className="flex-row items-center justify-between mb-4">
+                <View style={{ backgroundColor: '#F59E0B' }} className="w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-amber-200">
+                  <MaterialCommunityIcons name="account-tie" size={24} color="white" />
+                </View>
+                <MaterialCommunityIcons name="human-male-board" size={34} color="#FCD34D" />
               </View>
-              <Text className="text-3xl font-black text-gray-900">{tuitionTeacherCount}</Text>
-              <Text className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-1">Tuition Teachers</Text>
+              <Text className="text-4xl font-black tracking-tighter text-gray-900">{tuitionTeacherCount}</Text>
+              <Text className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mt-1">Tuition Teachers</Text>
+              <Text className="text-[9px] font-bold text-gray-400 mt-0.5">Active instructors</Text>
             </View>
-            <View className="bg-amber-50 flex-1 p-5 rounded-[28px] border-l-4 border-l-amber-500">
-              <View className="bg-amber-100 w-12 h-12 rounded-2xl items-center justify-center mb-3">
-                <MaterialCommunityIcons name="account-school" size={24} color="#D97706" />
+            <View style={{ backgroundColor: '#FDF2F8', borderColor: '#FBCFE8' }} className="flex-1 p-5 rounded-[28px] border overflow-hidden">
+              <View className="flex-row items-center justify-between mb-4">
+                <View style={{ backgroundColor: '#EC4899' }} className="w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-pink-200">
+                  <MaterialCommunityIcons name="account-school" size={24} color="white" />
+                </View>
+                <MaterialCommunityIcons name="school" size={34} color="#F9A8D4" />
               </View>
-              <Text className="text-3xl font-black text-gray-900">{tuitionStudentCount}</Text>
-              <Text className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-1">Tuition Students</Text>
+              <Text className="text-4xl font-black tracking-tighter text-gray-900">{tuitionStudentCount}</Text>
+              <Text className="text-[10px] font-bold uppercase tracking-widest text-pink-600 mt-1">Tuition Students</Text>
+              <Text className="text-[9px] font-bold text-gray-400 mt-0.5">Enrolled learners</Text>
             </View>
           </View>
 

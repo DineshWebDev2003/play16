@@ -35,6 +35,7 @@
       }
     },
     "android": {
+      "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "monochromeImage": "./assets/icon.png",

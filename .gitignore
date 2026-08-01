@@ -24,6 +24,13 @@ _agent/
 # Certificates
 *.pem
 *.pfx
+*.txt
+
+# Large local files / secrets
+*.zip
+tnhappykids-upload-key.*
+"tuition teacher.png"
+tuition*.png
 
 # Allow important config files in my-expo-app
 !my-expo-app/tailwind.config.js

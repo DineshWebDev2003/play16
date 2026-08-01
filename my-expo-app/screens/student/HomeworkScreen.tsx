@@ -40,7 +40,12 @@ export default function HomeworkScreen({ navigation }: Props) {
       const res = await api.get('/homework');
       const d = res.data?.data || (Array.isArray(res.data) ? res.data : []);
       const myBatchId = (user as any)?.batch_id;
-      setHomeworks(myBatchId ? d.filter((h: any) => !h.batch_id || h.batch_id === myBatchId) : d);
+      const myUserId = user?.id;
+      setHomeworks(myBatchId || myUserId ? d.filter((h: any) =>
+        !h.batch_id && (!h.student_ids || h.student_ids.length === 0) ||
+        (myBatchId && h.batch_id === myBatchId) ||
+        (myUserId && Array.isArray(h.student_ids) && h.student_ids.includes(myUserId))
+      ) : d);
     } catch {}
   }, [user]);
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { Alert } from 'react-native';
-import api, { setAuthToken, getMediaUrl } from '../services/api';
+import api, { setAuthToken, getMediaUrl, DEFAULT_AVATAR } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -247,7 +247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         comments: a.comments ? a.comments.map((c: any) => ({
           id: c.id.toString(),
           user: c.user?.name || 'User',
-          avatar: getMediaUrl(c.user?.avatar),
+          avatar: getMediaUrl(c.user?.avatar) || DEFAULT_AVATAR,
           text: c.text || c.comment || '',
           time: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently'
         })) : []
@@ -389,7 +389,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role:          u.role,
     branch_id:     u.branch_id ? u.branch_id.toString() : undefined,
     branch:        u.branch ? { id: u.branch.id.toString(), name: u.branch.name, address: u.branch.address } : undefined,
-    avatar:        getMediaUrl(u.avatar),
+    avatar:        getMediaUrl(u.avatar) || DEFAULT_AVATAR,
     status:        u.status,
     studentId:     u.student_id,
     teacherId:     u.teacher_id,
@@ -815,7 +815,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newComment: Comment = {
         id: res.data.id.toString(),
         user: res.data.user?.name || 'You',
-        avatar: res.data.user?.avatar || undefined,
+        avatar: getMediaUrl(res.data.user?.avatar) || DEFAULT_AVATAR,
         text: res.data.text,
         time: 'Just now'
       };

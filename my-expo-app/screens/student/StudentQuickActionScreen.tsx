@@ -27,7 +27,7 @@ export default function StudentQuickActionScreen({ navigation }: Props) {
     { label: 'Live Camera', screen: 'liveCamera', icon: 'broadcast', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Live', desc: 'View classroom live feed' },
     { label: 'My Fees', screen: 'myFees', icon: 'cash-multiple', color: '#8B5CF6', grad: ['#8B5CF6', '#7C3AED'], gradDark: ['#5b21b6', '#2e1065'], tag: 'Payments', desc: 'View fee details & payments' },
     { label: 'Emergency Contact', screen: 'emergencyContact', icon: 'phone-alert', color: '#EF4444', grad: ['#EF4444', '#DC2626'], gradDark: ['#7f1d1d', '#450a0a'], tag: 'Call', desc: 'Call guardians quickly' },
-    { label: 'Nanny Voice', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to your nanny' },
+    { label: 'Messages', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to your nanny' },
   ];
 
   return (
