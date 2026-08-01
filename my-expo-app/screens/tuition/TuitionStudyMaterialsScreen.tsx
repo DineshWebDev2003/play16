@@ -244,7 +244,19 @@ export default function TuitionStudyMaterialsScreen({ navigation }: Props) {
     if (!fileUrl) { Alert.alert('Error', 'File not available.'); return; }
     setPdfViewer(m);
     setPdfLoading(true);
-    setPdfUri(fileUrl);
+    setPdfUri(null);
+    try {
+      const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+      if (!cacheDir) throw new Error('Cache not available');
+      const fileName = m.file_name || `material_${m.id}`;
+      await FileSystem.makeDirectoryAsync(`${cacheDir}pdfview/`, { intermediates: true }).catch(() => {});
+      const res = await FileSystem.createDownloadResumable(fileUrl, `${cacheDir}pdfview/${fileName}`).downloadAsync();
+      if (res) setPdfUri(res.uri);
+      else throw new Error('Download failed');
+    } catch {
+      setPdfLoading(false);
+      Alert.alert('Error', 'Failed to load PDF.');
+    }
   }, []);
 
   const toggleBatch = (id: number) => {
@@ -666,19 +678,22 @@ export default function TuitionStudyMaterialsScreen({ navigation }: Props) {
             </TouchableOpacity>
           )}
         </View>
-        {pdfLoading ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="large" color="#F59E0B" />
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '700', fontSize: 12, marginTop: 12 }}>Loading PDF...</Text>
-          </View>
-        ) : pdfUri ? (
-          <Pdf
-            source={{ uri: pdfUri, cache: true }}
-            style={{ flex: 1, backgroundColor: '#000' }}
-            onLoadComplete={() => setPdfLoading(false)}
-            onError={(error: any) => { setPdfLoading(false); Alert.alert('Error', 'Failed to load PDF.'); }}
-          />
-        ) : null}
+        <View style={{ flex: 1 }}>
+          {pdfUri ? (
+            <Pdf
+              source={{ uri: pdfUri }}
+              style={{ flex: 1, backgroundColor: '#000' }}
+              onLoadComplete={() => setPdfLoading(false)}
+              onError={(error: any) => { setPdfLoading(false); Alert.alert('Error', 'Failed to load PDF.'); }}
+            />
+          ) : null}
+          {pdfLoading && (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color="#F59E0B" />
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '700', fontSize: 12, marginTop: 12 }}>Loading PDF...</Text>
+            </View>
+          )}
+        </View>
       </SafeAreaView>
     </Modal>
   );
