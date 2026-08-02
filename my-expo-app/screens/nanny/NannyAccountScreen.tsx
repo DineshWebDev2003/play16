@@ -74,6 +74,13 @@ export default function NannyAccountScreen({ navigation }: Props) {
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
         <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ backgroundColor: '#F3F4F6', width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={22} color="#374151" />
+          </TouchableOpacity>
+
           {/* ── Modern Header (matches Home) ── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>

@@ -21,10 +21,10 @@ export default function TeacherQuickActionScreen({ navigation }: Props) {
 
   const actions = [
     { label: 'Student Info', screen: 'studentList', icon: 'account-group', color: '#3B82F6', grad: ['#3B82F6', '#2563EB'], gradDark: ['#1e40af', '#1e1b4b'], tag: 'Directory', desc: 'Global directory' },
-    { label: 'School Fee', screen: 'feesManagement', icon: 'cash-multiple', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Fees', desc: 'Fee records & payments' },
     { label: 'Duty Log', screen: 'myAttendance', icon: 'calendar-account', color: '#6366F1', grad: ['#6366F1', '#4F46E5'], gradDark: ['#3730a3', '#312e81'], tag: 'Work', desc: 'Work history' },
     { label: 'Student Attendance', screen: 'takeAttendance', icon: 'calendar-check', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Presence', desc: 'Mark presence' },
     { label: 'Social Feed', screen: 'postActivity', icon: 'camera-burst', color: '#FBBF24', grad: ['#FBBF24', '#F59E0B'], gradDark: ['#92400E', '#78350F'], tag: 'Share', desc: 'Share moments' },
+    { label: 'Messages', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', grad: ['#06B6D4', '#0891B2'], gradDark: ['#164e63', '#083344'], tag: 'Chat', desc: 'Talk to nannies' },
     { label: 'Timetable', screen: 'timetable', icon: 'calendar-clock', color: '#6366F1', grad: ['#6366F1', '#4F46E5'], gradDark: ['#3730a3', '#312e81'], tag: 'Plans', desc: 'Daily schedule' },
   ];
 

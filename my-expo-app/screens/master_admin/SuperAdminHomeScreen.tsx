@@ -18,6 +18,7 @@ interface Props {
 export default function SuperAdminHomeScreen({ navigation }: Props) {
   const { user, users, branches, transactions, fetchData, updateAvatar } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const stats = useMemo(() => ({
@@ -54,7 +55,7 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" colors={["#F59E0B"]} />
         }
       >
-        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: theme === 'dark' ? '#D1D5DB' : '#6B7280' }}>
@@ -77,9 +78,8 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
               <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
                 <MaterialCommunityIcons name="camera" size={12} color="white" />
               </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
           </View>
-        </View>
 
         <View style={{ paddingVertical: 8 }}>
           <TouchableOpacity
@@ -337,6 +337,7 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
               </View>
             </LinearGradient>
           </TouchableOpacity>
+        </View>
         </View>
 
         <View style={{ height: 128 }} />

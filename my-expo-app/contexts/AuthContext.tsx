@@ -26,9 +26,11 @@ export interface User {
   username: string;
   role: UserRole;
   branch_id?: string;
+  batch_id?: string;
   branch?: Branch;
   avatar?: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending_payment';
+  pay_to_active?: boolean;
   studentId?: string;
   teacherId?: string;
   fatherName?: string;
@@ -48,6 +50,7 @@ export interface User {
   motherPhoto?: string;
   guardianPhoto?: string;
   fees?:          string;
+  monthly_fee?:   string;
   admissionDate?: string;
   fee_due_day?:   string;
   notification_settings?: {
@@ -388,9 +391,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email:         u.email,
     role:          u.role,
     branch_id:     u.branch_id ? u.branch_id.toString() : undefined,
+    batch_id:      u.batch_id ? u.batch_id.toString() : undefined,
     branch:        u.branch ? { id: u.branch.id.toString(), name: u.branch.name, address: u.branch.address } : undefined,
     avatar:        getMediaUrl(u.avatar) || DEFAULT_AVATAR,
     status:        u.status,
+    pay_to_active: !!u.pay_to_active,
     studentId:     u.student_id,
     teacherId:     u.teacher_id,
     fatherName:    u.father_name,
@@ -410,6 +415,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     motherPhoto:   getMediaUrl(u.mother_photo),
     guardianPhoto: getMediaUrl(u.guardian_photo),
     fees:          u.fees,
+    monthly_fee:   u.monthly_fee,
     admissionDate: u.admission_date,
     fee_due_day:   u.fee_due_day,
     notification_settings: u.notification_settings || {

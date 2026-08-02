@@ -143,6 +143,8 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
   const [guardianPhoto, setGuardianPhoto] = useState('');
   
   const [newPassword, setNewPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   
   // Date Picker Modal State
@@ -168,6 +170,8 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
       setFatherPhoto(targetUser.fatherPhoto || '');
       setMotherPhoto(targetUser.motherPhoto || '');
       setGuardianPhoto(targetUser.guardianPhoto || '');
+      setEmail(targetUser.email || '');
+      setPhone(targetUser.phone || '');
     }
   }, [targetUser]);
 
@@ -184,7 +188,7 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
       return;
     }
 
-    const updatedData: Partial<User> = {
+    const updatedData: Partial<User> & { password?: string } = {
       name,
       fatherName,
       fatherPhone,
@@ -203,6 +207,10 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
       guardianPhoto,
     };
 
+    if (email) updatedData.email = email;
+    if (phone) updatedData.phone = phone;
+    if (newPassword.trim()) updatedData.password = newPassword.trim();
+
     const success = studentId 
       ? await updateUser(studentId, updatedData) 
       : await updateProfile(updatedData);
@@ -211,13 +219,14 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
       Alert.alert('Success', studentId ? 'Student record updated! ✨' : 'Profile updated! ✨');
       setIsEditing(false);
       setCurrentStep(1);
+      setNewPassword('');
       if (studentId) {
         navigation.goBack();
       }
     }
   };
 
-  const renderInputField = (label: string, value: string, setValue: (val: string) => void, icon: string, placeholder: string, multiline: boolean = false) => (
+  const renderInputField = (label: string, value: string, setValue: (val: string) => void, icon: string, placeholder: string, multiline: boolean = false, keyboardType: any = 'default') => (
     <View className="mb-5">
       <Text className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2 ml-1">{label}</Text>
       <View className={`flex-row items-center bg-gray-50 dark:bg-gray-700 rounded-2xl px-4 ${multiline ? 'items-start py-4' : ''}`}>
@@ -230,6 +239,8 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
           placeholderTextColor="#9CA3AF"
           editable={isEditing}
           multiline={multiline}
+          keyboardType={keyboardType}
+          autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
           textAlignVertical={multiline ? 'top' : 'center'}
         />
       </View>
@@ -362,20 +373,27 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
           </View>
 
           <View className="px-6 mt-2">
-            {isEditing && renderProgressBar()}
+            {isEditing && targetUser?.role === 'student' && renderProgressBar()}
 
             <View className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm mb-6">
               
               {!isEditing ? (
                 <View>
                    <View className="items-center mb-6">
-                      {renderPhotoCard('Student Account', avatar)}
+                      {renderPhotoCard(targetUser?.role === 'student' ? 'Student Account' : 'Profile Picture', avatar)}
                        <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4 tracking-tight">{targetUser?.name}</Text>
                        <View className="bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full mt-2 flex-row items-center">
                          <View className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2" />
                          <Text className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-widest">Verified Record</Text>
                        </View>
                     </View>
+
+                    {targetUser?.role !== 'student' && (
+                      <View className="mb-6">
+                        {targetUser?.email ? renderDetailItem('Email', targetUser?.email, 'email') : null}
+                        {targetUser?.phone ? renderDetailItem('Mobile Number', targetUser?.phone, 'phone') : null}
+                      </View>
+                    )}
 
                     {financialSummary && (
                        <View className="mb-8 bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-5">
@@ -429,6 +447,18 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
                       <View className="flex-row items-center">
                         <MaterialCommunityIcons name="pencil-box-multiple-outline" size={18} color="white" />
                         <Text className="text-white font-bold text-base ml-2">Edit Full Student Profile</Text>
+                      </View>
+                    </TouchableOpacity>
+                   )}
+
+                   {targetUser?.role !== 'student' && (
+                    <TouchableOpacity 
+                     onPress={() => setIsEditing(true)}
+                     className="bg-amber-500 py-4 rounded-2xl items-center active:scale-95 mt-4"
+                    >
+                      <View className="flex-row items-center">
+                        <MaterialCommunityIcons name="pencil-box-multiple-outline" size={18} color="white" />
+                        <Text className="text-white font-bold text-base ml-2">Edit Profile Settings</Text>
                       </View>
                     </TouchableOpacity>
                    )}
@@ -605,9 +635,32 @@ export default function ProfileScreen({ navigation, route }: ProfileScreenProps)
                     </View>
                  </View>
                ) : (
-                 <View className="p-4 items-center">
-                   <MaterialCommunityIcons name="account-lock" size={40} color="#9CA3AF" />
-                   <Text className="text-gray-400 font-bold text-center mt-4">Student profile editing is not available for this account.</Text>
+                 <View>
+                   <Text className="text-amber-500 font-bold text-base mb-6 uppercase tracking-wider">Profile Settings</Text>
+                   <View className="items-center mb-6">
+                     {renderPhotoCard('Profile Picture', avatar, setAvatar)}
+                   </View>
+                   {renderInputField('Full Name', name, setName, 'account', 'Your full name')}
+                   {renderInputField('Email (Gmail)', email, setEmail, 'email', 'your@gmail.com', false, 'email-address')}
+                   {renderInputField('Mobile Number', phone, setPhone, 'phone', 'Your mobile number', false, 'phone-pad')}
+                   <View className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
+                     <Text className="text-gray-400 font-bold text-[10px] uppercase mb-5 tracking-widest">Account Security</Text>
+                     {renderInputField('New Password', newPassword, setNewPassword, 'key-outline', 'Enter new password (optional)')}
+                   </View>
+                   <View className="flex-row gap-3 mt-6">
+                     <TouchableOpacity
+                       onPress={() => { setIsEditing(false); setNewPassword(''); }}
+                       className="flex-1 bg-gray-200 dark:bg-gray-700 py-4 rounded-2xl items-center"
+                     >
+                       <Text className="text-gray-600 dark:text-gray-300 font-bold text-base">Cancel</Text>
+                     </TouchableOpacity>
+                     <TouchableOpacity
+                       onPress={handleUpdate}
+                       className="flex-1 bg-emerald-500 py-4 rounded-2xl items-center active:scale-95"
+                     >
+                       <Text className="text-white font-bold text-base">Save</Text>
+                     </TouchableOpacity>
+                   </View>
                  </View>
                )}
              </View>

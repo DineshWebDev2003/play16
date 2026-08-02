@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+import BranchFilter from '../../components/BranchFilter';
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -18,17 +19,26 @@ const tuitionActions = [
   { label: 'Post Progress', screen: 'tuitionPostProgress', icon: 'chart-line', color: '#10B981', desc: 'Student progress' },
   { label: 'Take Attendance', screen: 'tuitionAttendance', icon: 'calendar-check', color: '#F59E0B', desc: 'Tuition attendance' },
   { label: 'View Submissions', screen: 'viewSubmissions', icon: 'clipboard-list', color: '#3B82F6', desc: 'Check assignments' },
-  { label: 'Messages', screen: 'parentMessages', icon: 'message-text', color: '#EC4899', desc: 'Parent communication' },
+  { label: 'Messages', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', desc: 'Chat with nannies' },
   { label: 'Manage Users', screen: 'manageTuitionUsers', icon: 'account-group', color: '#14B8A6', desc: 'Create & manage tuition users' },
   { label: 'Study Materials', screen: 'tuitionStudyMaterials', icon: 'book-open-variant', color: '#F97316', desc: 'Upload resources' },
   { label: 'Tests & Marks', screen: 'tuitionPostProgress', icon: 'clipboard-check', color: '#A855F7', desc: 'Assessments' },
 ];
 
 export default function TuitionConsoleScreen({ navigation }: TuitionConsoleScreenProps) {
-  const { users } = useAuth();
+  const { user, users } = useAuth();
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
-  const tuitionStudentCount = useMemo(() => users.filter(u => u.role === 'tuition_student' && u.status === 'active').length, [users]);
-  const tuitionTeacherCount = useMemo(() => users.filter(u => u.role === 'tuition_teacher' && u.status === 'active').length, [users]);
+  const isSchoolAdmin = user?.role === 'admin';
+
+  const branchUsers = useMemo(() => {
+    if (user?.role !== 'master_admin') return users;
+    if (!selectedBranchId) return users;
+    return users.filter(u => u.branch_id === selectedBranchId);
+  }, [users, selectedBranchId, user?.role]);
+
+  const tuitionStudentCount = useMemo(() => branchUsers.filter(u => u.role === 'tuition_student' && u.status === 'active').length, [branchUsers]);
+  const tuitionTeacherCount = useMemo(() => branchUsers.filter(u => u.role === 'tuition_teacher' && u.status === 'active').length, [branchUsers]);
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-white">
@@ -49,6 +59,12 @@ export default function TuitionConsoleScreen({ navigation }: TuitionConsoleScree
               <MaterialCommunityIcons name="school" size={32} color="white" />
             </View>
           </View>
+
+          {user?.role === 'master_admin' && (
+            <View className="mb-6">
+              <BranchFilter selectedBranchId={selectedBranchId} onSelect={setSelectedBranchId} />
+            </View>
+          )}
 
           <View className="flex-row gap-3 mb-8">
             <View style={{ backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }} className="flex-1 p-5 rounded-[28px] border overflow-hidden">

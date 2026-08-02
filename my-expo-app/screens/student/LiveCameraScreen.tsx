@@ -11,6 +11,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import BranchFilter from '../../components/BranchFilter';
 
+const AMBER = ['#F59E0B', '#D97706'] as [string, string];
+const AMBER_DARK = ['#92400E', '#78350F'] as [string, string];
+const VIOLET = ['#8B5CF6', '#7C3AED'] as [string, string];
+const VIOLET_DARK = ['#5b21b6', '#2e1065'] as [string, string];
+
 const CAMERA_ICONS = ['youtube', 'twitch', 'video', 'eye', 'security'];
 
 interface Camera {
@@ -190,6 +195,7 @@ const CameraCard = memo(({ camera, onSelect, onEdit, onDelete, isAdmin, colors, 
 
 export default function LiveCameraScreen({ navigation, route }: any) {
   const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   const { user, branches } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'master_admin'; 
 
@@ -630,30 +636,38 @@ export default function LiveCameraScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View className={`flex-1 ${colors.background}`}>
-      <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-4">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
+      <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 8 }}>
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
-            <TouchableOpacity 
-              onPress={() => navigation.goBack()} 
-              className={`mb-4 ${colors.surface} w-12 h-12 rounded-2xl items-center justify-center border ${colors.border} shadow-sm`}
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ backgroundColor: isDark ? '#1e1e1e' : '#F3F4F6', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? '#262626' : '#E5E7EB', marginBottom: 16, elevation: 2 }}
             >
-              <MaterialCommunityIcons name="arrow-left" size={28} color={theme === 'dark' ? '#FFF' : '#000'} />
+              <MaterialCommunityIcons name="arrow-left" size={22} color={isDark ? '#FFFFFF' : '#374151'} />
             </TouchableOpacity>
-            <Text className={`text-5xl font-black ${colors.text} tracking-tighter`}>Live</Text>
-            <Text className="text-2xl font-bold text-brand-pink tracking-tight">Monitoring 📹</Text>
+            <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+              TN HAPPYKIDS
+            </Text>
+            <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
+              Live
+            </Text>
+            <View style={{ backgroundColor: 'rgba(236, 72, 153, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(236, 72, 153, 0.1)', flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="video" size={14} color="#DB2777" />
+              <Text style={{ color: '#DB2777', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Monitoring</Text>
+            </View>
           </View>
           <View className="flex-row items-center gap-3">
             {isAdmin && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => openModal()}
-                className="bg-brand-pink w-14 h-14 rounded-3xl items-center justify-center shadow-2xl border-4 border-white -rotate-6"
+                style={{ backgroundColor: '#DB2777', width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', elevation: 8, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-6deg' }] }}
               >
                 <MaterialCommunityIcons name="plus" size={28} color="white" />
               </TouchableOpacity>
             )}
-            <View className="bg-brand-yellow w-16 h-16 rounded-3xl items-center justify-center shadow-2xl border-4 border-white -rotate-6">
-              <MaterialCommunityIcons name="video" size={32} color="#92400E" />
+            <View style={{ backgroundColor: '#FDE047', width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', elevation: 8, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-6deg' }] }}>
+              <MaterialCommunityIcons name="cctv" size={30} color="#92400E" />
             </View>
           </View>
         </View>
@@ -664,7 +678,7 @@ export default function LiveCameraScreen({ navigation, route }: any) {
 
       <View className="flex-1 px-6">
         <View className="flex-row items-center justify-between mb-6 mt-4">
-            <Text className={`text-[10px] font-black uppercase tracking-[3px] ${colors.textTertiary}`}>Camera Infrastructure</Text>
+            <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 3, color: isDark ? '#9CA3AF' : '#6B7280' }}>Camera Infrastructure</Text>
             {isAdmin && (
                 <View className="flex-row items-center gap-3">
                     <TouchableOpacity 
@@ -681,7 +695,7 @@ export default function LiveCameraScreen({ navigation, route }: any) {
                                 setIsActionLoading(false);
                             }
                         }}
-                        className={`p-3 rounded-2xl border ${colors.border} ${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-sm'}`}
+                        style={{ padding: 12, borderRadius: 16, borderWidth: 1, borderColor: isDark ? '#262626' : '#F3F4F6', backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF', elevation: isDark ? 0 : 3 }}
                     >
                         <MaterialCommunityIcons name="refresh" size={24} color="#F59E0B" />
                     </TouchableOpacity>
@@ -694,32 +708,59 @@ export default function LiveCameraScreen({ navigation, route }: any) {
         ) : !isAccessible ? (
             <ScrollView 
                 refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={['#F59E0B']} />}
-                contentContainerStyle={{ flex: 1, justifyContent: 'center' }}
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
             >
-                <View className="items-center justify-center p-8">
-                    <View className="w-full bg-white dark:bg-white/5 p-10 rounded-[50px] items-center border border-brand-pink/20 shadow-2xl">
-                        <View className="bg-brand-pink/10 w-32 h-32 rounded-full items-center justify-center mb-8 border-4 border-white dark:border-white/5">
-                            <MaterialCommunityIcons name="shield-lock-outline" size={64} color="#F59E0B" />
-                        </View>
-                        <Text className={`text-4xl font-black ${colors.text} text-center tracking-tighter mb-4`}>Access Restricted</Text>
-                        <Text className={`text-center font-bold leading-7 ${colors.textSecondary} mb-10`}>
-                            {attendanceError || "To ensure the safety of all children, camera access is only permitted while your child is actively present inside the school premises."}
-                        </Text>
-                        
-                        <View className="w-full bg-brand-yellow/10 p-6 rounded-3xl border border-brand-yellow/20 flex-row items-center mb-10">
-                            <MaterialCommunityIcons name="information-outline" size={24} color="#D97706" />
-                            <Text className="flex-1 ml-4 text-[11px] font-black text-brand-yellow-800 uppercase tracking-widest leading-4">
-                                Access window: Between Clock-In and Clock-Out protocol execution.
-                            </Text>
-                        </View>
-
-                        <TouchableOpacity 
-                            onPress={() => fetchCameras()}
-                            className="bg-brand-pink w-full h-18 rounded-3xl items-center justify-center shadow-lg shadow-pink-200"
+                <View className="items-center justify-center">
+                    <View style={{ width: '100%', borderRadius: 24, overflow: 'hidden', elevation: 15 }}>
+                        <LinearGradient
+                            colors={isDark ? VIOLET_DARK : VIOLET}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{ padding: 24 }}
                         >
-                            <Text className="text-white font-black uppercase tracking-[3px] text-xs">Verify Status Again</Text>
-                        </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+                                    <MaterialCommunityIcons name="shield-lock-outline" size={36} color="white" />
+                                </View>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FCA5A5', marginRight: 6 }} />
+                                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5 }}>Restricted</Text>
+                                </View>
+                            </View>
+
+                            <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -1 }}>Access Restricted</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '600', lineHeight: 20, marginTop: 10 }}>
+                                {attendanceError || "To ensure the safety of all children, camera access is only permitted while your child is actively present inside the school premises."}
+                            </Text>
+
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 16, borderRadius: 16, marginTop: 20, flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="information-outline" size={24} color="white" />
+                                <Text style={{ flex: 1, marginLeft: 12, color: 'white', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, lineHeight: 16 }}>
+                                    Access window: Between Clock-In and Clock-Out protocol execution.
+                                </Text>
+                            </View>
+
+                            <View style={{ position: 'absolute', bottom: -16, right: -16, opacity: 0.1 }}>
+                                <MaterialCommunityIcons name="cctv" size={110} color="white" />
+                            </View>
+                        </LinearGradient>
                     </View>
+
+                    <TouchableOpacity
+                        onPress={() => fetchCameras()}
+                        activeOpacity={0.9}
+                        style={{ width: '100%', borderRadius: 18, overflow: 'hidden', marginTop: 20, elevation: 8 }}
+                    >
+                        <LinearGradient
+                            colors={isDark ? AMBER_DARK : AMBER}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{ padding: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                        >
+                            <MaterialCommunityIcons name="refresh" size={18} color="white" />
+                            <Text style={{ color: 'white', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 11, marginLeft: 8 }}>Verify Status Again</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         ) : (

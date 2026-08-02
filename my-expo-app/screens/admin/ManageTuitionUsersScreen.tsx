@@ -815,11 +815,16 @@ export default function ManageTuitionUsersScreen({ navigation }: Props) {
     users.filter(u => u.role === 'tuition_teacher' || u.role === 'tuition_student'),
   [users]);
 
-  const stats = useMemo(() => ({
-    teachers: tuitionUsers.filter(u => u.role === 'tuition_teacher' && u.status === 'active').length,
-    students: tuitionUsers.filter(u => u.role === 'tuition_student' && u.status === 'active').length,
-    total: tuitionUsers.length,
-  }), [tuitionUsers]);
+  const stats = useMemo(() => {
+    const scoped = selectedBranchId
+      ? tuitionUsers.filter(u => u.branch_id === selectedBranchId)
+      : tuitionUsers;
+    return {
+      teachers: scoped.filter(u => u.role === 'tuition_teacher' && u.status === 'active').length,
+      students: scoped.filter(u => u.role === 'tuition_student' && u.status === 'active').length,
+      total: scoped.length,
+    };
+  }, [tuitionUsers, selectedBranchId]);
 
   const displayedUsers = useMemo(() => {
     let list = (filter === 'all' ? tuitionUsers : tuitionUsers.filter(u => u.role === filter));

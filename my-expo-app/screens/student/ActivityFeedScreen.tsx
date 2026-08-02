@@ -104,24 +104,11 @@ const ReelItem = React.memo(({
       setDownloadProgress(0);
       
       const fileName = `${item.title.replace(/\s/g, '_')}_${item.id}${item.type === 'video' ? '.mp4' : '.jpg'}`;
-      const cacheDir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
-      if (!cacheDir) throw new Error('Cache directory not available');
-      const dir = `${cacheDir}downloads/`;
-      await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {});
-      const fileUri = `${dir}${fileName}`;
-      
-      const downloadResumable = FileSystem.createDownloadResumable(
-        item.media,
-        fileUri,
-        {},
-        (p) => {
-          const prog = p.totalBytesWritten / p.totalBytesExpectedToWrite;
-          setDownloadProgress(prog);
-        }
-      );
-
-      const res = await downloadResumable.downloadAsync();
-      if (res) {
+      const dir = new FileSystem.Directory(FileSystem.Paths.cache, 'downloads');
+      if (!dir.exists) dir.create({ intermediates: true });
+      const target = new FileSystem.File(dir, fileName);
+      const res = await FileSystem.File.downloadFileAsync(item.media, target, { idempotent: true });
+      if (res?.uri) {
         await Sharing.shareAsync(res.uri);
       }
       setIsDownloading(false);

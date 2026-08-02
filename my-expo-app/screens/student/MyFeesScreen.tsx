@@ -5,19 +5,31 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
+const AMBER = ['#F59E0B', '#D97706'] as [string, string];
+const AMBER_DARK = ['#92400E', '#78350F'] as [string, string];
+const EMERALD = ['#10B981', '#059669'] as [string, string];
+const EMERALD_DARK = ['#064e3b', '#022c22'] as [string, string];
+const VIOLET = ['#8B5CF6', '#7C3AED'] as [string, string];
+const VIOLET_DARK = ['#5b21b6', '#2e1065'] as [string, string];
+const BLUE = ['#3B82F6', '#2563EB'] as [string, string];
+const BLUE_DARK = ['#1e40af', '#1e1b4b'] as [string, string];
+
 export default function MyFeesScreen({ navigation }: any) {
   const { user, fees, feeStructures, refreshFees, fetchData } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Auto-refresh data when this screen mounts
   useEffect(() => {
     refreshFees();
     fetchData();
@@ -33,24 +45,19 @@ export default function MyFeesScreen({ navigation }: any) {
     if (!user) return [];
     const dbId = user.id?.toString();
     const schoolId = user.studentId?.toString();
-    return fees.filter(f => 
+    return fees.filter(f =>
       (f.student_id?.toString() === dbId || f.student_id?.toString() === schoolId)
     );
   }, [user, fees]);
 
   const studentFinancials = useMemo(() => {
     if (!user) return { paid: 0, pending: 0 };
-    
-    // Paid: sum of all fee records with status 'paid'
     const paidSum = myFeesList
       .filter(f => f.status === 'paid')
       .reduce((sum, f) => sum + (f.amount || 0), 0);
-      
-    // Pending: sum of all fee records with status 'unpaid'
     const pendingSum = myFeesList
       .filter(f => f.status === 'unpaid')
       .reduce((sum, f) => sum + (f.amount || 0), 0);
-      
     return { paid: paidSum, pending: pendingSum };
   }, [myFeesList]);
 
@@ -112,91 +119,158 @@ export default function MyFeesScreen({ navigation }: any) {
     }
   };
 
+  const studentFeeStructures = feeStructures.filter(fs => fs.category === user?.category);
+
   const renderDashboard = () => (
-    <View className="px-6">
-      <View className="mb-8 bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm">
-        <View className="flex-row items-center justify-between mb-6">
-          <View>
-            <Text className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1">GLOBAL BALANCE</Text>
-            <Text className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">₹{studentFinancials.pending.toLocaleString()}</Text>
-          </View>
-          <View className="w-14 h-14 rounded-2xl bg-amber-500 items-center justify-center">
-            <MaterialCommunityIcons name="wallet-outline" size={28} color="white" />
-          </View>
-        </View>
-
-        <View className="flex-row gap-3 pt-5 border-t border-gray-100 dark:border-gray-700">
-          <View className="flex-1 bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-2xl items-center">
-            <MaterialCommunityIcons name="check-decagram" size={20} color="#10B981" />
-            <Text className="text-emerald-600 dark:text-emerald-400 font-bold text-lg mt-1">₹{studentFinancials.paid.toLocaleString()}</Text>
-            <Text className="text-[8px] font-bold text-emerald-600/60 dark:text-emerald-400/60 uppercase tracking-widest mt-1">TOTAL PAID</Text>
-          </View>
-          <View className="flex-1 bg-amber-50 dark:bg-amber-900/30 p-4 rounded-2xl items-center">
-            <MaterialCommunityIcons name="calendar-clock" size={20} color="#F59E0B" />
-            <Text className="text-amber-600 dark:text-amber-400 font-bold text-lg mt-1">Day {user?.fee_due_day || '5'}</Text>
-            <Text className="text-[8px] font-bold text-amber-600/60 dark:text-amber-400/60 uppercase tracking-widest mt-1">DUE DATE</Text>
-          </View>
-        </View>
-      </View>
-
-      <View className="mb-6">
-        <Text className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-4 px-1">Fee Architecture</Text>
-        {feeStructures
-          .filter(fs => fs.category === user?.category)
-          .map((fs, idx) => (
-            <View 
-              key={idx}
-              className="bg-white dark:bg-gray-800 p-5 rounded-2xl mb-3 flex-row items-center justify-between shadow-sm"
-            >
-              <View className="flex-row items-center">
-                <View className="bg-indigo-100 dark:bg-indigo-900/40 w-10 h-10 rounded-xl items-center justify-center mr-3">
-                  <MaterialCommunityIcons name="layers-triple-outline" size={20} color="#6366F1" />
+    <View style={{ paddingHorizontal: 24 }}>
+      <View style={{ paddingVertical: 4 }}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {}}
+          style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
+        >
+          <LinearGradient
+            colors={studentFinancials.pending > 0 ? (isDark ? AMBER_DARK : AMBER) : (isDark ? EMERALD_DARK : EMERALD)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 12 }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <MaterialCommunityIcons name="wallet-outline" size={18} color="white" />
                 </View>
                 <View>
-                  <Text className="font-bold text-gray-900 dark:text-white text-sm">{fs.name}</Text>
-                  <Text className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">{fs.frequency}</Text>
+                  <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Global Balance</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Student Wallet</Text>
                 </View>
               </View>
-              <Text className="font-bold text-gray-900 dark:text-white text-lg">₹{fs.amount.toLocaleString()}</Text>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>
+                  {studentFinancials.pending > 0 ? 'Pending' : 'Clear'}
+                </Text>
+              </View>
             </View>
-          ))}
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                {[
+                  { label: 'Pending', value: `₹${studentFinancials.pending.toLocaleString('en-IN')}`, icon: 'clock-alert-outline', color: '#FDE68A' },
+                  { label: 'Paid', value: `₹${studentFinancials.paid.toLocaleString('en-IN')}`, icon: 'check-decagram', color: '#6EE7B7' },
+                  { label: 'Due Day', value: `Day ${user?.fee_due_day || '5'}`, icon: 'calendar-clock', color: '#93C5FD' },
+                ].map((item, i) => (
+                  <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
+                    <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }} numberOfLines={1}>{item.value}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+              <MaterialCommunityIcons name="safe-square-outline" size={90} color="white" />
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ paddingVertical: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Fee Architecture 🏗️</Text>
+          <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+            <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Structure</Text>
+          </View>
+        </View>
+
+        {studentFeeStructures.length > 0 ? (
+          studentFeeStructures.map((fs, idx) => (
+            <View
+              key={idx}
+              style={{
+                backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
+                borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                borderWidth: 1, borderColor: isDark ? '#262626' : '#F3F4F6', elevation: 4, padding: 16,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.15)', width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <MaterialCommunityIcons name="layers-triple-outline" size={20} color="#6366F1" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#FFFFFF' : '#111827' }} numberOfLines={1}>{fs.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                    <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100 }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: '#6366F1' }}>{fs.frequency}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FFFFFF' : '#111827' }}>₹{fs.amount.toLocaleString()}</Text>
+            </View>
+          ))
+        ) : (
+          <View style={{ alignItems: 'center', paddingVertical: 40, opacity: 0.5 }}>
+            <MaterialCommunityIcons name="layers-triple-outline" size={56} color={isDark ? '#4B5563' : '#9CA3AF'} />
+            <Text style={{ fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#6B7280' : '#9CA3AF', marginTop: 12 }}>
+              No fee structure configured
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
 
   const renderHistory = () => (
-    <View className="px-6">
+    <View style={{ paddingHorizontal: 24 }}>
       {paidFeeRecords.length === 0 ? (
-        <View className="items-center py-24">
-          <MaterialCommunityIcons name="history" size={64} color="#D1D5DB" />
-          <Text className="font-bold text-gray-400 tracking-widest mt-4 text-xs text-center uppercase">No Payment History</Text>
-          <Text className="text-gray-300 text-xs mt-2">Your paid fee records will appear here</Text>
+        <View style={{ alignItems: 'center', paddingVertical: 100, opacity: 0.5 }}>
+          <MaterialCommunityIcons name="history" size={72} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          <Text style={{ fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#6B7280' : '#9CA3AF', marginTop: 16 }}>
+            No Payment History
+          </Text>
+          <Text style={{ fontSize: 12, color: isDark ? '#6B7280' : '#9CA3AF', marginTop: 8, fontWeight: '600' }}>
+            Your paid fee records will appear here
+          </Text>
         </View>
       ) : (
         paidFeeRecords.map((fee, idx) => (
-          <TouchableOpacity 
+          <TouchableOpacity
             key={idx}
             activeOpacity={0.95}
             onPress={() => handleDownload(fee)}
-            className="bg-white dark:bg-gray-800 p-5 mb-4 rounded-2xl shadow-sm"
+            style={{
+              backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
+              borderRadius: 16, marginBottom: 12, overflow: 'hidden',
+              borderWidth: 1, borderColor: isDark ? '#262626' : '#F3F4F6', elevation: 4,
+            }}
           >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center flex-1">
-                <View className="bg-emerald-500 w-12 h-12 rounded-xl items-center justify-center mr-4">
-                  <MaterialCommunityIcons name="hand-coin-outline" size={24} color="white" />
+            <LinearGradient
+              colors={isDark ? EMERALD_DARK : EMERALD}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 16 }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 46, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <MaterialCommunityIcons name="hand-coin-outline" size={22} color="white" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }} numberOfLines={1}>{fee.type || 'School Fee'}</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{fee.date}</Text>
+                  </View>
                 </View>
-                <View className="flex-1">
-                  <Text className="font-bold text-gray-900 dark:text-white text-base" numberOfLines={1}>{fee.type || 'School Fee'}</Text>
-                  <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{fee.date}</Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ color: 'white', fontSize: 20, fontWeight: '900' }}>₹{(Number(fee.amount) || 0).toLocaleString()}</Text>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100, marginTop: 4, flexDirection: 'row', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="download" size={10} color="white" />
+                    <Text style={{ color: 'white', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 4 }}>Receipt</Text>
+                  </View>
                 </View>
               </View>
-              <View className="items-end">
-                <Text className="font-bold text-xl text-emerald-600 dark:text-emerald-400">+ ₹{(Number(fee.amount) || 0).toLocaleString()}</Text>
-                <View className="bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-lg mt-1">
-                  <Text className="text-[8px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">PAID</Text>
-                </View>
+              <View style={{ position: 'absolute', bottom: -12, right: -12, opacity: 0.1 }}>
+                <MaterialCommunityIcons name="receipt" size={80} color="white" />
               </View>
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         ))
       )}
@@ -204,57 +278,91 @@ export default function MyFeesScreen({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-gray-900">
-      <View className="flex-1">
-        <View style={{ paddingTop: Math.max(insets.top, 20) }} className="px-6 pb-4">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <TouchableOpacity 
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <View />
+        }
+      >
+        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
+          {/* ── Modern Header ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity
                 onPress={() => navigation.goBack()}
-                className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl items-center justify-center mb-4"
+                style={{ backgroundColor: isDark ? '#1e1e1e' : '#F3F4F6', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? '#262626' : '#E5E7EB', marginBottom: 16, elevation: 2 }}
               >
-                <MaterialCommunityIcons name="arrow-left" size={22} color="#374151" />
+                <MaterialCommunityIcons name="arrow-left" size={22} color={isDark ? '#FFFFFF' : '#374151'} />
               </TouchableOpacity>
-              <Text className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Finance</Text>
-              <Text className="text-lg font-bold text-amber-500 mt-[-2px]">Dashboard</Text>
+              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                TN HAPPYKIDS
+              </Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
+                Finance
+              </Text>
+              <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.1)' }}>
+                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>
+                  {activeTab === 'dashboard' ? 'Wallet Dashboard' : 'Payment History'}
+                </Text>
+              </View>
             </View>
-            <View className="bg-amber-500 w-16 h-16 rounded-2xl items-center justify-center">
-               <MaterialCommunityIcons name="bank" size={32} color="white" />
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('profile')}
+              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}
+            >
+              {user?.avatar ? (
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              ) : (
+                <MaterialCommunityIcons name="bank" size={36} color="#92400E" />
+              )}
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                <MaterialCommunityIcons name="lock-outline" size={12} color="white" />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Tab Switch ── */}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+            {([
+              { key: 'dashboard' as const, label: 'Wallets', icon: 'wallet-outline' },
+              { key: 'history' as const, label: 'History', icon: 'history' },
+            ]).map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                activeOpacity={0.9}
+                onPress={() => setActiveTab(tab.key)}
+                style={{
+                  flex: 1, backgroundColor: activeTab === tab.key ? '#F59E0B' : (isDark ? '#1e1e1e' : '#F3F4F6'),
+                  borderRadius: 14, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center',
+                  borderWidth: 1, borderColor: activeTab === tab.key ? '#F59E0B' : (isDark ? '#262626' : '#E5E7EB'),
+                  elevation: activeTab === tab.key ? 4 : 0,
+                }}
+              >
+                <MaterialCommunityIcons name={tab.icon as any} size={18} color={activeTab === tab.key ? 'white' : (isDark ? '#9CA3AF' : '#6B7280')} />
+                <Text style={{ fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, color: activeTab === tab.key ? 'white' : (isDark ? '#9CA3AF' : '#6B7280'), marginLeft: 6 }}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <View className="flex-row gap-3 mb-6 px-6">
-            <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => setActiveTab('dashboard')}
-              className={`flex-1 py-4 rounded-2xl items-center justify-center ${activeTab === 'dashboard' ? 'bg-amber-500' : 'bg-gray-100 dark:bg-gray-800'}`}
-            >
-              <Text className={`font-bold text-xs uppercase tracking-widest ${activeTab === 'dashboard' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>WALLETS</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => setActiveTab('history')}
-              className={`flex-1 py-4 rounded-2xl items-center justify-center ${activeTab === 'history' ? 'bg-amber-500' : 'bg-gray-100 dark:bg-gray-800'}`}
-            >
-              <Text className={`font-bold text-xs uppercase tracking-widest ${activeTab === 'history' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>HISTORY</Text>
-            </TouchableOpacity>
-          </View>
-
-          {activeTab === 'dashboard' ? renderDashboard() : renderHistory()}
-          <View className="h-32" />
-        </ScrollView>
-      </View>
+        {activeTab === 'dashboard' ? renderDashboard() : renderHistory()}
+        <View style={{ height: 128 }} />
+      </ScrollView>
 
       {pdfLoading && (
-        <View className="absolute inset-0 bg-black/60 items-center justify-center z-50">
-           <View className="bg-white dark:bg-[#1a1a18] p-10 rounded-[40px] items-center shadow-2xl">
-              <ActivityIndicator color="#F59E0B" size="large" />
-              <Text className="text-gray-900 dark:text-white font-black mt-6 uppercase tracking-[4px] text-[10px]">Encrypting Invoice...</Text>
-           </View>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <View style={{ backgroundColor: isDark ? '#1a1a18' : '#FFFFFF', padding: 40, borderRadius: 40, alignItems: 'center', elevation: 24 }}>
+            <ActivityIndicator color="#F59E0B" size="large" />
+            <Text style={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: '900', marginTop: 24, textTransform: 'uppercase', letterSpacing: 4, fontSize: 10 }}>
+              Encrypting Invoice...
+            </Text>
+          </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

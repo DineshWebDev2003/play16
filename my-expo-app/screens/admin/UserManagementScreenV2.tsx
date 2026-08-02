@@ -14,6 +14,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import StatusModal from '../../components/StatusModal';
 import ChoiceModal from '../../components/ChoiceModal';
 import BranchFilter from '../../components/BranchFilter';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 
 interface NavigationProps { navigate: (screen: string) => void; goBack: () => void; }
@@ -48,9 +49,9 @@ function FieldRow({ icon, label, required = false, theme, children }: {
 }
 
 // ─── User Form (shared for Add & Edit) ─────────────────────────────────────────
-function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
+function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit, payToActive }: {
   theme: string; onSubmit: (data: any) => void;
-  isSubmitting: boolean; initialData?: Partial<User>; isEdit?: boolean;
+  isSubmitting: boolean; initialData?: Partial<User>; isEdit?: boolean; payToActive?: boolean;
 }) {
   const { user, branches } = useAuth();
   const [formData, setFormData] = useState({
@@ -65,9 +66,10 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     password: '',
-    role: (initialData?.role as string) || 'teacher',
+    role: (initialData?.role as string) || 'student',
     gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
     fees: initialData?.fees || '',
+    monthly_fee: (initialData as any)?.monthly_fee || '',
     fee_due_day: (initialData as any)?.fee_due_day || '5',
     branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
     batch_id: (initialData as any)?.batch_id || '',
@@ -98,9 +100,10 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
       email: initialData?.email || '',
       phone: initialData?.phone || '',
       password: '',
-      role: (initialData?.role as string) || 'teacher',
+      role: (initialData?.role as string) || 'student',
       gender: (initialData?.gender as 'Male' | 'Female') || 'Male',
       fees: initialData?.fees || '',
+      monthly_fee: (initialData as any)?.monthly_fee || '',
       fee_due_day: (initialData as any)?.fee_due_day || '5',
       branch_id: initialData?.branch_id || (user?.role === 'admin' ? user?.branch_id : '') || '',
       batch_id: (initialData as any)?.batch_id || '',
@@ -117,10 +120,18 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
     if (!formData.phone.trim()) m.push('Phone Number');
     if (!isEdit && !formData.password.trim()) m.push('Initial Password');
     if (formData.password && formData.password.length < 6) m.push('Password (min 6 chars)');
+    if (payToActive && (formData.role === 'student' || formData.role === 'tuition_student') && !formData.fees?.toString().trim()) m.push('Admission Fee');
+    if ((formData.role === 'student' || formData.role === 'tuition_student') && !formData.monthly_fee?.toString().trim()) m.push('Monthly Fee');
+    if ((formData.role === 'student' || formData.role === 'tuition_student') && !formData.fee_due_day?.toString().trim()) m.push('Fee Due Date');
+    if ((formData.role === 'student' || formData.role === 'tuition_student') && parseInt(formData.fee_due_day as any, 10) > 28) m.push('Fee Due Date (max 28)');
     return m;
-  }, [formData, isEdit]);
+  }, [formData, isEdit, payToActive]);
 
   const isValid = missing.length === 0;
+
+  const dueDayInvalid = (formData.role === 'student' || formData.role === 'tuition_student') &&
+    !!formData.fee_due_day?.toString().trim() &&
+    (parseInt(formData.fee_due_day as any, 10) > 28 || parseInt(formData.fee_due_day as any, 10) < 1);
 
   const inp: any = {
     borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13,
@@ -281,45 +292,84 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
             </FieldRow>
           )}
 
-          <FieldRow icon="currency-inr" label="Fee Details" theme={theme}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1.5, flexDirection: 'row', alignItems: 'center' }}>
+          {(formData.role === 'student' || formData.role === 'tuition_student') && (
+            <FieldRow icon="currency-inr" label="Monthly Fee" required theme={theme}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1.5, flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ backgroundColor: '#2563EB', width: 48, height: 52, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'white', fontWeight: '900', fontSize: 18 }}>₹</Text>
+                  </View>
+                  <TextInput
+                    style={{ ...inp, flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+                    placeholder="Monthly Amount"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    value={formData.monthly_fee ? formData.monthly_fee.toString() : ''}
+                    onChangeText={v => set('monthly_fee', v)}
+                  />
+                </View>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ backgroundColor: '#FBBF24', width: 48, height: 52, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="calendar-clock" size={20} color="#92400E" />
+                  </View>
+                  <TextInput
+                    style={{
+                      ...inp,
+                      flex: 1,
+                      borderTopLeftRadius: 0,
+                      borderBottomLeftRadius: 0,
+                      borderColor: dueDayInvalid ? '#EF4444' : (theme === 'dark' ? '#3a3a38' : '#E5E7EB'),
+                    }}
+                    placeholder="Due Date"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={formData.fee_due_day ? formData.fee_due_day.toString() : ''}
+                    onChangeText={v => set('fee_due_day', v.replace(/\D/g, '').slice(0, 2))}
+                  />
+                </View>
+              </View>
+              {dueDayInvalid && (
+                <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: '700', marginTop: 4 }}>
+                  Due Date must be between 1 and 28.
+                </Text>
+              )}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: dueDayInvalid ? 2 : 6 }}>
+                <Text style={{ fontSize: 9, color: '#2563EB', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  * Monthly Fee (required)
+                </Text>
+                <Text style={{ fontSize: 9, color: dueDayInvalid ? '#EF4444' : '#FBBF24', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  Due Date (1-28)
+                </Text>
+              </View>
+            </FieldRow>
+          )}
+
+          {(formData.role === 'student' || formData.role === 'tuition_student') && (
+            <FieldRow icon="currency-inr" label="Admission Fee" required={payToActive} theme={theme}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ backgroundColor: '#7C3AED', width: 48, height: 52, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: 'white', fontWeight: '900', fontSize: 18 }}>₹</Text>
                 </View>
                 <TextInput
                   style={{ ...inp, flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-                  placeholder="Amount"
+                  placeholder="Admission Amount"
                   placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   value={formData.fees ? formData.fees.toString() : ''}
                   onChangeText={v => set('fees', v)}
                 />
               </View>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ backgroundColor: brandColor, width: 48, height: 52, borderTopLeftRadius: 12, borderBottomLeftRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-                  <MaterialCommunityIcons name="calendar-clock" size={20} color="#92400E" />
-                </View>
-                <TextInput
-                  style={{ ...inp, flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-                  placeholder="Due Date"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
-                  maxLength={2}
-                  value={formData.fee_due_day ? formData.fee_due_day.toString() : ''}
-                  onChangeText={v => set('fee_due_day', v)}
-                />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                <Text style={{ fontSize: 9, color: '#7C3AED', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {payToActive ? '* Admission Fee (required when Pay-to-Active is ON)' : 'Admission Fee'}
+                </Text>
+                <Text style={{ fontSize: 9, color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                  No due date
+                </Text>
               </View>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-              <Text style={{ fontSize: 9, color: brandColor, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
-                * Monthly Amount
-              </Text>
-              <Text style={{ fontSize: 9, color: '#FBBF24', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
-                Due Date (1-31)
-              </Text>
-            </View>
-          </FieldRow>
+            </FieldRow>
+          )}
         </>
       )}
 
@@ -404,7 +454,7 @@ function UserFormRaw({ theme, onSubmit, isSubmitting, initialData, isEdit }: {
 const UserForm = memo(UserFormRaw);
 
 // ─── User Form Modal ───────────────────────────────────────────────────────────
-const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, initialData, isEdit }: any) => {
+const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, initialData, isEdit, payToActive }: any) => {
   const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
   return (
@@ -451,6 +501,7 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
                 isSubmitting={isSubmitting}
                 initialData={initialData}
                 isEdit={isEdit}
+                payToActive={payToActive}
               />
             </View>
             <View style={{ height: 40 }} />
@@ -462,16 +513,19 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
 });
 
 // ─── User Card ─────────────────────────────────────────────────────────────────
-const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleIcon, isSelecting, isSelected, onToggleSelect }: {
+const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleIcon, isSelecting, isSelected, onToggleSelect, canToggle }: {
   user: User; theme: string;
   onEdit: (u: User) => void;
   onStatusToggle: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   getRoleIcon: (role: string) => string;
   isSelecting?: boolean; isSelected?: boolean; onToggleSelect?: (id: string) => void;
+  canToggle?: boolean;
 }) => {
   const isDark = theme === 'dark';
   const isActive = user.status === 'active';
+  const isPendingPayment = user.status === 'pending_payment';
+  const isStudent = user.role === 'student' || user.role === 'tuition_student';
   const branchName = user.branch?.name || '';
   const [showActions, setShowActions] = useState(false);
 
@@ -529,14 +583,14 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
               {user.name}
             </Text>
             <View style={{
-              backgroundColor: isActive ? (isDark ? '#064E3B' : '#F0FFF4') : (isDark ? '#7F1D1D' : '#FFF5F5'),
+              backgroundColor: isActive ? (isDark ? '#064E3B' : '#F0FFF4') : isPendingPayment ? '#FEF3C7' : (isDark ? '#7F1D1D' : '#FFF5F5'),
               paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
             }}>
               <Text style={{
                 fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1,
-                color: isActive ? (isDark ? '#6EE7B7' : '#065F46') : (isDark ? '#FCA5A5' : '#991B1B'),
+                color: isActive ? (isDark ? '#6EE7B7' : '#065F46') : isPendingPayment ? '#B45309' : (isDark ? '#FCA5A5' : '#991B1B'),
               }}>
-                {user.status}
+                {isPendingPayment ? 'Awaiting Payment' : (isActive ? 'Active' : 'Disabled')}
               </Text>
             </View>
           </View>
@@ -639,13 +693,14 @@ const UserCard = memo(({ user, theme, onEdit, onStatusToggle, onDelete, getRoleI
           </TouchableOpacity>
 
           <TouchableOpacity
+            disabled={isStudent || !canToggle}
             onPress={() => { setShowActions(false); onStatusToggle(user.id); }}
-            style={{ flex: 1, alignItems: 'center' }}>
+            style={{ flex: 1, alignItems: 'center', opacity: (isStudent || !canToggle) ? 0.4 : 1 }}>
             <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB' }}>
-              <MaterialCommunityIcons name={isActive ? 'account-cancel-outline' : 'account-check-outline'} size={16} color={isActive ? '#EF4444' : '#10B981'} />
+              <MaterialCommunityIcons name={isStudent ? 'lock-outline' : (isActive ? 'account-cancel-outline' : 'account-check-outline')} size={16} color={isStudent ? '#D97706' : (isActive ? '#EF4444' : '#10B981')} />
             </View>
             <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 4 }}>
-              {isActive ? 'Halt' : 'Live'}
+              {isStudent ? 'Pay to Live' : (isActive ? 'Disable' : 'Enable')}
             </Text>
           </TouchableOpacity>
 
@@ -676,7 +731,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'student' | 'teacher' | 'admin' | 'nanny'>('all');
+  const [filter, setFilter] = useState<'all' | 'student' | 'teacher' | 'admin'>('all');
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -687,10 +742,29 @@ export default function UserManagementScreenV2({ navigation }: Props) {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [showMonsterPanel, setShowMonsterPanel] = useState(false);
   const [monsterPass, setMonsterPass] = useState('');
+  const [payToActive, setPayToActive] = useState(false);
 
   const isMonsterAdmin = user?.username === 'monster';
   const MONSTER_PASSWORD = 'Monster@123';
   const isSchoolAdmin = user?.role === 'admin';
+  const isMaster = user?.role === 'master_admin';
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('payToActive');
+        if (stored !== null) setPayToActive(stored === 'true');
+      } catch {}
+    })();
+  }, []);
+
+  const togglePayToActive = useCallback(() => {
+    setPayToActive(prev => {
+      const next = !prev;
+      AsyncStorage.setItem('payToActive', String(next)).catch(() => {});
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (isSchoolAdmin && user?.branch_id) {
@@ -740,18 +814,32 @@ export default function UserManagementScreenV2({ navigation }: Props) {
     setIsSubmitting(true);
     try {
       const branch = branches.find(b => b.id?.toString() === formData.branch_id?.toString());
-      const branchPrefix = branch ? branch.name.charAt(0).toUpperCase() : 'X';
-      const roleLetter = (formData.role === 'teacher' || formData.role === 'tuition_teacher') ? 't' : 's';
-      const prefix = `${branchPrefix}${roleLetter}`;
+      const SCHOOL_CODE = 'TNHK';
+      const isStudentRole = formData.role === 'student' || formData.role === 'tuition_student';
+      const isTeacherRole = formData.role === 'teacher' || formData.role === 'tuition_teacher';
+
+      let branchCode: string = 'XX';
+      if (branch) {
+        const letters = branch.name.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase();
+        const collides = branches.some(b =>
+          b.id?.toString() !== branch.id?.toString() &&
+          b.name.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() === letters
+        );
+        branchCode = collides ? branch.id.toString() : letters;
+      }
+
+      const roleToken = formData.role === 'tuition_student' || formData.role === 'tuition_teacher' ? 'TU' : formData.role === 'student' ? 'S' : 'T';
+      const prefix = `${SCHOOL_CODE}${roleToken}${branchCode}`;
+
       const branchRoleUsers = users.filter(u =>
         u.branch_id?.toString() === formData.branch_id?.toString() &&
-        ((formData.role === 'student' || formData.role === 'tuition_student') ? (u.role === 'student' || u.role === 'tuition_student') : (u.role === 'teacher' || u.role === 'tuition_teacher'))
+        (isStudentRole ? (u.role === 'student' || u.role === 'tuition_student') : (u.role === 'teacher' || u.role === 'tuition_teacher'))
       );
       const maxSeq = branchRoleUsers
         .map(u => {
           const id = u.studentId || u.teacherId || '';
-          const num = id.replace(prefix, '');
-          return parseInt(num, 10) || 0;
+          if (!id.startsWith(prefix)) return 0;
+          return parseInt(id.slice(prefix.length), 10) || 0;
         })
         .reduce((max, n) => Math.max(max, n), 0);
       const nextSeq = (maxSeq + 1).toString().padStart(3, '0');
@@ -766,7 +854,8 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         role: formData.role,
         gender: formData.gender,
         password: formData.password,
-        status: 'active',
+        status: (payToActive && (formData.role === 'student' || formData.role === 'tuition_student')) ? 'pending_payment' : 'active',
+        pay_to_active: payToActive && (formData.role === 'student' || formData.role === 'tuition_student') ? true : undefined,
         branch_id: formData.branch_id || undefined,
         father_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fatherName : undefined,
         mother_name: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherName : undefined,
@@ -774,12 +863,13 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         mother_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
         category: formData.role === 'student' || formData.role === 'tuition_student' ? formData.category : undefined,
         fees: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees : undefined,
+        monthly_fee: formData.role === 'student' || formData.role === 'tuition_student' ? formData.monthly_fee : undefined,
         fee_due_day: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
         batch_id: formData.batch_id ? formData.batch_id : undefined,
       }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
 
-      if (formData.role === 'student' || formData.role === 'tuition_student') payload.student_id = `${prefix}${nextSeq}`;
-      if (formData.role === 'teacher' || formData.role === 'tuition_teacher') payload.teacher_id = `${prefix}${nextSeq}`;
+      if (isStudentRole) payload.student_id = `${prefix}${nextSeq}`;
+      if (isTeacherRole) payload.teacher_id = `${prefix}${nextSeq}`;
 
       await addUser(payload);
       setShowAddForm(false);
@@ -788,7 +878,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       console.log('Add User Error:', err?.response?.data || err.message);
       setStatusModal({ visible: true, title: 'System Error ⚠️', message: err?.response?.data?.message || 'Something went wrong while adding the user.', type: 'error' });
     } finally { setIsSubmitting(false); }
-  }, [users, addUser, user]);
+  }, [users, addUser, user, payToActive]);
 
   // ── Edit ──
   const handleEditSubmit = useCallback(async (formData: any) => {
@@ -813,6 +903,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         mother_phone: formData.role === 'student' || formData.role === 'tuition_student' ? formData.motherPhone : undefined,
         category: formData.role === 'student' || formData.role === 'tuition_student' ? formData.category : undefined,
         fees: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fees : undefined,
+        monthly_fee: formData.role === 'student' || formData.role === 'tuition_student' ? formData.monthly_fee : undefined,
         fee_due_day: formData.role === 'student' || formData.role === 'tuition_student' ? formData.fee_due_day : undefined,
         date_of_birth: formData.role === 'student' || formData.role === 'tuition_student' && formData.dateOfBirth ? formData.dateOfBirth : undefined,
         batch_id: formData.batch_id ? formData.batch_id : undefined,
@@ -886,13 +977,12 @@ export default function UserManagementScreenV2({ navigation }: Props) {
 
   const stats = useMemo(() => ({
     students: users.filter(u => u.role === 'student' && u.status === 'active').length,
-    teachers: users.filter(u => u.role === 'teacher' && u.status === 'active').length,
+    teachers: users.filter(u => (u.role === 'teacher' || u.role === 'nanny') && u.status === 'active').length,
     admins: users.filter(u => u.role === 'admin' && u.status === 'active').length,
-    nannies: users.filter(u => u.role === 'nanny' && u.status === 'active').length,
   }), [users]);
 
   const displayedUsers = useMemo(() => {
-    let list = (filter === 'all' ? users : users.filter(u => u.role === filter)).filter(u => u.role !== 'master_admin' && u.role !== 'tuition_teacher' && u.role !== 'tuition_student');
+    let list = (filter === 'all' ? users : filter === 'teacher' ? users.filter(u => u.role === 'teacher' || u.role === 'nanny') : users.filter(u => u.role === filter)).filter(u => u.role !== 'master_admin' && u.role !== 'tuition_teacher' && u.role !== 'tuition_student');
     if (selectedBranchId) {
       list = list.filter(u => u.branch_id === selectedBranchId);
     }
@@ -927,9 +1017,10 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         isSelecting={isSelecting}
         isSelected={selectedIds.has(item.id)}
         onToggleSelect={toggleSelect}
+        canToggle={isMaster || isSchoolAdmin}
       />
     </View>
-  ), [isDark, getRoleIcon, toggleUserStatus, handleDeleteUserPress, isSelecting, selectedIds, toggleSelect]);
+  ), [isDark, getRoleIcon, toggleUserStatus, handleDeleteUserPress, isSelecting, selectedIds, toggleSelect, isMaster, isSchoolAdmin]);
 
   const stickyHeaderStyle = useAnimatedStyle(() => ({}));
 
@@ -994,6 +1085,13 @@ export default function UserManagementScreenV2({ navigation }: Props) {
             <View style={{ flex: 1 }}>
               <BranchFilter selectedBranchId={selectedBranchId} onSelect={setSelectedBranchId} />
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate('alumni')}
+              style={{
+                backgroundColor: '#7C3AED', width: 46, height: 46, borderRadius: 14,
+                alignItems: 'center', justifyContent: 'center', elevation: 2,
+              }}>
+              <MaterialCommunityIcons name="account-star-outline" size={22} color="white" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => { setShowSearch(prev => { if (prev) setSearch(''); return !prev; }); }}
               style={{
                 backgroundColor: showSearch ? brandColor : (isDark ? '#1e1e1e' : '#FFFFFF'),
@@ -1040,9 +1138,8 @@ export default function UserManagementScreenV2({ navigation }: Props) {
               { key: 'student', label: 'Students', short: 'St', icon: 'school-outline', color: studentColor, count: stats.students },
               { key: 'teacher', label: 'Staff', short: 'Te', icon: 'account-tie-outline', color: teacherColor, count: stats.teachers },
               { key: 'admin', label: 'Admins', short: 'Ad', icon: 'shield-account-outline', color: adminColor, count: stats.admins },
-              { key: 'nanny', label: 'Nannies', short: 'Na', icon: 'baby-face-outline', color: '#06B6D4', count: stats.nannies },
             ].map(card => (
-              <TouchableOpacity key={card.key} onPress={() => setFilter(prev => prev === card.key ? 'all' : card.key as 'all' | 'student' | 'teacher' | 'admin' | 'nanny')}
+              <TouchableOpacity key={card.key} onPress={() => setFilter(prev => prev === card.key ? 'all' : card.key as 'all' | 'student' | 'teacher' | 'admin')}
                 activeOpacity={0.9}
                 style={{
                   flex: 1, borderRadius: 20, overflow: 'hidden',
@@ -1063,6 +1160,38 @@ export default function UserManagementScreenV2({ navigation }: Props) {
             ))}
           </View>
         </View>
+        {isMaster && (
+          <View style={{ paddingHorizontal: 24, paddingBottom: 10 }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: payToActive ? '#FEF3C7' : (isDark ? '#1e1e1e' : '#FFFFFF'),
+              borderRadius: 18, padding: 14,
+              borderWidth: 1, borderColor: payToActive ? '#F59E0B' : (isDark ? '#333' : '#E5E7EB'),
+              elevation: 3,
+            }}>
+              <View style={{ backgroundColor: payToActive ? brandColor : (isDark ? '#333' : '#F3F4F6'), width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="cash-lock" size={20} color={payToActive ? '#FFFFFF' : (isDark ? '#CCC' : '#6B7280')} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '900', color: isDark ? '#FFF' : '#111827' }}>Pay to Active</Text>
+                <Text style={{ fontSize: 10, fontWeight: '600', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>
+                  {payToActive ? 'ON - New students must pay admission fee before access' : 'OFF - New students get instant access'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={togglePayToActive}
+                style={{
+                  width: 50, height: 28, borderRadius: 14,
+                  backgroundColor: payToActive ? brandColor : (isDark ? '#333' : '#E5E7EB'),
+                  justifyContent: 'center', paddingHorizontal: 3,
+                }}>
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: 'white',
+                  alignSelf: payToActive ? 'flex-end' : 'flex-start',
+                }} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </Animated.View>
 
       {/* ── Main Scrollable Content ── */}
@@ -1094,7 +1223,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
           <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ fontSize: 16, fontWeight: '900', flex: 1, color: isDark ? '#FFFFFF' : '#111827' }}>
-                {search ? `"${search}"` : filter === 'all' ? 'All Members' : filter === 'student' ? 'Students' : filter === 'teacher' ? 'Faculty' : filter === 'admin' ? 'Admins' : 'Nannies'}
+                {search ? `"${search}"` : filter === 'all' ? 'All Members' : filter === 'student' ? 'Students' : filter === 'teacher' ? 'Staff' : 'Admins'}
                 <Text style={{ color: isDark ? '#6B7280' : '#9CA3AF', fontSize: 13 }}> ({displayedUsers.length})</Text>
               </Text>
               {(filter !== 'all' || search !== '') && (
@@ -1130,20 +1259,20 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15, shadowRadius: 16,
       }}>
-        {(['all', 'student', 'teacher', 'admin', 'nanny'] as const).map(tab => (
+        {(['all', 'student', 'teacher', 'admin'] as const).map(tab => (
           <TouchableOpacity key={tab} onPress={() => setFilter(tab)}
             style={{
               flex: 1, backgroundColor: filter === tab ? brandColor : 'transparent',
               borderRadius: 14, paddingVertical: 10, alignItems: 'center',
             }}>
             <MaterialCommunityIcons
-              name={tab === 'all' ? 'account-group-outline' : tab === 'student' ? 'school-outline' : tab === 'teacher' ? 'account-tie-outline' : tab === 'admin' ? 'shield-account-outline' : 'baby-face-outline'}
+              name={tab === 'all' ? 'account-group-outline' : tab === 'student' ? 'school-outline' : tab === 'teacher' ? 'account-tie-outline' : 'shield-account-outline'}
               size={18} color={filter === tab ? '#FFFFFF' : (isDark ? '#CCC' : '#6B7280')} />
             <Text style={{
               fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 1,
               color: filter === tab ? '#FFFFFF' : (isDark ? '#CCC' : '#6B7280'), marginTop: 2,
             }}>
-              {tab === 'all' ? 'ALL' : tab === 'student' ? 'STUDENTS' : tab === 'teacher' ? 'TEACHERS' : tab === 'admin' ? 'ADMINS' : 'NANNIES'}
+              {tab === 'all' ? 'ALL' : tab === 'student' ? 'STUDENTS' : tab === 'teacher' ? 'STAFF' : 'ADMINS'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -1227,6 +1356,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         onSubmit={handleAddSubmit}
         isSubmitting={isSubmitting}
         theme={isDark ? 'dark' : 'light'}
+        payToActive={payToActive}
         isEdit={false}
       />
 
@@ -1237,6 +1367,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
         isSubmitting={isSubmitting}
         theme={isDark ? 'dark' : 'light'}
         initialData={editingUser}
+        payToActive={payToActive}
         isEdit={true}
       />
 

@@ -9,7 +9,6 @@ import StatusModal from '../../components/StatusModal';
 import ChoiceModal from '../../components/ChoiceModal';
 import PremiumPopup from '../../components/PremiumPopup';
 import BranchFilter from '../../components/BranchFilter';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -119,7 +118,7 @@ const StudentCard = React.memo(({
           <View className="flex-row items-center mt-2">
             <View className={`${isAbsent ? (appTheme === 'dark' ? 'bg-red-900/30' : 'bg-red-100') : (isIn ? (appTheme === 'dark' ? 'bg-green-900/30' : 'bg-green-100') : 'bg-brand-pink/10')} px-2 py-0.5 rounded-lg mr-2`}>
               <Text className={`text-[9px] font-black ${isAbsent ? 'text-red-400' : (isIn ? 'text-green-500' : 'text-brand-pink')}`}>
-                {generateIdFromBranchId(student.branch_id, 'student')}
+                {student.studentId || `ID ${student.id}`}
               </Text>
             </View>
           </View>
@@ -387,7 +386,7 @@ const ViewDropdown = React.memo(({
 
 export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScreenProps) {
   const { colors, theme: appTheme } = useTheme();
-  const { users, branches, fetchData: refreshUsers, user: authUser } = useAuth();
+  const { users, branches, user: authUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [branchFilterId, setBranchFilterId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -416,7 +415,6 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
   const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
   const [statusModal, setStatusModal] = useState({ visible: false, title: '', message: '', type: 'error' as any });
   const [choiceModal, setChoiceModal] = useState({ visible: false, title: '', message: '', options: [] as any[], iconName: '', accentColor: '' });
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -424,10 +422,8 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
   const fetchData = useCallback(async () => {
     try {
       setInitialLoading(true);
-      const startTime = Date.now();
-      await refreshUsers();
       const response = await api.get(`/attendance?date=${selectedDate}`);
-      
+
       const data = response.data;
       const records: Record<string, StudentAttendance> = {};
       data.forEach((item: any) => {
@@ -443,17 +439,13 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
         };
       });
       setAttendanceRecords(records);
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 500) {
-        await new Promise(resolve => setTimeout(resolve, 500 - elapsed));
-      }
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
     }
-  }, [selectedDate, refreshUsers]);
+  }, [selectedDate]);
 
   useEffect(() => {
         if (activeTab === 'day') {
@@ -511,7 +503,6 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
       if (activeTab === 'day') {
         await fetchData();
       } else {
-        await refreshUsers();
         await fetchMonthlyData();
       }
     } catch (error) {
@@ -519,7 +510,7 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
     } finally {
       setRefreshing(false);
     }
-  }, [fetchData, fetchMonthlyData, activeTab, refreshUsers]);
+  }, [fetchData, fetchMonthlyData, activeTab]);
 
   // Synchronous ref for all state-dependent callbacks to keep them stable
   const stateRef = useRef({ attendanceRecords, users, colors });
@@ -527,7 +518,7 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
 
   // Stabilize students list
   const students = useMemo(() => {
-    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : authUser?.role === 'teacher' ? ['student'] : ['student', 'tuition_student'];
+    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : (authUser?.role === 'teacher' || authUser?.role === 'nanny') ? ['student'] : ['student', 'tuition_student'];
     let filtered = users.filter(u => allowedRoles.includes(u.role) && u.status === 'active');
     if (branchFilterId) {
       filtered = filtered.filter(u => u.branch_id?.toString() === branchFilterId);
@@ -544,7 +535,7 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
   }, [users, branchFilterId, searchQuery, currentPage]);
 
   const totalFilteredCount = useMemo(() => {
-    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : authUser?.role === 'teacher' ? ['student'] : ['student', 'tuition_student'];
+    const allowedRoles = authUser?.role === 'tuition_teacher' ? ['tuition_student'] : (authUser?.role === 'teacher' || authUser?.role === 'nanny') ? ['student'] : ['student', 'tuition_student'];
     let filtered = users.filter(u => allowedRoles.includes(u.role) && u.status === 'active');
     if (branchFilterId) {
       filtered = filtered.filter(u => u.branch_id?.toString() === branchFilterId);
@@ -986,49 +977,11 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
                     ListHeaderComponent={
                     <>
                         <View className="px-6 mb-6 flex-row items-center justify-center">
-                        <TouchableOpacity 
-                            onPress={() => setShowDatePicker(true)}
-                            className="flex-row items-center"
-                        >
-                            <MaterialCommunityIcons name="calendar" size={22} color="#F59E0B" />
-                            <Text className={`text-base font-black ml-2 ${colors.text}`}>{selectedDate}</Text>
-                            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textTertiary} style={{ marginLeft: 4 }} />
-                        </TouchableOpacity>
-                        </View>
-
-                        {showDatePicker && (
-                          <View className="px-6 mb-4">
-                            {Platform.OS === 'ios' ? (
-                              <View className={`rounded-2xl p-4 ${appTheme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                                <DateTimePicker
-                                  value={new Date(selectedDate)}
-                                  mode="date"
-                                  display="inline"
-                                  minimumDate={new Date()}
-                                  onChange={(_event: DateTimePickerEvent, date?: Date) => {
-                                    if (date) {
-                                      setSelectedDate(date.toISOString().split('T')[0]);
-                                    }
-                                    setShowDatePicker(false);
-                                  }}
-                                />
-                              </View>
-                            ) : (
-                              <DateTimePicker
-                                value={new Date(selectedDate)}
-                                mode="date"
-                                display="default"
-                                minimumDate={new Date()}
-                                onChange={(_event: DateTimePickerEvent, date?: Date) => {
-                                  if (date) {
-                                    setSelectedDate(date.toISOString().split('T')[0]);
-                                  }
-                                  setShowDatePicker(false);
-                                }}
-                              />
-                            )}
+                          <View className="flex-row items-center bg-amber-50 px-4 py-2 rounded-full">
+                            <MaterialCommunityIcons name="calendar-today" size={18} color="#F59E0B" />
+                            <Text className={`text-sm font-black ml-2 ${colors.text}`}>{selectedDate}</Text>
                           </View>
-                        )}
+                        </View>
     
                         {SummaryHeader}
     
@@ -1099,7 +1052,7 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
                                 <Text className={`text-xl font-black ${colors.text} tracking-tight`} numberOfLines={1}>{selectedStudentForMonthly.name}</Text>
                                 <View className="flex-row items-center mt-1">
                                 <View className="bg-brand-pink/10 px-2 py-0.5 rounded-lg mr-2 border border-brand-pink/20">
-                                    <Text className="text-[10px] font-black text-brand-pink uppercase tracking-widest">{generateIdFromBranchId(selectedStudentForMonthly.branch_id, 'student')}</Text>
+                                    <Text className="text-[10px] font-black text-brand-pink uppercase tracking-widest">{selectedStudentForMonthly.studentId || `ID ${selectedStudentForMonthly.id}`}</Text>
                                 </View>
                                 </View>
                             </View>
@@ -1260,9 +1213,9 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
                   <Text className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-5">Select the guardian present</Text>
 
                   {[
-                    { label: 'Father', icon: 'face-man', color: '#3B82F6', name: (markingStudent as any).fatherName },
-                    { label: 'Mother', icon: 'face-woman', color: '#D97706', name: (markingStudent as any).motherName },
-                    { label: 'Guardian', icon: 'account-child', color: '#10B981', name: (markingStudent as any).parentName },
+                    { label: 'Father', icon: 'face-man', color: '#3B82F6', name: (markingStudent as any).fatherName, photo: (markingStudent as any).fatherPhoto },
+                    { label: 'Mother', icon: 'face-woman', color: '#D97706', name: (markingStudent as any).motherName, photo: (markingStudent as any).motherPhoto },
+                    { label: 'Guardian', icon: 'account-child', color: '#10B981', name: (markingStudent as any).parentName, photo: (markingStudent as any).guardianPhoto },
                   ].map((item, idx) => (
                     <TouchableOpacity
                       key={idx}
@@ -1271,9 +1224,15 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
                       className="mb-4 rounded-2xl overflow-hidden shadow-sm border border-gray-100"
                     >
                       <View className="p-5 flex-row items-center">
-                        <View style={{ backgroundColor: item.color + '18' }} className="w-14 h-14 rounded-2xl items-center justify-center mr-4">
-                          <MaterialCommunityIcons name={item.icon as any} size={30} color={item.color} />
-                        </View>
+                        {item.photo ? (
+                          <View className="w-14 h-14 rounded-2xl overflow-hidden mr-4 border-2 border-white shadow-sm">
+                            <Image source={{ uri: item.photo }} className="w-full h-full" resizeMode="cover" />
+                          </View>
+                        ) : (
+                          <View style={{ backgroundColor: item.color + '18' }} className="w-14 h-14 rounded-2xl items-center justify-center mr-4">
+                            <MaterialCommunityIcons name={item.icon as any} size={30} color={item.color} />
+                          </View>
+                        )}
                         <View className="flex-1">
                           <View className="flex-row items-center flex-wrap">
                             {item.name ? (
@@ -1341,14 +1300,14 @@ export default function TakeAttendanceScreen({ navigation }: TakeAttendanceScree
             data={students.filter(s => {
               if (!popupSearchQuery) return true;
               const q = popupSearchQuery.toLowerCase();
-              const id = generateIdFromBranchId(s.branch_id, 'student').toLowerCase();
+              const id = (s.studentId || s.id || '').toLowerCase();
               return s.name.toLowerCase().includes(q) || id.includes(q);
             })}
             keyExtractor={(item) => `popup-${item.id}`}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={<EmptyList colors={colors} />}
             renderItem={({ item }) => {
-              const studentId = generateIdFromBranchId(item.branch_id, 'student');
+              const studentId = item.studentId || `ID ${item.id}`;
               return (
                 <TouchableOpacity
                   onPress={() => { setShowStudentPopup(false); setMarkingStudentId(item.id); }}

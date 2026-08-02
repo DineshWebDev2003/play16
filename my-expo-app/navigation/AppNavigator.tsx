@@ -16,6 +16,7 @@ import AdminQuickActionScreen from '../screens/admin/AdminQuickActionScreen';
 import AdminAccountScreen from '../screens/admin/AdminAccountScreen';
 import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import UserManagementScreenV2 from '../screens/admin/UserManagementScreenV2';
+import AlumniScreen from '../screens/admin/AlumniScreen';
 import FeesManagementScreen from '../screens/admin/FeesManagementScreen';
 import AnnouncementsScreen from '../screens/admin/AnnouncementsScreen';
 import ReportsScreen from '../screens/admin/ReportsScreen';
@@ -34,6 +35,7 @@ import HomeworkScreen from '../screens/student/HomeworkScreen';
 import TimetableScreen from '../screens/student/TimetableScreen';
 import EmergencyContactScreen from '../screens/student/EmergencyContactScreen';
 import MyFeesScreen from '../screens/student/MyFeesScreen';
+import PayGatewayScreen from '../screens/student/PayGatewayScreen';
 import RewardsScreen from '../screens/student/RewardsScreen';
 import ProfileScreen from '../screens/student/ProfileScreen';
 import TeacherHomeScreen from '../screens/teacher/TeacherHomeScreen';
@@ -60,6 +62,7 @@ import TuitionStudentQuickActionScreen from '../screens/tuition/TuitionStudentQu
 import TuitionStudentAccountScreen from '../screens/tuition/TuitionStudentAccountScreen';
 import TuitionAttendanceScreen from '../screens/tuition/TuitionAttendanceScreen';
 import TuitionPostProgressScreen from '../screens/tuition/TuitionPostProgressScreen';
+import TuitionMyProgressScreen from '../screens/tuition/TuitionMyProgressScreen';
 import TuitionStudyMaterialsScreen from '../screens/tuition/TuitionStudyMaterialsScreen';
 import TuitionConsoleScreen from '../screens/admin/TuitionConsoleScreen';
 import ManageTuitionUsersScreen from '../screens/admin/ManageTuitionUsersScreen';
@@ -75,10 +78,9 @@ import StudentInfoScreen from '../screens/master_admin/StudentInfoScreen';
 // Nanny screens
 import NannyHomeScreen from '../screens/nanny/NannyHomeScreen';
 import NannyAccountScreen from '../screens/nanny/NannyAccountScreen';
-import NannyAttendanceScreen from '../screens/nanny/NannyAttendanceScreen';
 import VoiceChatScreen from '../screens/voice/VoiceChatScreen';
 
-type ScreenType = 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'pettyCash' | 'nannyChat' | 'nannyAttendance';
+type ScreenType = 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'pettyCash' | 'nannyChat' | 'nannyAttendance';
 
 export default function AppNavigator() {
   const { user, announcements, isLoading, logout } = useAuth();
@@ -192,6 +194,8 @@ export default function AppNavigator() {
     const backAction = () => {
       if (currentScreen !== 'login' && !['home', 'quickAction', 'account'].includes(currentScreen)) {
         goBack();
+      } else if (currentScreen === 'account' && user?.role === 'nanny') {
+        goBack();
       }
       return true;
     };
@@ -229,6 +233,7 @@ export default function AppNavigator() {
     // Admin screens
     userManagement: 'quickAction',
     userManagementV2: 'quickAction',
+    alumni: 'quickAction',
     feesManagement: 'quickAction',
     announcements: 'quickAction',
     reports: 'quickAction',
@@ -261,7 +266,8 @@ export default function AppNavigator() {
     nannyAttendance: 'home',
   };
 
-  const isTabScreen = ['home', 'quickAction', 'account'].includes(currentScreen) && !!user && user?.role !== 'nanny';
+  const needsPayment = (user?.role === 'student' || user?.role === 'tuition_student') && (user?.pay_to_active === true || user?.status === 'pending_payment');
+  const isTabScreen = ['home', 'quickAction', 'account'].includes(currentScreen) && !!user && user?.role !== 'nanny' && !needsPayment;
   const activeTab = tabMapping[currentScreen] || 'home';
 
   useEffect(() => {
@@ -284,6 +290,9 @@ export default function AppNavigator() {
 
   const renderInnerContent = () => {
     const activeTab = currentScreen === 'login' ? 'home' : currentScreen;
+    if (needsPayment) {
+      return <PayGatewayScreen navigation={navigation} />;
+    }
     switch (activeTab) {
       case 'privacyPolicy':
         return <PrivacyPolicyScreen navigation={navigation} />;
@@ -325,6 +334,7 @@ export default function AppNavigator() {
         );
       case 'userManagement': return <UserManagementScreen navigation={navigation} />;
       case 'userManagementV2': return <UserManagementScreenV2 navigation={navigation} />;
+      case 'alumni': return <AlumniScreen navigation={navigation} />;
       case 'feesManagement': return <FeesManagementScreen navigation={navigation} />;
       case 'announcements': return <AnnouncementsScreen navigation={navigation} />;
       case 'reports': return <ReportsScreen navigation={navigation} />;
@@ -357,14 +367,14 @@ export default function AppNavigator() {
       case 'studentInfo': return <StudentInfoScreen navigation={navigation} />;
       case 'notificationSettings': return <NotificationSettingsScreen navigation={navigation} />;
       case 'tuitionPostProgress': return <TuitionPostProgressScreen navigation={navigation} />;
-      case 'tuitionMyProgress': return <View style={{ flex: 1, backgroundColor: '#FFF8F0', alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#9CA3AF' }}>My Progress (Coming Soon)</Text></View>;
+      case 'tuitionMyProgress': return <TuitionMyProgressScreen navigation={navigation} />;
       case 'tuitionAttendance': return <TuitionAttendanceScreen navigation={navigation} />;
       case 'tuitionStudyMaterials': return <TuitionStudyMaterialsScreen navigation={navigation} />;
       case 'pettyCash': return <PettyCashScreen navigation={navigation} />;
       case 'tuitionConsole': return <TuitionConsoleScreen navigation={navigation} />;
       case 'manageTuitionUsers': return <ManageTuitionUsersScreen navigation={navigation} />;
       case 'nannyChat': return <VoiceChatScreen navigation={navigation} />;
-      case 'nannyAttendance': return <NannyAttendanceScreen navigation={navigation} />;
+      case 'nannyAttendance': return <TakeAttendanceScreen navigation={navigation} />;
       default: return <AdminHomeScreen navigation={{ navigate, goBack }} />;
     }
   };

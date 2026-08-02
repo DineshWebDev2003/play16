@@ -1188,7 +1188,7 @@ export default function FeesManagementScreen({ navigation }: any) {
       {/* Segmented Tabs */}
       <View className="px-6 mb-5">
         <View className="flex-row bg-gray-100 rounded-[20px] p-1.5">
-          {FEES_TABS.map(t => (
+          {FEES_TABS.filter(t => isMasterAdmin || t.id !== 'admission').map(t => (
             <TouchableOpacity
               key={t.id}
               onPress={() => setActiveTab(t.id)}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, RefreshControl } from 'react-native';
 import PremiumPopup from '../../components/PremiumPopup';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
 
@@ -17,37 +17,37 @@ interface StudentHomeScreenProps {
   navigation: NavigationProps;
 }
 
+const AMBER = ['#F59E0B', '#D97706'] as [string, string];
+const AMBER_DARK = ['#92400E', '#78350F'] as [string, string];
+const BLUE = ['#3B82F6', '#2563EB'] as [string, string];
+const BLUE_DARK = ['#1e40af', '#1e1b4b'] as [string, string];
+const EMERALD = ['#10B981', '#059669'] as [string, string];
+const EMERALD_DARK = ['#064e3b', '#022c22'] as [string, string];
+const PINK = ['#EC4899', '#DB2777'] as [string, string];
+const PINK_DARK = ['#831843', '#500724'] as [string, string];
+const VIOLET = ['#8B5CF6', '#7C3AED'] as [string, string];
+const VIOLET_DARK = ['#5b21b6', '#2e1065'] as [string, string];
+const RED = ['#EF4444', '#DC2626'] as [string, string];
+const RED_DARK = ['#7f1d1d', '#450a0a'] as [string, string];
+
 export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps) {
-  const { user, announcements, updateAvatar, fees: allFees, feeStructures, refreshFees } = useAuth();
-  const { colors, theme } = useTheme();
+  const { user, announcements, updateAvatar, fees: allFees, refreshFees } = useAuth();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isDark = theme === 'dark';
+
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [timetableLoading, setTimetableLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [selectedNotice, setSelectedNotice] = useState<any>(null);
   const [todaySchedule, setTodaySchedule] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await Promise.all([
-        fetchTodayAttendance(),
-        fetchTimetable(),
-        refreshFees()
-      ]);
-    } catch (err) {
-      console.error('Refresh Error:', err);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [fetchTodayAttendance, fetchTimetable, refreshFees]);
   const myFees = useMemo(() => {
     if (!user || user.role !== 'student') return [];
     const dbId = user.id?.toString();
     const schoolId = user.studentId?.toString();
-    
-    return allFees.filter(f => 
+    return allFees.filter(f =>
       (f.student_id?.toString() === dbId || f.student_id?.toString() === schoolId)
     );
   }, [allFees, user]);
@@ -57,11 +57,8 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthStr = months[d.getMonth()];
     const year = d.getFullYear();
-    
-    // Academic year usually starts in June
     const acadYearStart = d.getMonth() >= 5 ? year : year - 1;
     const acadYearEnd = acadYearStart + 1;
-    
     return {
       currentMonthStr: `${monthStr} ${year}`,
       currentMonthYearCode: `${year}-${String(d.getMonth() + 1).padStart(2, '0')}`,
@@ -71,42 +68,27 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
 
   const financialStatus = useMemo(() => {
     if (!user || user.role !== 'student') return null;
-    
     const dbId = user.id?.toString();
     const schoolId = user.studentId?.toString();
     const todayStr = new Date().toISOString().split('T')[0];
-
-    // Find ALL fees for this student
-    const studentFees = allFees.filter(f => 
+    const studentFees = allFees.filter(f =>
       (f.student_id?.toString() === dbId || f.student_id?.toString() === schoolId)
     );
-
     const unpaidFees = studentFees.filter(f => f.status === 'unpaid');
-    
-    // Check if current month is already paid
-    const currentMonthPaid = studentFees.find(f => 
-       f.date?.includes(currentMonthYearCode) && f.status === 'paid'
+    const currentMonthPaid = studentFees.find(f =>
+      f.date?.includes(currentMonthYearCode) && f.status === 'paid'
     );
-
-    // Cumulative logic:
-    // If ANY unpaid fee exists and is past its due date, the status is Overdue (Red)
     let hasAnyOverdue = unpaidFees.some(f => f.due_date && f.due_date < todayStr);
-    
-    // Check if current month has a virtual overdue
     if (!hasAnyOverdue && !currentMonthPaid && !studentFees.some(f => f.date?.includes(currentMonthYearCode))) {
-       const dueDayNum = parseInt(user.fee_due_day || '5');
-       if (new Date().getDate() > dueDayNum) {
-          hasAnyOverdue = true;
-       }
+      const dueDayNum = parseInt(user.fee_due_day || '5');
+      if (new Date().getDate() > dueDayNum) {
+        hasAnyOverdue = true;
+      }
     }
-
     const isPending = unpaidFees.length > 0 || (!currentMonthPaid && (user.fees && parseInt(user.fees) > 0));
     const isPaid = !isPending && currentMonthPaid;
-    
-    // Sort unpaid by date for naming context
-    const sortedUnpaid = [...unpaidFees].sort((a,b) => (a.due_date || a.date).localeCompare(b.due_date || b.date));
+    const sortedUnpaid = [...unpaidFees].sort((a, b) => (a.due_date || a.date).localeCompare(b.due_date || b.date));
     const oldestFee = sortedUnpaid[0];
-
     return {
       isPaid,
       paidAt: currentMonthPaid?.paid_at,
@@ -120,38 +102,22 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
 
   const feeBreakdown = useMemo(() => {
     if (!user) return { total: 0, overdue: 0, current: 0 };
-    
     const todayStr = new Date().toISOString().split('T')[0];
-    
-    // 1. Calculate Overdue from DB
     const overdueAmount = myFees
       .filter(f => f.status === 'unpaid' && f.due_date && f.due_date < todayStr)
       .reduce((sum, f) => sum + (f.amount || 0), 0);
-    
-    // 2. Calculate Current/Upcoming from DB
     const currentAmountDb = myFees
       .filter(f => f.status === 'unpaid' && (!f.due_date || f.due_date >= todayStr))
       .reduce((sum, f) => sum + (f.amount || 0), 0);
-    
-    // 3. Current month virtual fee
     const currentMonthPaid = myFees.find(f => f.date?.includes(currentMonthYearCode) && f.status === 'paid');
     const currentMonthInDb = myFees.find(f => f.date?.includes(currentMonthYearCode));
-    
     let extra = 0;
     if (!currentMonthInDb && !currentMonthPaid && user.fees && parseInt(user.fees) > 0) {
-       extra = parseInt(user.fees);
+      extra = parseInt(user.fees);
     }
-
     const totalCurrent = currentAmountDb + extra;
-
-    return {
-      total: overdueAmount + totalCurrent,
-      overdue: overdueAmount,
-      current: totalCurrent
-    };
+    return { total: overdueAmount + totalCurrent, overdue: overdueAmount, current: totalCurrent };
   }, [myFees, user, currentMonthYearCode]);
-
-
 
   const fetchTimetable = useCallback(async () => {
     try {
@@ -160,7 +126,6 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
       const dayIndex = todayNum === 0 ? 6 : todayNum - 1;
       const data = response.data?.data || (Array.isArray(response.data) ? response.data : []);
       const filtered = data.filter((s: any) => s.day === dayIndex);
-      
       if (filtered.length > 0) {
         const timeToMinutes = (timeStr: string) => {
           const [time, period] = timeStr.split(' ');
@@ -185,18 +150,13 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
     if (!user) return;
     setAttendanceLoading(true);
     try {
-      // Use local date string instead of UTC ISO to avoid timezone shifts
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      
-      // Use user.id as it's the primary key used in the attendance table
       const studentUid = user.id.toString();
-      
       const response = await api.get(`/attendance?date=${today}`);
       if (response.data && response.data.length > 0) {
-        // Find the specific record for THIS student among today's records
-        const myRecord = response.data.find((r: any) => 
-          r.student_id?.toString() === studentUid && 
+        const myRecord = response.data.find((r: any) =>
+          r.student_id?.toString() === studentUid &&
           r.date === today
         );
         setTodayAttendance(myRecord || null);
@@ -210,19 +170,26 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
     }
   }, [user]);
 
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([fetchTodayAttendance(), fetchTimetable(), refreshFees()]);
+    } catch (err) {
+      console.error('Refresh Error:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [fetchTodayAttendance, fetchTimetable, refreshFees]);
+
   useEffect(() => {
     fetchTodayAttendance();
     fetchTimetable();
     refreshFees();
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Only need to update every min now
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, [fetchTodayAttendance, fetchTimetable, refreshFees]);
 
-  // Filter announcements for students
   const studentNotices = announcements.filter(a => a.target === 'all' || a.target === 'student');
-  const latestNotice = studentNotices.length > 0 ? studentNotices[0] : null;
 
   const handleQuickAction = (screen: string | null) => {
     if (screen) {
@@ -232,493 +199,377 @@ export default function StudentHomeScreen({ navigation }: StudentHomeScreenProps
     }
   };
 
-  const renderAnnouncements = (list: any[], sectionTitle: string, hint: string) => {
-    const screenWidth = Dimensions.get('window').width;
-    const cardWidth = screenWidth - 48; // Significantly increased width
-
-    return (
-      <View className="py-2">
-        <View className="flex-row items-center justify-between mb-4 px-6">
-          <Text className={`text-xl font-black ${colors.text}`}>{sectionTitle} 📢</Text>
-          {list.length > 1 && (
-            <Text className={`text-xs font-bold ${colors.textTertiary}`}>Swipe for more</Text>
-          )}
-        </View>
-        
-        {list.length > 0 ? (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-            decelerationRate="fast"
-            snapToInterval={cardWidth + 16} // cardWidth + gap
-          >
-            {list.map((item, index) => (
-              <TouchableOpacity 
-                key={item.id}
-                activeOpacity={0.9}
-                style={{ width: cardWidth, aspectRatio: 16 / 9 }}
-                className={`${index === list.length - 1 ? '' : 'mr-4'} bg-brand-violet relative overflow-hidden rounded-[20px] border-2 border-white shadow-xl`}
-                onPress={() => setSelectedNotice(item)}
-              >
-                {item.image ? (
-                  <Image 
-                    source={{ uri: item.image }} 
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center bg-brand-violet/20">
-                    <MaterialCommunityIcons name="bullhorn-outline" size={64} color="#F59E0B" />
-                  </View>
-                )}
-                
-                <View className="absolute inset-0 bg-black/30 justify-end p-6">
-                  <View className="bg-white/20 self-start px-3 py-1 rounded-full mb-2 flex-row items-center">
-                    <MaterialCommunityIcons name="calendar-edit" size={12} color="white" style={{ marginRight: 4 }} />
-                    <Text className="text-white text-[10px] font-black uppercase tracking-widest">{item.date}</Text>
-                  </View>
-                  <Text className="text-white text-2xl font-black tracking-tighter" numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                  <View className="flex-row items-center mt-1">
-                    <MaterialCommunityIcons name="account-circle-outline" size={14} color="white" />
-                    <Text className="text-white/80 text-xs font-bold ml-1">{item.author || 'Admin'}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View className="items-center px-6">
-            <LinearGradient
-              colors={theme === 'dark' ? ['#1e1e1e', '#1a1a14'] : ['#FFF5F8', '#FFFFFF']}
-              style={{ width: cardWidth, aspectRatio: 16 / 9 }}
-              className="items-center justify-center rounded-[20px] border-2 border-brand-violet/10 border-dashed"
-            >
-              <View className="bg-brand-violet/10 w-20 h-20 rounded-full items-center justify-center mb-4">
-                <MaterialCommunityIcons name="bullhorn-variant-outline" size={42} color="#F59E0B" />
-              </View>
-              <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>All Caught Up! ✨</Text>
-              <Text className="mt-1 font-black text-brand-violet/40 uppercase text-[8px] tracking-[3px]">No New Notices</Text>
-            </LinearGradient>
-          </View>
-        )}
-      </View>
-    );
-  };
+  const timeStr = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const dateStr = currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
-    <View className={`flex-1 ${colors.background}`}>
-      <ScrollView 
-        className={`flex-1 ${colors.background}`} 
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={isRefreshing} 
+          <RefreshControl
+            refreshing={isRefreshing}
             onRefresh={onRefresh}
             colors={['#F59E0B']}
-            tintColor={theme === 'dark' ? '#FFF' : '#F59E0B'}
+            tintColor="#F59E0B"
+            progressBackgroundColor={isDark ? '#1c1c14' : '#FFFFFF'}
           />
         }
       >
+        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
 
-
-        {/* Header - Blends with background */}
-        <View style={{ paddingTop: Math.max(useSafeAreaInsets().top, 20) }} className="px-6 pb-6">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className={`text-xl font-black ${colors.textSecondary} uppercase tracking-widest`}>
-                Hi Student 🎒
+          {/* ── Modern Header ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#D1D5DB' : '#6B7280' }}>
+                TN HAPPYKIDS
               </Text>
-              <View className="flex-row items-center mt-1">
-                <Text className={`text-3xl font-black ${colors.text} tracking-tighter`}>
-                  {user?.name || 'Explorer'}
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('profile')}
-                  className="ml-2 bg-brand-violet/10 p-2 rounded-full"
-                >
-                  <MaterialCommunityIcons name="pencil" size={18} color="#F59E0B" />
-                </TouchableOpacity>
-              </View>
-              <View className="bg-brand-violet/20 self-start px-3 py-1 rounded-full mt-2 border border-brand-violet/10 shadow-sm">
-                  <Text className="text-brand-violet text-[9px] font-black uppercase tracking-[2px]">Explorer</Text>
+              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }} numberOfLines={1}>
+                {user?.name?.split(' ')[0] || 'Explorer'}
+              </Text>
+              <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.1)' }}>
+                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Student Console</Text>
               </View>
             </View>
-            <TouchableOpacity 
-              className="bg-brand-yellow w-20 h-20 rounded-[20px] items-center justify-center shadow-lg border-4 border-white rotate-3 relative overflow-hidden"
-              onPress={updateAvatar}
-            >
+            <TouchableOpacity activeOpacity={0.85} onPress={updateAvatar}
+              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}>
               {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               ) : (
-                <MaterialCommunityIcons name="face-man-shimmer-outline" size={42} color="#92400E" />
+                <MaterialCommunityIcons name="face-man-shimmer-outline" size={36} color="#92400E" />
               )}
-              <View className="absolute -bottom-1 -right-1 bg-brand-violet p-1.5 rounded-lg border-2 border-white">
-                <MaterialCommunityIcons name="camera" size={14} color="white" />
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                <MaterialCommunityIcons name="camera" size={12} color="white" />
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* ── Modern Attendance Status Card ── */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('attendance')}
-            className="mt-6 rounded-[20px] overflow-hidden shadow-2xl"
-            style={{ elevation: 20 }}
-          >
-            <LinearGradient
-              colors={theme === 'dark' ? ['#1e1b4b', '#1e293b'] : ['#FFFFFF', '#FDF2F8']}
-              className="p-6"
-            >
-              <View className="flex-row items-center justify-between mb-6">
-                <View>
-                  <Text className={`text-2xl font-black ${colors.text} tracking-tighter`}>Daily Journey 🎒</Text>
-                  <Text className={`text-[10px] ${colors.textTertiary} font-black uppercase tracking-[2px]`}>Live Attendance Track</Text>
+          {/* ── Today's Journey (hero counter card) ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}>
+              <LinearGradient
+                colors={todayAttendance?.in_time ? (isDark ? EMERALD_DARK : EMERALD) : (isDark ? AMBER_DARK : AMBER)}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 12 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                      <MaterialCommunityIcons name={todayAttendance?.in_time ? 'school' : 'bus-clock'} size={18} color="white" />
+                    </View>
+                    <View>
+                      <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Today's Journey</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>{dateStr} · {timeStr}</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>
+                      {todayAttendance?.in_time ? (todayAttendance?.out_time ? 'Journey Complete' : 'Safely In') : 'Expecting Arrival'}
+                    </Text>
+                  </View>
                 </View>
-                <View className={`${todayAttendance?.in_time ? 'bg-green-500/10 border-green-500/20' : 'bg-orange-500/10 border-orange-500/20'} px-3 py-1.5 rounded-full border flex-row items-center`}>
-                  <View className={`w-2 h-2 ${todayAttendance?.in_time ? 'bg-green-500' : 'bg-orange-500'} rounded-full mr-2`} />
-                  <Text className={`${todayAttendance?.in_time ? 'text-green-600' : 'text-orange-600'} text-[10px] font-black uppercase`}>
-                    {todayAttendance?.in_time ? (todayAttendance?.out_time ? 'Journey Complete' : 'Safely In') : 'Expecting Arrival'}
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {[
+                      { label: 'Arrival', value: todayAttendance?.in_time || '--:--', icon: 'login', color: '#FCD34D' },
+                      { label: 'Departure', value: todayAttendance?.out_time || '--:--', icon: 'logout', color: '#6EE7B7' },
+                      { label: 'Status', value: todayAttendance?.in_time ? (todayAttendance?.out_time ? 'Done' : 'Active') : 'Pending', icon: 'shield-check', color: '#93C5FD' },
+                    ].map((item, i) => (
+                      <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
+                        <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                        <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }} numberOfLines={1}>{item.value}</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => navigation.navigate('attendance')}
+                  style={{ marginTop: 10, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                >
+                  <MaterialCommunityIcons name="calendar-check-outline" size={18} color="white" />
+                  <Text style={{ color: 'white', fontWeight: '900', fontSize: 14, marginLeft: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    View Attendance
                   </Text>
-                </View>
-              </View>
-
-              <View className="flex-row justify-between items-center">
-                {/* Departure / Clock In Status */}
-                <View className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white'} rounded-[16px] p-4 w-[46%] shadow-sm border ${theme === 'dark' ? 'border-white/10' : 'border-gray-100'} ${!todayAttendance?.in_time ? 'opacity-50' : ''}`}>
-                  <View className="flex-row items-center mb-3">
-                    <View className={`${todayAttendance?.in_time ? 'bg-blue-600' : 'bg-gray-400'} w-10 h-10 rounded-2xl items-center justify-center mr-2 shadow-lg`}>
-                      <MaterialCommunityIcons name="bus-clock" size={22} color="white" />
-                    </View>
-                    <View>
-                      <Text className={`font-black ${colors.text} text-[11px]`}>Arrival</Text>
-                      <Text className={`text-[10px] font-bold ${todayAttendance?.in_time ? 'text-blue-500' : colors.textTertiary}`}>
-                        {todayAttendance?.in_time || '--:--'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className={`${todayAttendance?.in_time ? 'bg-blue-50 border-blue-100' : 'bg-gray-50 border-gray-100'} px-2 py-1.5 rounded-xl border`}>
-                    <Text className={`${todayAttendance?.in_time ? 'text-blue-700' : 'text-gray-400'} text-[9px] font-black uppercase text-center`} numberOfLines={1}>
-                      {todayAttendance?.dropped_by_type ? `${todayAttendance.dropped_by_type} Drop` : 'Waiting...'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progress Connector */}
-                <View className="w-4 items-center justify-center">
-                  <MaterialCommunityIcons 
-                    name="dots-vertical" 
-                    size={20} 
-                    color={todayAttendance?.in_time ? (theme === 'dark' ? '#334155' : '#E2E8F0') : '#F1F5F9'} 
-                  />
-                </View>
-
-                {/* Arrival / Clock Out Status */}
-                <View className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white'} rounded-[16px] p-4 w-[46%] shadow-sm border ${theme === 'dark' ? 'border-white/10' : 'border-gray-100'} ${!todayAttendance?.out_time ? 'opacity-50' : ''}`}>
-                  <View className="flex-row items-center mb-3">
-                    <View className={`${todayAttendance?.out_time ? 'bg-brand-violet' : 'bg-gray-400'} w-10 h-10 rounded-2xl items-center justify-center mr-2 shadow-lg`}>
-                      <MaterialCommunityIcons name="home-heart" size={22} color="white" />
-                    </View>
-                    <View>
-                      <Text className={`font-black ${colors.text} text-[11px]`}>Departure</Text>
-                      <Text className={`text-[10px] font-bold ${todayAttendance?.out_time ? 'text-brand-violet' : colors.textTertiary}`}>
-                        {todayAttendance?.out_time || '--:--'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className={`${todayAttendance?.out_time ? 'bg-pink-50 border-pink-100' : 'bg-gray-50 border-gray-100'} px-2 py-1.5 rounded-xl border`}>
-                    <Text className={`${todayAttendance?.out_time ? 'text-brand-violet' : 'text-gray-400'} text-[9px] font-black uppercase text-center`} numberOfLines={1}>
-                      {todayAttendance?.picked_by_type ? `${todayAttendance.picked_by_type} Pick` : 'In School'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              
-              {/* Background Glows */}
-              <View className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl" />
-              <View className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-500/5 rounded-full blur-3xl" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-
-
-        {/* Modern School Portal Actions */}
-        <View className="px-6 py-6">
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>School Pulse 📡</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('timetable')}>
-               <Text className="text-brand-violet font-bold text-xs">Full View</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Large Lead Action: Timetable (Now in Signature Pink) */}
-          <TouchableOpacity 
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('timetable')}
-              className="mb-4 rounded-[20px] overflow-hidden shadow-2xl"
-              style={{ elevation: 20 }}
-          >
-              <LinearGradient
-                  colors={theme === 'dark' ? ['#701a75', '#4c1d95'] : ['#F59E0B', '#DB2777']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="p-7"
-              >
-                  <View className="flex-row items-center justify-between relative z-10">
-                      <View className="flex-1 mr-4">
-                          <View className="flex-row items-center mb-1">
-                              <View className="bg-white/20 p-1.5 rounded-lg mr-2">
-                                  <MaterialCommunityIcons name="timeline-clock-outline" size={14} color="white" />
-                              </View>
-                              <Text className="text-white font-black uppercase text-[10px] tracking-[2px] opacity-80">
-                                  {todaySchedule ? "Ongoing Class" : "School Ongoing"}
-                              </Text>
-                          </View>
-                          <Text className="text-white text-3xl font-black mt-2 tracking-tighter" numberOfLines={1}>
-                              {todaySchedule ? todaySchedule.activity : "No Scheduled Activity"}
-                          </Text>
-                          <View className="flex-row items-center mt-4">
-                              <View className="bg-white/20 self-start px-4 py-2 rounded-2xl flex-row items-center mr-3 border border-white/10">
-                                  <MaterialCommunityIcons name="clock-fast" size={16} color="white" />
-                                  <Text className="text-white text-[12px] font-black ml-2">
-                                      {todaySchedule ? todaySchedule.time : "Standby"}
-                                  </Text>
-                              </View>
-                              <View className="bg-white/20 self-start px-4 py-2 rounded-2xl flex-row items-center border border-white/10">
-                                  <MaterialCommunityIcons name="map-marker-outline" size={16} color="white" />
-                                  <Text className="text-white text-[12px] font-black ml-2">
-                                      {todaySchedule ? (todaySchedule.room || 'Main Hall') : "School Site"}
-                                  </Text>
-                              </View>
-                          </View>
-                      </View>
-                      <View className="bg-white/30 w-16 h-16 rounded-[24px] items-center justify-center border-4 border-white/10 shadow-lg rotate-6">
-                          <MaterialCommunityIcons 
-                              name={todaySchedule ? (todaySchedule.icon || "bullseye-arrow") : "clock-outline"} 
-                              size={36} 
-                              color="white" 
-                          />
-                      </View>
-                  </View>
-                  <View className="absolute -bottom-10 -right-10 opacity-10">
-                      <MaterialCommunityIcons name="toy-brick-plus" size={180} color="white" />
-                  </View>
-              </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Secondary Trio Row: Activity Feed, Live Feed, My Attendance */}
-          <View className="flex-row justify-between gap-2">
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('activityFeed')}
-              className="flex-1 rounded-[20px] overflow-hidden shadow-lg"
-              style={{ elevation: 12 }}
-            >
-              <LinearGradient
-                colors={theme === 'dark' ? ['#7c2d12', '#431407'] : ['#FBBF24', '#F59E0B']}
-                className="p-4 h-40 justify-between"
-              >
-                <View className="bg-white/30 self-start p-2.5 rounded-2xl">
-                  <MaterialCommunityIcons name="image-multiple" size={24} color="white" />
-                </View>
-                <View>
-                  <Text className="text-white text-base font-black tracking-tighter">Activity Feed</Text>
-                  <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-wider">Class Highlights</Text>
-                </View>
-                <View className="absolute -bottom-4 -right-4 opacity-10">
-                  <MaterialCommunityIcons name="camera-iris" size={70} color="white" />
+                </TouchableOpacity>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="school-outline" size={90} color="white" />
                 </View>
               </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('liveCamera')}
-              className="flex-1 rounded-[20px] overflow-hidden shadow-lg"
-              style={{ elevation: 12 }}
-            >
-              <LinearGradient
-                colors={theme === 'dark' ? ['#1e40af', '#1e1b4b'] : ['#3B82F6', '#2563EB']}
-                className="p-4 h-40 justify-between"
-              >
-                <View className="bg-white/30 self-start p-2.5 rounded-2xl">
-                  <MaterialCommunityIcons name="video-vintage" size={24} color="white" />
-                </View>
-                <View>
-                  <Text className="text-white text-base font-black tracking-tighter">Live Feed</Text>
-                  <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-wider">Secure Stream</Text>
-                </View>
-                <View className="absolute -bottom-4 -right-4 opacity-10">
-                  <MaterialCommunityIcons name="cctv" size={70} color="white" />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => navigation.navigate('attendance')}
-              className="flex-1 rounded-[20px] overflow-hidden shadow-lg"
-              style={{ elevation: 12 }}
-            >
-              <LinearGradient
-                colors={theme === 'dark' ? ['#065f46', '#022c22'] : ['#10B981', '#059669']}
-                className="p-4 h-40 justify-between"
-              >
-                <View className="bg-white/30 self-start p-2.5 rounded-2xl">
-                  <MaterialCommunityIcons name="calendar-check" size={24} color="white" />
-                </View>
-                <View>
-                  <Text className="text-white text-base font-black tracking-tighter">Attendance</Text>
-                  <Text className="text-white/80 text-[9px] font-bold mt-1 uppercase tracking-wider">My Records</Text>
-                </View>
-                <View className="absolute -bottom-4 -right-4 opacity-10">
-                  <MaterialCommunityIcons name="clipboard-check" size={70} color="white" />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-
-        {/* ── Modern Financial Overview Card ── */}
-        <View className="px-6 pb-12">
-          <View className="flex-row items-center justify-between mb-5 px-1">
-            <Text className={`text-xl font-black ${colors.text} tracking-tighter`}>Financial Vault 💳</Text>
-            <View className="bg-green-500/10 px-3 py-1 rounded-full">
-              <Text className="text-green-600 text-[9px] font-black uppercase tracking-widest">Secure Payments</Text>
             </View>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('myFees')}
-            className="rounded-[20px] overflow-hidden shadow-2xl"
-            style={{ elevation: 20 }}
-          >
-            <LinearGradient
-              colors={financialStatus?.isOverdue 
-                ? (theme === 'dark' ? ['#7f1d1d', '#450a0a'] : ['#EF4444', '#991B1B']) 
-                : (financialStatus?.isPending
-                  ? (theme === 'dark' ? ['#7c2d12', '#431407'] : ['#F59E0B', '#D97706'])
-                  : (theme === 'dark' ? ['#064e3b', '#022c22'] : ['#10B981', '#059669']))
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="p-7"
-            >
-              <View className="absolute inset-0 bg-black/5" />
-              <View className="flex-row items-center justify-between z-10">
-                <View className="flex-1">
-                  <View className="bg-white/20 self-start px-3 py-1 rounded-full mb-3">
-                    <Text className="text-white text-[10px] font-black uppercase tracking-widest">Academic Year {academicYear}</Text>
+          {/* ── Main Operations ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Main Operations ⚙️</Text>
+              <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.2)' }}>
+                <Text style={{ color: '#F59E0B', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Student Tools</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('timetable')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#4F46E5', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={isDark ? VIOLET_DARK : VIOLET}
+                  style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                      <MaterialCommunityIcons name="timeline-clock-outline" size={24} color="white" />
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Now</Text>
+                    </View>
                   </View>
-                  <Text className="text-white text-3xl font-black tracking-tighter">
-                    {financialStatus?.isOverdue ? "Payment Overdue" : (financialStatus?.isPending ? "Fee Pending" : "School Fees")}
-                  </Text>
-                  <View className="flex-row items-center mt-2">
-                    <View className={`bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 flex-row items-center`}>
-                      <MaterialCommunityIcons 
-                        name={financialStatus?.isOverdue ? "alert-circle" : (financialStatus?.isPending ? "clock-outline" : "checkbox-marked-circle")} 
-                        size={16} 
-                        color={financialStatus?.isOverdue ? "#FCA5A5" : (financialStatus?.isPending ? "#FDE68A" : "#34D399")} 
-                      />
-                      <Text className="text-white text-xs font-black ml-2">
-                        {financialStatus?.isOverdue 
-                          ? `${financialStatus.title} Overdue` 
-                          : (financialStatus?.isPending ? `${financialStatus.title} Pending` : "No Pending Dues")}
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>Timetable</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Daily Schedule</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#E9D5FF' }} numberOfLines={1}>{todaySchedule ? todaySchedule.activity : 'Standby'}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Activity</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#E9D5FF' }} numberOfLines={1}>{todaySchedule ? todaySchedule.time : '--:--'}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Time</Text>
+                    </View>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="timetable" size={90} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('activityFeed')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={isDark ? EMERALD_DARK : EMERALD}
+                  style={{ padding: 20, height: 180, justifyContent: 'space-between' }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 12 }}>
+                      <MaterialCommunityIcons name="star-face" size={24} color="white" />
+                    </View>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: 'white' }}>Kids</Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>Activity Feed</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Moments & Highlights</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>{studentNotices.length}</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Notices</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '900', color: '#D1FAE5' }}>Live</Text>
+                      <Text style={{ fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>Moments</Text>
+                    </View>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="image-multiple-outline" size={90} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('liveCamera')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#2563EB', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={isDark ? BLUE_DARK : BLUE}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="video-vintage" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Live Feed</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Secure Stream</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="cctv" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('nannyChat')}
+                style={{ width: '48%', borderRadius: 16, overflow: 'hidden', shadowColor: '#DB2777', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 12 }}
+              >
+                <LinearGradient
+                  colors={isDark ? PINK_DARK : PINK}
+                  style={{ padding: 20, height: 150, justifyContent: 'space-between' }}
+                >
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'flex-start', padding: 10, borderRadius: 12 }}>
+                    <MaterialCommunityIcons name="microphone-message" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Voice Chat</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '700', marginTop: 3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Talk to your Nanny</Text>
+                  </View>
+                  <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                    <MaterialCommunityIcons name="microphone-message" size={80} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── Financial Overview ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Financial Vault 💳</Text>
+              <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                <Text style={{ color: '#10B981', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Secure Payments</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('myFees')}
+              style={{ borderRadius: 16, overflow: 'hidden', shadowColor: financialStatus?.isOverdue ? '#991B1B' : '#059669', shadowOpacity: 0.35, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 15 }}
+            >
+              <LinearGradient
+                colors={financialStatus?.isOverdue
+                  ? (isDark ? RED_DARK : RED)
+                  : (financialStatus?.isPending
+                    ? (isDark ? AMBER_DARK : AMBER)
+                    : (isDark ? EMERALD_DARK : EMERALD))}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 12 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                      <MaterialCommunityIcons name={financialStatus?.isOverdue ? 'cash-remove' : (financialStatus?.isPending ? 'cash-fast' : 'currency-inr')} size={18} color="white" />
+                    </View>
+                    <View>
+                      <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>
+                        {financialStatus?.isOverdue ? 'Overdue Balance' : (financialStatus?.isPending ? 'Fee Pending' : 'School Fees')}
+                      </Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Academic Year {academicYear}</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>
+                      {financialStatus?.isOverdue ? 'Due Now' : (financialStatus?.isPending ? 'Unpaid' : 'All Clear')}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 10 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    {[
+                      { label: 'Total', value: `₹${(feeBreakdown.total || 0).toLocaleString('en-IN')}`, icon: 'wallet-outline', color: '#FCD34D' },
+                      { label: 'Overdue', value: `₹${(feeBreakdown.overdue || 0).toLocaleString('en-IN')}`, icon: 'clock-alert-outline', color: '#FCA5A5' },
+                      { label: 'Current', value: `₹${(feeBreakdown.current || 0).toLocaleString('en-IN')}`, icon: 'calendar-month-outline', color: '#6EE7B7' },
+                    ].map((item, i) => (
+                      <View key={item.label} style={{ alignItems: 'center', flex: 1, borderRightWidth: i < 2 ? 1 : 0, borderRightColor: 'rgba(255,255,255,0.1)' }}>
+                        <MaterialCommunityIcons name={item.icon as any} size={20} color="#FFFFFF" style={{ marginBottom: 4 }} />
+                        <Text style={{ color: 'white', fontSize: 15, fontWeight: '900' }} numberOfLines={1}>{item.value}</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 7, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginTop: 1 }}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
+                  <MaterialCommunityIcons name="safe-square-outline" size={90} color="white" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Notice Board ── */}
+          {studentNotices.length > 0 && (
+            <View style={{ paddingVertical: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+                <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Notice Board 📢</Text>
+                <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                  <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Updates</Text>
+                </View>
+              </View>
+
+              {studentNotices.slice(0, 5).map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.9}
+                  onPress={() => setSelectedNotice(item)}
+                  style={{ borderRadius: 16, overflow: 'hidden', elevation: 8, marginBottom: 12, borderWidth: 1, borderColor: isDark ? '#262626' : '#F3F4F6', backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF' }}
+                >
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={{ width: '100%', height: 170 }} resizeMode="cover" />
+                  ) : (
+                    <LinearGradient
+                      colors={isDark ? ['#312e81', '#4c1d95'] : ['#8B5CF6', '#7C3AED']}
+                      style={{ width: '100%', height: 90, justifyContent: 'center', alignItems: 'center' }}
+                    >
+                      <MaterialCommunityIcons name="bullhorn-outline" size={42} color="white" />
+                    </LinearGradient>
+                  )}
+                  <View style={{ padding: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                      <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="calendar-edit" size={10} color="#F59E0B" />
+                        <Text style={{ color: '#F59E0B', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 4 }}>{item.date}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 17, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }} numberOfLines={2}>{item.title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                      <MaterialCommunityIcons name="account-circle-outline" size={14} color={isDark ? '#6B7280' : '#9CA3AF'} />
+                      <Text style={{ color: isDark ? '#9CA3AF' : '#6B7280', fontSize: 10, fontWeight: '700', marginLeft: 5 }}>
+                        {item.author || 'Admin'}
                       </Text>
                     </View>
                   </View>
-                </View>
-                
-                <View className="bg-white/30 w-16 h-16 rounded-[24px] items-center justify-center border-4 border-white/10 shadow-lg rotate-3">
-                  <MaterialCommunityIcons 
-                    name={financialStatus?.isOverdue ? "cash-remove" : (financialStatus?.isPending ? "cash-fast" : "currency-inr")} 
-                    size={36} 
-                    color="white" 
-                  />
-                </View>
-              </View>
-
-              <View className="flex-row items-center justify-between mt-8 z-10">
-                <View>
-                  <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest">
-                    {financialStatus?.isOverdue ? "Cumulative Balance" : (financialStatus?.isPending ? "Amount to Pay" : "Current Balance")}
-                  </Text>
-                  <Text className="text-white text-xl font-black mt-1 tracking-tight">
-                    {feeBreakdown.total > 0 
-                      ? `₹${feeBreakdown.total.toLocaleString()} Total Due` 
-                      : (financialStatus?.isPaid ? "Paid for this Month" : "No Pending Dues")}
-                  </Text>
-                  
-                  {financialStatus?.isPaid && financialStatus.paidAt && (
-                     <View className="flex-row items-center mt-1">
-                        <MaterialCommunityIcons name="calendar-check" size={10} color="#34D399" />
-                        <Text className="text-white/60 text-[9px] font-black uppercase tracking-widest ml-1">
-                           Paid: {new Date(financialStatus.paidAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                        </Text>
-                     </View>
-                  )}
-                  
-                  {financialStatus?.isOverdue && feeBreakdown.overdue > 0 && feeBreakdown.current > 0 && (
-                    <Text className="text-white/80 text-[9px] font-black mt-1 uppercase tracking-wider">
-                      (₹{feeBreakdown.overdue.toLocaleString()} Overdue + ₹{feeBreakdown.current.toLocaleString()} Current Month)
-                    </Text>
-                  )}
-                </View>
-                <View className="bg-white p-2.5 rounded-2xl shadow-md">
-                  <MaterialCommunityIcons 
-                    name="chevron-right" 
-                    size={24} 
-                    color={financialStatus?.isOverdue ? "#991B1B" : (financialStatus?.isPending ? "#D97706" : "#059669")} 
-                  />
-                </View>
-              </View>
-
-              {/* Background Pattern */}
-              <View className="absolute -bottom-12 -right-12 opacity-10">
-                <MaterialCommunityIcons 
-                  name={financialStatus?.isOverdue ? "clock-alert-outline" : "safe-square-outline"} 
-                  size={180} 
-                  color="white" 
-                />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        <PremiumPopup
-          visible={!!selectedNotice}
-          onClose={() => setSelectedNotice(null)}
-          title={selectedNotice?.title || ''}
-          message={selectedNotice?.content}
-          type="info"
-          icon="bullhorn"
-        >
-          {selectedNotice?.date && (
-            <View className="bg-pink-50/50 dark:bg-pink-500/10 self-center px-4 py-1.5 rounded-full border border-pink-100 dark:border-pink-500/20 mb-4 flex-row items-center">
-              <MaterialCommunityIcons name="calendar-clock" size={12} color="#F59E0B" />
-              <Text className="text-brand-violet text-[10px] font-black uppercase tracking-widest ml-2">{selectedNotice.date}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
-          {selectedNotice?.image && (
-            <Image 
-              source={{ uri: selectedNotice.image }} 
-              style={{ width: '100%', height: 200, borderRadius: 24, marginBottom: 16 }}
-              resizeMode="cover"
-            />
-          )}
-        </PremiumPopup>
-        
-        {/* ── Top Announcements ── */}
-        {studentNotices.length > 0 && renderAnnouncements(studentNotices, 'Notice Board', 'notices')}
-        
-        {/* Consistent Bottom Spacer for Floating Tab Bar */}
-        <View className="h-32" />
+        </View>
+
+        <View style={{ height: 128 }} />
       </ScrollView>
+
+      <PremiumPopup
+        visible={!!selectedNotice}
+        onClose={() => setSelectedNotice(null)}
+        title={selectedNotice?.title || ''}
+        message={selectedNotice?.content}
+        type="info"
+        icon="bullhorn"
+      >
+        {selectedNotice?.date && (
+          <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', alignSelf: 'center', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.2)', marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+            <MaterialCommunityIcons name="calendar-clock" size={12} color="#F59E0B" />
+            <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 6 }}>{selectedNotice.date}</Text>
+          </View>
+        )}
+        {selectedNotice?.image && (
+          <Image
+            source={{ uri: selectedNotice.image }}
+            style={{ width: '100%', height: 200, borderRadius: 24, marginBottom: 16 }}
+            resizeMode="cover"
+          />
+        )}
+      </PremiumPopup>
     </View>
   );
 }
