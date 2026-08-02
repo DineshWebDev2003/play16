@@ -32,22 +32,22 @@ workflows:
           cd my-expo-app/android
           cat >> app/build.gradle <<'EOF'
 
-android {
-    signingConfigs {
-        release {
-            storeFile file('../../android_keystore.jks')
-            storePassword System.getenv("CM_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("CM_KEY_ALIAS")
-            keyPassword System.getenv("CM_KEY_PASSWORD")
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
-    }
-}
-EOF
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file('../../android_keystore.jks')
+                      storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("CM_KEY_ALIAS")
+                      keyPassword System.getenv("CM_KEY_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
       - name: Build Debug APK
         script: |
           cd my-expo-app/android
