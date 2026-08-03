@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Image, Linking, TextInput, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoutModal from '../../components/LogoutModal';
+import { verifyPassword } from '../../services/api';
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -35,6 +36,9 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [showMaintPassword, setShowMaintPassword] = useState(false);
+  const [maintPassword, setMaintPassword] = useState('');
+  const [verifyingMaint, setVerifyingMaint] = useState(false);
 
   const handleSaveName = async () => {
     if (!name.trim()) return;
@@ -86,6 +90,24 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
     }
   };
 
+  const handleVerifyMaintPassword = async () => {
+    if (!maintPassword.trim()) {
+      Alert.alert('Password Required', 'Please enter your password to continue.');
+      return;
+    }
+    setVerifyingMaint(true);
+    const ok = await verifyPassword(maintPassword);
+    setVerifyingMaint(false);
+    if (ok) {
+      setMaintPassword('');
+      setShowMaintPassword(false);
+      navigation.navigate('maintenance');
+    } else {
+      Alert.alert('Access Denied', 'Incorrect password. Only the master admin can access maintenance.');
+      setMaintPassword('');
+    }
+  };
+
   const inputStyle = {
     backgroundColor: isDark ? '#262626' : '#F3F4F6',
     borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
@@ -103,6 +125,7 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
   const menuItems = [
     { id: 'notifications', title: 'Notifications', subtitle: 'Manage notification settings', icon: 'bell-outline', iconColor: '#F59E0B', bgColor: 'rgba(244, 114, 182, 0.15)' },
     { id: 'settings', title: 'App Settings', subtitle: 'Configure app preferences', icon: 'cog-outline', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)' },
+    { id: 'maintenance', title: 'System Maintenance', subtitle: 'Run migrations & fix storage', icon: 'wrench-cog', iconColor: '#7C3AED', bgColor: 'rgba(124, 58, 237, 0.15)' },
     { id: 'support', title: 'Support & Help', subtitle: 'Get help and contact support', icon: 'help-circle-outline', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
     { id: 'about', title: 'About', subtitle: 'App version and information', icon: 'information-outline', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)' },
     { id: 'privacy', title: 'Privacy Policy', subtitle: 'Data protection & privacy', icon: 'shield-account-outline', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)' },
@@ -312,6 +335,9 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
                       navigation.navigate('notificationSettings');
                     } else if (item.id === 'settings') {
                       navigation.navigate('settings');
+                    } else if (item.id === 'maintenance') {
+                      setMaintPassword('');
+                      setShowMaintPassword(true);
                     } else if (item.id === 'about') {
                       Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
                     } else if (item.id === 'privacy') {
@@ -359,6 +385,47 @@ export default function SuperAdminAccountScreen({ navigation }: Props) {
         </View>
       </ScrollView>
       <LogoutModal visible={showLogout} onConfirm={logout} onCancel={() => setShowLogout(false)} />
+
+      <Modal visible={showMaintPassword} transparent={true} animationType="fade" onRequestClose={() => setShowMaintPassword(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: isDark ? '#1c1c14' : '#FFFFFF', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB' }}>
+            <View style={{ alignItems: 'center', marginBottom: 18 }}>
+              <View style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)', width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="shield-lock" size={32} color="#7C3AED" />
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: isDark ? '#FFF' : '#111827', marginTop: 14 }}>Enter Password</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 4, textAlign: 'center' }}>
+                System Maintenance is protected. Enter your password to continue.
+              </Text>
+            </View>
+            <TextInput
+              style={inputStyle}
+              placeholder="Your password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry
+              autoCapitalize="none"
+              value={maintPassword}
+              onChangeText={setMaintPassword}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', marginTop: 16 }}>
+              <TouchableOpacity
+                onPress={() => setShowMaintPassword(false)}
+                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: isDark ? '#262626' : '#F3F4F6', alignItems: 'center', marginRight: 8 }}
+              >
+                <Text style={{ color: isDark ? '#FFF' : '#111', fontWeight: '900', fontSize: 14 }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleVerifyMaintPassword}
+                disabled={verifyingMaint}
+                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#7C3AED', alignItems: 'center', marginLeft: 8 }}
+              >
+                {verifyingMaint ? <ActivityIndicator color="white" /> : <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 14 }}>Continue</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

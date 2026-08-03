@@ -80,6 +80,19 @@ export const setOnUnauthorized = (cb: (() => void) | null) => {
 };
 
 /**
+ * Verifies the currently authenticated user's password.
+ * Used to gate sensitive screens (e.g. Maintenance) behind a manual password entry.
+ */
+export const verifyPassword = async (password: string): Promise<boolean> => {
+  try {
+    await api.post('/verify-password', { password });
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
  * Fetches the current Maintenance Mode status (public endpoint, no auth).
  * Used by the app to show the maintenance popup to non-admin users.
  */
