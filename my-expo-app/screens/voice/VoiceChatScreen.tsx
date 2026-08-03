@@ -58,6 +58,8 @@ const roleLabel = (role: string) => {
     case 'master_admin': return 'Master Admin';
     case 'student': return 'Parent';
     case 'teacher': return 'Teacher';
+    case 'tuition_student': return 'Tuition Student';
+    case 'tuition_teacher': return 'Tuition Teacher';
     default: return role;
   }
 };
@@ -69,6 +71,8 @@ const roleColor = (role: string) => {
     case 'master_admin': return '#EF4444';
     case 'student': return '#3B82F6';
     case 'teacher': return '#F59E0B';
+    case 'tuition_student': return '#10B981';
+    case 'tuition_teacher': return '#8B5CF6';
     default: return '#6B7280';
   }
 };
@@ -77,6 +81,8 @@ const roleIcon = (role: string) => {
   switch (role) {
     case 'nanny': return 'baby-face-outline';
     case 'student': return 'account-heart-outline';
+    case 'tuition_student': return 'school';
+    case 'tuition_teacher': return 'account-tie';
     default: return 'shield-account-outline';
   }
 };
@@ -84,6 +90,8 @@ const roleIcon = (role: string) => {
 const getContactLabel = (role: string) => {
   if (role === 'student') return 'Parents';
   if (role === 'nanny') return 'Nannies';
+  if (role === 'tuition_student') return 'Tuition Students';
+  if (role === 'tuition_teacher') return 'Tuition Teachers';
   return 'Staff';
 };
 
@@ -422,7 +430,12 @@ export default function VoiceChatScreen({ navigation }: Props) {
   };
 
   // ── Conversation list data (must stay above early returns for hook order) ──
-  const contactGroups = ['student', 'admin', 'nanny', 'master_admin', 'teacher'];
+  const contactGroups = useMemo(() => {
+    if (user?.role === 'tuition_teacher') return ['tuition_student'];
+    if (user?.role === 'tuition_student') return ['tuition_teacher'];
+    if (user?.role === 'student') return ['teacher', 'admin', 'master_admin'];
+    return ['student', 'admin', 'nanny', 'master_admin', 'teacher'];
+  }, [user]);
 
   const recipients = useMemo(() => {
     if (!user) return [];

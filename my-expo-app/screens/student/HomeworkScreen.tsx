@@ -39,13 +39,14 @@ export default function HomeworkScreen({ navigation }: Props) {
     try {
       const res = await api.get('/homework');
       const d = res.data?.data || (Array.isArray(res.data) ? res.data : []);
-      const myBatchId = (user as any)?.batch_id;
-      const myUserId = user?.id;
-      setHomeworks(myBatchId || myUserId ? d.filter((h: any) =>
-        !h.batch_id && (!h.student_ids || h.student_ids.length === 0) ||
-        (myBatchId && h.batch_id === myBatchId) ||
-        (myUserId && Array.isArray(h.student_ids) && h.student_ids.includes(myUserId))
-      ) : d);
+      const myBatchId = String((user as any)?.batch_id ?? '');
+      const myUserId = String(user?.id ?? '');
+      setHomeworks(d.filter((h: any) => {
+        const hBatch = String(h.batch_id ?? '');
+        const hStudentIds = Array.isArray(h.student_ids) ? h.student_ids.map(String) : [];
+        const noTarget = !h.batch_id && (!h.student_ids || h.student_ids.length === 0);
+        return noTarget || (myBatchId && hBatch === myBatchId) || (myUserId && hStudentIds.includes(myUserId));
+      }));
     } catch {}
   }, [user]);
 
@@ -95,7 +96,17 @@ export default function HomeworkScreen({ navigation }: Props) {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission Denied', 'Need camera roll access.'); return; }
     const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.6, allowsMultipleSelection: true });
-    if (!r.canceled) setSubmitFiles(prev => [...prev, ...r.assets.map(a => ({ uri: a.uri, name: a.fileName || `img_${Date.now()}.jpg`, type: a.mimeType || 'image/jpeg', size: a.fileSize || 0 }))]);
+    console.log('PICKER RESULT:', JSON.stringify(r, null, 2));
+    console.log('CANCELED:', r.canceled, 'ASSET COUNT:', r.canceled ? 0 : r.assets.length);
+    if (!r.canceled) {
+      const mapped = r.assets.map(a => ({ uri: a.uri, name: a.fileName || `img_${Date.now()}.jpg`, type: a.mimeType || 'image/jpeg', size: a.fileSize || 0 }));
+      console.log('MAPPED FILES:', JSON.stringify(mapped, null, 2));
+      setSubmitFiles(prev => {
+        const next = [...prev, ...mapped];
+        console.log('SUBMIT FILES AFTER APPEND:', next.length, next.map(f => ({ name: f.name, size: f.size })));
+        return next;
+      });
+    }
   }, []);
   const pickSubmitDoc = useCallback(async () => {
     const r = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], multiple: true, copyToCacheDirectory: true });

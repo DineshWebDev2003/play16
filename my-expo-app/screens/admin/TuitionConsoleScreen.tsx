@@ -21,6 +21,7 @@ const tuitionActions = [
   { label: 'View Submissions', screen: 'viewSubmissions', icon: 'clipboard-list', color: '#3B82F6', desc: 'Check assignments' },
   { label: 'Messages', screen: 'nannyChat', icon: 'microphone-message', color: '#06B6D4', desc: 'Chat with nannies' },
   { label: 'Manage Users', screen: 'manageTuitionUsers', icon: 'account-group', color: '#14B8A6', desc: 'Create & manage tuition users' },
+  { label: 'Student List', screen: 'tuitionStudentList', icon: 'account-school', color: '#0EA5E9', desc: 'Browse students by class' },
   { label: 'Study Materials', screen: 'tuitionStudyMaterials', icon: 'book-open-variant', color: '#F97316', desc: 'Upload resources' },
   { label: 'Tests & Marks', screen: 'tuitionPostProgress', icon: 'clipboard-check', color: '#A855F7', desc: 'Assessments' },
 ];

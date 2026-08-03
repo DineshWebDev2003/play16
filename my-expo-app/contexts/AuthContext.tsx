@@ -236,7 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         end_date: a.end_date || undefined,
       })));
 
-      setActivities(resolveArray(activitiesRes.data).map((a: any) => ({
+      const mappedActivities = resolveArray(activitiesRes.data).map((a: any) => ({
         id: (a.id || Math.random()).toString(),
         title: a.title || 'Activity',
         description: a.description || '',
@@ -254,7 +254,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           text: c.text || c.comment || '',
           time: c.created_at ? new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently'
         })) : []
-      })));
+      }));
+      mappedActivities.forEach((act: any) => {
+        console.log('[ACTIVITY_URL] id=' + act.id + ' mediaUrl=' + act.mediaUrl + ' thumbnailUrl=' + act.thumbnailUrl);
+      });
+      setActivities(mappedActivities);
 
       const rawTransactions = resolveArray(transactionsRes.data).map((t: any) => ({
         id:       (t.id || Math.random()).toString(),

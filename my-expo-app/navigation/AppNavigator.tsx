@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { View, Text, TouchableOpacity, BackHandler, Alert, ActivityIndicator, Animated, Easing, Dimensions, StatusBar } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import SessionExpiredModal from '../components/SessionExpiredModal';
-import { setOnUnauthorized } from '../services/api';
+import { setOnUnauthorized, fetchMaintenanceStatus } from '../services/api';
+import MaintenanceBlockScreen from '../screens/auth/MaintenanceBlockScreen';
 
 // Import screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -51,6 +53,7 @@ import MyAttendanceScreen from '../screens/teacher/MyAttendanceScreen';
 import StudentAttendanceReportScreen from '../screens/teacher/StudentAttendanceReportScreen';
 import TeacherAttendanceReportScreen from '../screens/admin/TeacherAttendanceReportScreen';
 import SplashScreen from '../screens/auth/SplashScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import PrivacyPolicyScreen from '../screens/auth/PrivacyPolicyScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 // Tuition screens
@@ -61,6 +64,8 @@ import TuitionStudentHomeScreen from '../screens/tuition/TuitionStudentHomeScree
 import TuitionStudentQuickActionScreen from '../screens/tuition/TuitionStudentQuickActionScreen';
 import TuitionStudentAccountScreen from '../screens/tuition/TuitionStudentAccountScreen';
 import TuitionAttendanceScreen from '../screens/tuition/TuitionAttendanceScreen';
+import TuitionStudentListScreen from '../screens/tuition/TuitionStudentListScreen';
+import TuitionStudentDetailScreen from '../screens/tuition/TuitionStudentDetailScreen';
 import TuitionPostProgressScreen from '../screens/tuition/TuitionPostProgressScreen';
 import TuitionMyProgressScreen from '../screens/tuition/TuitionMyProgressScreen';
 import TuitionStudyMaterialsScreen from '../screens/tuition/TuitionStudyMaterialsScreen';
@@ -79,8 +84,9 @@ import StudentInfoScreen from '../screens/master_admin/StudentInfoScreen';
 import NannyHomeScreen from '../screens/nanny/NannyHomeScreen';
 import NannyAccountScreen from '../screens/nanny/NannyAccountScreen';
 import VoiceChatScreen from '../screens/voice/VoiceChatScreen';
+import MaintenanceScreen from '../screens/admin/MaintenanceScreen';
 
-type ScreenType = 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'pettyCash' | 'nannyChat' | 'nannyAttendance';
+type ScreenType = 'onboarding' | 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'tuitionStudentList' | 'tuitionStudentDetail' | 'pettyCash' | 'nannyChat' | 'nannyAttendance' | 'maintenance';
 
 export default function AppNavigator() {
   const { user, announcements, isLoading, logout } = useAuth();
@@ -92,6 +98,8 @@ export default function AppNavigator() {
   const [isHomeBlinking, setIsHomeBlinking] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState<{ enabled: boolean; message: string }>({ enabled: false, message: '' });
   const navigate = useCallback((screen: ScreenType, resetOrParams: boolean | any = false, screenParams: any = null) => {
     setCurrentScreen(screen);
     const finalParams = typeof resetOrParams === 'object' ? resetOrParams : screenParams;
@@ -157,8 +165,49 @@ export default function AppNavigator() {
     return () => setOnUnauthorized(null);
   }, [user]);
 
+  // Poll Maintenance Mode status — non-admin users get blocked with a popup
+  const checkMaintenance = useCallback(async () => {
+    const status = await fetchMaintenanceStatus();
+    setMaintenanceMode({ enabled: !!status.enabled, message: status.message || '' });
+  }, []);
+
+  useEffect(() => {
+    checkMaintenance();
+    const interval = setInterval(checkMaintenance, 30000); // re-check every 30s
+    return () => clearInterval(interval);
+  }, [checkMaintenance]);
+
+  // First-launch onboarding — only shown once until the user finishes it
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const seen = await AsyncStorage.getItem('@tn_happykids_onboarding_seen');
+        if (mounted) setShowOnboarding(seen !== 'true');
+      } catch {
+        if (mounted) setShowOnboarding(true);
+      } finally {
+        if (mounted) setOnboardingChecked(true);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleOnboardingFinish = useCallback(async () => {
+    try { await AsyncStorage.setItem('@tn_happykids_onboarding_seen', 'true'); } catch {}
+    setShowOnboarding(false);
+    navigate('login', true);
+  }, [navigate]);
+
   const handleSessionLogin = useCallback(async () => {
     setSessionExpired(false);
+    logout();
+    navigate('login', true);
+  }, [navigate, logout]);
+
+  const handleMaintenanceLogout = useCallback(() => {
     logout();
     navigate('login', true);
   }, [navigate, logout]);
@@ -262,12 +311,16 @@ export default function AppNavigator() {
     pettyCash: 'quickAction',
     tuitionConsole: 'quickAction',
     manageTuitionUsers: 'quickAction',
+    tuitionStudentList: 'quickAction',
+    tuitionStudentDetail: 'quickAction',
     nannyChat: 'home',
     nannyAttendance: 'home',
+    maintenance: 'quickAction',
   };
 
   const needsPayment = (user?.role === 'student' || user?.role === 'tuition_student') && (user?.pay_to_active === true || user?.status === 'pending_payment');
-  const isTabScreen = ['home', 'quickAction', 'account'].includes(currentScreen) && !!user && user?.role !== 'nanny' && !needsPayment;
+  const maintenanceBlocked = maintenanceMode.enabled && !!user && user?.role !== 'master_admin';
+  const isTabScreen = ['home', 'quickAction', 'account'].includes(currentScreen) && !!user && user?.role !== 'nanny' && !needsPayment && !maintenanceBlocked;
   const activeTab = tabMapping[currentScreen] || 'home';
 
   useEffect(() => {
@@ -371,7 +424,10 @@ export default function AppNavigator() {
       case 'tuitionAttendance': return <TuitionAttendanceScreen navigation={navigation} />;
       case 'tuitionStudyMaterials': return <TuitionStudyMaterialsScreen navigation={navigation} />;
       case 'pettyCash': return <PettyCashScreen navigation={navigation} />;
+      case 'maintenance': return <MaintenanceScreen navigation={navigation} />;
       case 'tuitionConsole': return <TuitionConsoleScreen navigation={navigation} />;
+      case 'tuitionStudentList': return <TuitionStudentListScreen navigation={navigation} />;
+      case 'tuitionStudentDetail': return <TuitionStudentDetailScreen navigation={navigation} route={{ params }} />;
       case 'manageTuitionUsers': return <ManageTuitionUsersScreen navigation={navigation} />;
       case 'nannyChat': return <VoiceChatScreen navigation={navigation} />;
       case 'nannyAttendance': return <TakeAttendanceScreen navigation={navigation} />;
@@ -388,7 +444,25 @@ export default function AppNavigator() {
     );
   }
 
+  // Maintenance Mode — block every non-master-admin user (logged in or not)
+  if (maintenanceBlocked) {
+    return (
+      <>
+        <MaintenanceBlockScreen maintenanceMessage={maintenanceMode.message} onLogout={handleMaintenanceLogout} />
+        <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
+      </>
+    );
+  }
+
   if (!user) {
+    if (onboardingChecked && showOnboarding) {
+      return (
+        <>
+          <OnboardingScreen onFinish={handleOnboardingFinish} />
+          <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
+        </>
+      );
+    }
     if (currentScreen === 'privacyPolicy') {
         return (
           <>
@@ -402,6 +476,7 @@ export default function AppNavigator() {
         <LoginScreen 
             onLogin={() => navigate('home', true)} 
             onOpenPrivacy={() => navigate('privacyPolicy')}
+            maintenanceMessage={maintenanceMode.enabled ? maintenanceMode.message : undefined}
         />
         <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
       </>

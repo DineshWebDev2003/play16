@@ -48,17 +48,12 @@ workflows:
               }
           }
           EOF
-      - name: Build Debug APK
+      - name: Build Release AAB
         script: |
           cd my-expo-app/android
-          ./gradlew assembleDebug
-      - name: Build Release APK
-        script: |
-          cd my-expo-app/android
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
     artifacts:
-      - my-expo-app/android/app/build/outputs/apk/debug/*.apk
-      - my-expo-app/android/app/build/outputs/apk/release/*.apk
+      - my-expo-app/android/app/build/outputs/bundle/release/*.aab
     publishing:
       email:
         recipients:

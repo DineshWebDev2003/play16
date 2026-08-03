@@ -53,8 +53,6 @@ export default function TuitionTeacherHomeScreen({ navigation }: Props) {
     setRefreshing(false);
   }, [fetchData, loadTodayAttendance]);
 
-  const studentColors = ['#8B5CF6', '#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#EF4444', '#14B8A6', '#F97316'];
-
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
       <ScrollView
@@ -154,7 +152,7 @@ export default function TuitionTeacherHomeScreen({ navigation }: Props) {
                 key={item.label}
                 activeOpacity={0.85}
                 onPress={() => {
-                  const screens: Record<string, string> = { 'Homework': 'postHomework', 'Submissions': 'viewSubmissions', 'Progress': 'tuitionPostProgress', 'Messages': 'parentMessages' };
+                  const screens: Record<string, string> = { 'Homework': 'postHomework', 'Submissions': 'viewSubmissions', 'Progress': 'tuitionPostProgress', 'Messages': 'nannyChat' };
                   navigation.navigate(screens[item.label]);
                 }}
                 style={{
@@ -185,49 +183,6 @@ export default function TuitionTeacherHomeScreen({ navigation }: Props) {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 24, paddingVertical: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>My Students</Text>
-            <View style={{ backgroundColor: 'rgba(245,158,11,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(245,158,11,0.2)' }}>
-              <Text style={{ color: '#F59E0B', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>{tuitionStudents.length} Total</Text>
-            </View>
-          </View>
-          {tuitionStudents.length === 0 ? (
-            <View style={{ backgroundColor: isDark ? '#2a2a28' : '#FFFFFF', borderRadius: 20, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: isDark ? '#3a3a38' : '#F3F4F6' }}>
-              <MaterialCommunityIcons name="account-group-outline" size={56} color={isDark ? '#4B5563' : '#9CA3AF'} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: isDark ? '#D1D5DB' : '#6B7280', marginTop: 16, textAlign: 'center' }}>No tuition students assigned</Text>
-              <Text style={{ fontSize: 11, fontWeight: '500', color: isDark ? '#6B7280' : '#9CA3AF', marginTop: 6, textAlign: 'center' }}>Students will appear here once assigned</Text>
-            </View>
-          ) : (
-            tuitionStudents.map((s, index) => (
-              <TouchableOpacity key={s.id} activeOpacity={0.8}
-                style={{
-                  backgroundColor: isDark ? '#2a2a28' : '#FFFFFF',
-                  borderRadius: 16, padding: 16, marginBottom: 8,
-                  elevation: 2,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{
-                    width: 44, height: 44, borderRadius: 14,
-                    backgroundColor: studentColors[index % studentColors.length],
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <MaterialCommunityIcons name="school" size={22} color="white" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '900', fontSize: 15, color: isDark ? '#FFFFFF' : '#111827' }}>{s.name}</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', marginTop: 2 }}>
-                      @{s.username} | {s.studentId || 'N/A'}
-                    </Text>
-                  </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? '#4B5563' : '#9CA3AF'} />
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
         </View>
 
         <View style={{ height: 128 }} />

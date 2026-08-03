@@ -13,7 +13,7 @@ const actions = [
   { icon: 'book-education', label: 'Study Materials', screen: 'tuitionStudyMaterials', color: '#F97316', grad: ['#F97316', '#EA580C'], gradDark: ['#9a3412', '#7c2d12'], tag: 'Resources', desc: 'View class resources' },
   { icon: 'chart-line', label: 'My Progress', screen: 'tuitionMyProgress', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Track', desc: 'Track performance' },
   { icon: 'calendar-check', label: 'Attendance', screen: 'attendance', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Report', desc: 'View attendance record' },
-  { icon: 'message-text', label: 'Messages', screen: 'parentMessages', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with teachers' },
+  { icon: 'message-text', label: 'Messages', screen: 'nannyChat', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with teachers & admin' },
 ];
 
 export default function TuitionStudentQuickActionScreen({ navigation }: Props) {

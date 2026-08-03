@@ -26,7 +26,8 @@ export default function TuitionTeacherQuickActionScreen({ navigation }: Props) {
     { label: 'Post Progress', screen: 'tuitionPostProgress', icon: 'chart-line', color: '#10B981', grad: ['#10B981', '#059669'], gradDark: ['#064e3b', '#022c22'], tag: 'Track', desc: 'Track student progress' },
     { label: 'Attendance', screen: 'tuitionAttendance', icon: 'calendar-check', color: '#F59E0B', grad: ['#F59E0B', '#D97706'], gradDark: ['#92400E', '#78350F'], tag: 'Mark', desc: 'Mark daily attendance' },
     { label: 'View Submissions', screen: 'viewSubmissions', icon: 'clipboard-list', color: '#3B82F6', grad: ['#3B82F6', '#2563EB'], gradDark: ['#1e40af', '#1e1b4b'], tag: 'Review', desc: 'Review submitted work' },
-    { label: 'Messages', screen: 'parentMessages', icon: 'message-text', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with parents & students' },
+    { label: 'Messages', screen: 'nannyChat', icon: 'message-text', color: '#EC4899', grad: ['#EC4899', '#DB2777'], gradDark: ['#831843', '#500724'], tag: 'Chat', desc: 'Chat with nannies & admin' },
+    { label: 'Student List', screen: 'tuitionStudentList', icon: 'account-group', color: '#14B8A6', grad: ['#14B8A6', '#0D9488'], gradDark: ['#0f766e', '#134e4a'], tag: 'Directory', desc: 'Browse students by class' },
   ];
 
   return (

@@ -47,7 +47,7 @@ export const getMediaUrl = (path: string | undefined): string | undefined => {
   
   const baseStorageUrl = IS_LOCAL
     ? `http://${LOCAL_IP}:8000/storage`
-    : `https://${BASE_DOMAIN}/storage`;
+    : `https://${BASE_DOMAIN}/uploads`;
 
   return `${baseStorageUrl}/${clean.replace(/^storage\//i, '')}`;
 };
@@ -77,6 +77,21 @@ let unauthorizedFired = false;
 export const setOnUnauthorized = (cb: (() => void) | null) => {
   onUnauthorized = cb;
   if (!cb) unauthorizedFired = false;
+};
+
+/**
+ * Fetches the current Maintenance Mode status (public endpoint, no auth).
+ * Used by the app to show the maintenance popup to non-admin users.
+ */
+export const fetchMaintenanceStatus = async () => {
+  try {
+    const res = await api.get('/maintenance/status');
+    return res.data ?? {};
+  } catch (e) {
+    // If the endpoint is unreachable, assume maintenance is OFF so the app
+    // is never blocked accidentally.
+    return { enabled: false, message: '', enabled_by: null, updated_at: null };
+  }
 };
 
 api.interceptors.response.use(

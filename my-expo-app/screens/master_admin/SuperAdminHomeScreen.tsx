@@ -19,6 +19,9 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
   const { user, users, branches, transactions, fetchData, updateAvatar } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const isDark = theme === 'dark';
+  const textPrimary = isDark ? '#FFFFFF' : '#111827';
+  const textSecondary = isDark ? '#9CA3AF' : '#6B7280';
   const [refreshing, setRefreshing] = React.useState(false);
 
   const stats = useMemo(() => ({
@@ -339,6 +342,21 @@ export default function SuperAdminHomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
         </View>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('maintenance')}
+          style={{ padding: 18, borderRadius: 16, marginTop: 14, backgroundColor: isDark ? '#2d2d24' : '#FFFFFF', borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB', flexDirection: 'row', alignItems: 'center' }}
+        >
+          <View style={{ backgroundColor: '#7C3AED', width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialCommunityIcons name="wrench-cog" size={20} color="#fff" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ color: textPrimary, fontSize: 15, fontWeight: '900' }}>System Maintenance</Text>
+            <Text style={{ color: textSecondary, fontSize: 10, fontWeight: '700', marginTop: 2 }}>Run migrations & fix storage (no terminal needed)</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={textSecondary} />
+        </TouchableOpacity>
 
         <View style={{ height: 128 }} />
       </ScrollView>

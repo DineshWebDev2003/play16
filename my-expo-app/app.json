@@ -43,7 +43,7 @@
       },
       "package": "com.tnhappykids.throneapp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 3,
+      "versionCode": 4,
       "notification": {
         "icon": "./assets/notification-icon.png",
         "color": "#F59E0B"

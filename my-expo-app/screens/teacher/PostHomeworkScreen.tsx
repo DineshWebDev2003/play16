@@ -17,9 +17,9 @@ import api, { getMediaUrl } from '../../services/api';
 
 interface Props { navigation: { navigate: (s: string) => void; goBack: () => void } }
 interface Attachment { uri: string; name: string; type: string; size: number; }
-interface Batch { id: number; name: string; description?: string; students_count?: number; icon?: string; color?: string; }
+interface Batch { id: number; name: string; description?: string; students_count?: number; icon?: string; color?: string; branch_id?: number; }
 interface Subject { id: number; name: string; batch_id: number | null; batch?: Batch | null; branch_id?: number; icon?: string; color?: string; }
-interface AppUser { id: number; name: string; role: string; batch_id?: number | null; username?: string; }
+interface AppUser { id: number; name: string; role: string; batch_id?: number | null; username?: string; studentId?: string; student_id?: string; }
 
 const ICONS = ['book-education', 'book', 'bookmark', 'book-open-variant', 'book-plus', 'bookshelf', 'school', 'google-classroom', 'shape', 'shape-plus', 'star', 'star-outline', 'fire', 'flash', 'lightbulb', 'lightbulb-on', 'pencil', 'pen', 'abacus', 'calculator', 'sigma', 'function', 'math-compass', 'drawing', 'palette', 'music', 'microphone', 'chemistry', 'flask', 'earth', 'map', 'compass', 'basketball', 'football', 'swim', 'run', 'food-apple', 'food', 'heart', 'account-group', 'account-star', 'crown', 'diamond', 'trophy', 'medal', 'flag', 'rocket', 'airplane', 'car', 'bus', 'train', 'phone', 'cellphone', 'laptop', 'monitor', 'tablet', 'headphones', 'camera', 'video', 'filmstrip', 'gamepad', 'puzzle', 'toy-brick', 'robot', 'cloud', 'moon', 'weather-sunny', 'weather-night', 'flower', 'pine-tree', 'paw', 'cat', 'dog'];
 
@@ -268,7 +268,7 @@ const ColorPicker = ({ visible, onClose, onSelect, selected, title, icon, isDark
 
 // ── Main Screen ──
 export default function PostHomeworkScreen({ navigation }: Props) {
-  const { user } = useAuth();
+  const { user, branches } = useAuth();
   const { colors, theme } = useTheme();
   const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
@@ -305,6 +305,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   // Subject form state
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectBatchId, setNewSubjectBatchId] = useState<number | null>(null);
+  const [newSubjectBranchId, setNewSubjectBranchId] = useState<number | null>(null);
   const [newSubjectIcon, setNewSubjectIcon] = useState('book-education');
   const [newSubjectColor, setNewSubjectColor] = useState('#D97706');
   const [showNewBatchPicker, setShowNewBatchPicker] = useState(false);
@@ -317,6 +318,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   const [allStudents, setAllStudents] = useState<AppUser[]>([]);
   const [newBatchName, setNewBatchName] = useState('');
   const [newBatchDesc, setNewBatchDesc] = useState('');
+  const [newBatchBranchId, setNewBatchBranchId] = useState<number | null>(null);
   const [newBatchIcon, setNewBatchIcon] = useState('google-classroom');
   const [newBatchColor, setNewBatchColor] = useState('#8B5CF6');
   const [creatingBatch, setCreatingBatch] = useState(false);
@@ -355,7 +357,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
 
   // ── Subject CRUD ──
   const resetSubjectForm = useCallback(() => {
-    setNewSubjectName(''); setNewSubjectBatchId(null); setNewSubjectIcon('book-education'); setNewSubjectColor('#D97706'); setEditingSubject(null);
+    setNewSubjectName(''); setNewSubjectBatchId(null); setNewSubjectBranchId(null); setNewSubjectIcon('book-education'); setNewSubjectColor('#D97706'); setEditingSubject(null);
   }, []);
 
   const handleSaveSubject = useCallback(async () => {
@@ -364,7 +366,12 @@ export default function PostHomeworkScreen({ navigation }: Props) {
     try {
       const p: any = { name: newSubjectName.trim(), icon: newSubjectIcon, color: newSubjectColor };
       if (newSubjectBatchId) p.batch_id = newSubjectBatchId;
-      if (user?.branch_id) p.branch_id = user.branch_id;
+      if (user?.role === 'master_admin') {
+        if (!newSubjectBranchId) { Alert.alert('Required', 'Please select a branch.'); setCreatingSubject(false); return; }
+        p.branch_id = newSubjectBranchId;
+      } else if (user?.branch_id) {
+        p.branch_id = user.branch_id;
+      }
       if (editingSubject) { await api.put(`/subjects/${editingSubject.id}`, p); } else { await api.post('/subjects', p); }
       resetSubjectForm(); await loadSubjects();
       Alert.alert('Success', editingSubject ? 'Subject updated.' : 'Subject created.');
@@ -382,27 +389,29 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   }, [loadSubjects, editingSubject, resetSubjectForm]);
 
   const startEditSubject = useCallback((s: Subject) => {
-    setNewSubjectName(s.name); setNewSubjectBatchId(s.batch_id); setNewSubjectIcon(s.icon || 'book-education'); setNewSubjectColor(s.color || '#D97706'); setEditingSubject(s);
+    setNewSubjectName(s.name); setNewSubjectBatchId(s.batch_id); setNewSubjectBranchId(s.branch_id ?? null); setNewSubjectIcon(s.icon || 'book-education'); setNewSubjectColor(s.color || '#D97706'); setEditingSubject(s);
   }, []);
 
   // ── Batch CRUD ──
   const resetBatchForm = useCallback(() => {
-    setNewBatchName(''); setNewBatchDesc(''); setNewBatchIcon('google-classroom'); setNewBatchColor('#8B5CF6'); setEditingBatch(null);
+    setNewBatchName(''); setNewBatchDesc(''); setNewBatchBranchId(null); setNewBatchIcon('google-classroom'); setNewBatchColor('#8B5CF6'); setEditingBatch(null);
   }, []);
 
   const handleSaveBatch = useCallback(async () => {
     if (!newBatchName.trim()) { Alert.alert('Required', 'Batch name is required.'); return; }
+    if (user?.role === 'master_admin' && !newBatchBranchId) { Alert.alert('Required', 'Please select a branch.'); return; }
     setCreatingBatch(true);
     try {
       const p: any = { name: newBatchName.trim(), icon: newBatchIcon, color: newBatchColor };
       if (newBatchDesc.trim()) p.description = newBatchDesc.trim();
-      if (user?.branch_id) p.branch_id = user.branch_id;
+      if (user?.role === 'master_admin') p.branch_id = newBatchBranchId;
+      else if (user?.branch_id) p.branch_id = user.branch_id;
       if (editingBatch) { await api.put(`/batches/${editingBatch.id}`, p); } else { await api.post('/batches', p); }
       resetBatchForm(); await loadBatches();
       Alert.alert('Success', editingBatch ? 'Class updated.' : 'Class created.');
     } catch (err: any) { Alert.alert('Error', err?.response?.data?.message || 'Failed.'); }
     setCreatingBatch(false);
-  }, [newBatchName, newBatchDesc, newBatchIcon, newBatchColor, editingBatch, user, loadBatches, resetBatchForm]);
+  }, [newBatchName, newBatchDesc, newBatchIcon, newBatchColor, newBatchBranchId, editingBatch, user, loadBatches, resetBatchForm]);
 
   const deleteBatch = useCallback(async (id: number) => {
     Alert.alert('Delete Class', 'Students will be unassigned. Continue?', [
@@ -414,7 +423,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   }, [loadBatches, editingBatch, resetBatchForm, selectedManageBatch]);
 
   const startEditBatch = useCallback((b: Batch) => {
-    setNewBatchName(b.name); setNewBatchDesc(b.description || ''); setNewBatchIcon(b.icon || 'google-classroom'); setNewBatchColor(b.color || '#8B5CF6'); setEditingBatch(b);
+    setNewBatchName(b.name); setNewBatchDesc(b.description || ''); setNewBatchBranchId(b.branch_id ?? null); setNewBatchIcon(b.icon || 'google-classroom'); setNewBatchColor(b.color || '#8B5CF6'); setEditingBatch(b);
   }, []);
 
   // ── Student assignment ──
@@ -574,8 +583,9 @@ export default function PostHomeworkScreen({ navigation }: Props) {
   }, [title, description, subject, dueDate, selectedBatch, selectedStudents, attachments, user, batches, navigation]);
 
   const selectedSubjectObj = subjects.find(s => s.id === selectedSubjectId);
-  const batchStudents = selectedManageBatch ? allStudents.filter(s => s.batch_id === selectedManageBatch.id) : [];
-  const unassignedStudents = selectedManageBatch ? allStudents.filter(s => !s.batch_id || s.batch_id !== selectedManageBatch.id) : [];
+  const sameBatch = (s: AppUser, batchId: number | null | undefined) => !!batchId && String(s.batch_id) === String(batchId);
+  const batchStudents = selectedManageBatch ? allStudents.filter(s => sameBatch(s, selectedManageBatch.id)) : [];
+  const unassignedStudents = selectedManageBatch ? allStudents.filter(s => !sameBatch(s, selectedManageBatch.id)) : [];
 
   // ── Full-screen Icon Picker ──
   const tabs = [
@@ -682,7 +692,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
                   <Text style={{ color: '#B0B7C3', fontSize: 12, marginTop: 4 }}>Tap + to create your first class</Text>
                 </View>
               ) : batches.map(b => {
-                const studentCount = allStudents.filter(s => s.batch_id === b.id).length;
+                const studentCount = allStudents.filter(s => String(s.batch_id) === String(b.id)).length;
                 return (
                   <View key={b.id}
                     style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, marginBottom: 12, borderWidth: 1, borderColor: isDark ? '#3a3a38' : '#F3F4F6', backgroundColor: isDark ? '#2a2a28' : '#FFFFFF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6 }}>
@@ -880,9 +890,16 @@ export default function PostHomeworkScreen({ navigation }: Props) {
 
       {/* ── FULL-SCREEN SUBJECT PICKER ── */}
       <Modal transparent visible={showSubjectPicker} onRequestClose={() => setShowSubjectPicker(false)} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
-          <PickerHeader title="Pick a Subject" onClose={() => setShowSubjectPicker(false)}
-            right={<TouchableOpacity onPress={() => { setSelectedSubjectId(null); setShowSubjectPicker(false); }} style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 }}><Text style={{ color: '#fff', fontWeight: '900', fontSize: 11 }}>All</Text></TouchableOpacity>} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#F8F6F0' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: isDark ? '#3a3a35' : '#F3F4F6' }}>
+            <TouchableOpacity onPress={() => setShowSubjectPicker(false)} style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: isDark ? '#262620' : '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="close" size={22} color={isDark ? '#D1D5DB' : '#374151'} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: isDark ? '#FFF' : '#111827' }}>Pick a Subject</Text>
+            <TouchableOpacity onPress={() => { setSelectedSubjectId(null); setShowSubjectPicker(false); }} style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, backgroundColor: isDark ? '#2a2a24' : '#FDE68A' }}>
+              <Text style={{ color: isDark ? '#FBBF24' : '#B45309', fontWeight: '900', fontSize: 11 }}>ALL</Text>
+            </TouchableOpacity>
+          </View>
           {subjects.length === 0 ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialCommunityIcons name="book-off" size={48} color="#9CA3AF" />
@@ -890,33 +907,38 @@ export default function PostHomeworkScreen({ navigation }: Props) {
               <Text style={{ color: '#B0B7C3', fontSize: 12, marginTop: 4 }}>Create one in Subjects tab</Text>
             </View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', gap: 16 }}>
-                {subjects.map(s => {
-                  const active = selectedSubjectId === s.id;
-                  return (
-                    <TouchableOpacity key={s.id} activeOpacity={0.7} onPress={() => { setSelectedSubjectId(s.id); setShowSubjectPicker(false); }}
-                      style={{ padding: 18, borderRadius: 24, width: 200, borderWidth: 2, borderColor: active ? brandDark : (isDark ? '#4B5563' : '#F3F4F6'), overflow: 'hidden' }}>
-                      {active && <LinearGradient colors={[brand, brandDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />}
-                      <View style={{ width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14, backgroundColor: active ? 'rgba(255,255,255,0.25)' : (s.color || '#D97706') + '30' }}>
-                        <MaterialCommunityIcons name={(s.icon || 'book-education') as any} size={26} color={active ? '#fff' : (s.color || '#D97706')} />
+            <ScrollView contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, paddingHorizontal: 4, color: isDark ? '#6B7280' : '#9CA3AF' }}>{subjects.length} subjects</Text>
+              {subjects.map(s => {
+                const active = selectedSubjectId === s.id;
+                return (
+                  <TouchableOpacity key={s.id} activeOpacity={0.85} onPress={() => { setSelectedSubjectId(s.id); setShowSubjectPicker(false); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 18, marginBottom: 12, borderWidth: 2, borderColor: active ? brandDark : (isDark ? '#3a3a38' : '#F3F4F6'), backgroundColor: isDark ? '#262620' : '#FFFFFF', overflow: 'hidden', elevation: active ? 4 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6 }}>
+                    {active && <LinearGradient colors={[brand, brandDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />}
+                    <View style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 14, backgroundColor: active ? 'rgba(255,255,255,0.25)' : (s.color || '#D97706') + '22' }}>
+                      <MaterialCommunityIcons name={(s.icon || 'book-education') as any} size={24} color={active ? '#fff' : (s.color || '#D97706')} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: '800', fontSize: 15, color: active ? '#fff' : (isDark ? '#fff' : '#111827') }} numberOfLines={1}>{s.name}</Text>
+                      {s.batch ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                          <MaterialCommunityIcons name="shape" size={13} color={active ? '#FFF' : '#8B5CF6'} />
+                          <Text style={{ fontSize: 11, fontWeight: '800', marginLeft: 5, color: active ? '#fff' : '#8B5CF6' }} numberOfLines={1}>{s.batch.name}</Text>
+                        </View>
+                      ) : (
+                        <Text style={{ fontSize: 11, fontWeight: '600', marginTop: 4, color: active ? 'rgba(255,255,255,0.85)' : (isDark ? '#6B7280' : '#9CA3AF') }}>No class mapped</Text>
+                      )}
+                    </View>
+                    {active ? (
+                      <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                        <MaterialCommunityIcons name="check" size={18} color={brandDark} />
                       </View>
-                      <Text style={{ fontWeight: '900', fontSize: 15, marginBottom: 6, minHeight: 40, color: active ? '#fff' : (isDark ? '#fff' : '#111827') }} numberOfLines={2}>{s.name}</Text>
-                      {s.batch && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <MaterialCommunityIcons name="shape" size={14} color={active ? '#FFF' : '#8B5CF6'} />
-                          <Text style={{ fontSize: 11, fontWeight: '800', marginLeft: 5, color: active ? '#fff' : '#8B5CF6', }}>{s.batch.name}</Text>
-                        </View>
-                      )}
-                      {active && (
-                        <View style={{ position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                          <MaterialCommunityIcons name="check" size={18} color={brandDark} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                    ) : (
+                      <MaterialCommunityIcons name="chevron-right" size={20} color={isDark ? '#4B5563' : '#D1D5DB'} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           )}
         </SafeAreaView>
@@ -936,7 +958,10 @@ export default function PostHomeworkScreen({ navigation }: Props) {
                 <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#EDE9FE', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                   <MaterialCommunityIcons name="account-plus" size={18} color="#8B5CF6" />
                 </View>
-                <Text style={{ flex: 1, fontWeight: '700', fontSize: 14, color: isDark ? '#E5E7EB' : '#374151' }}>{st.name}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: '700', fontSize: 14, color: isDark ? '#E5E7EB' : '#374151' }}>{st.name}</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>ID: {st.student_id || st.studentId || st.id}</Text>
+                </View>
                 <MaterialCommunityIcons name="chevron-right" size={18} color="#9CA3AF" />
               </TouchableOpacity>
             ))}
@@ -1098,6 +1123,28 @@ export default function PostHomeworkScreen({ navigation }: Props) {
               </View>
               <View style={{ height: 1, backgroundColor: isDark ? '#3a3a32' : '#FDE68A', marginBottom: 16 }} />
               <Survey label="Subject Name" icon="book" value={newSubjectName} onChange={setNewSubjectName} placeholder="e.g. Mathematics" isDark={isDark} />
+              {user?.role === 'master_admin' ? (
+                <View style={{ marginBottom: 18 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <MaterialCommunityIcons name="office-building" size={16} color={brand} />
+                    <Text style={{ fontSize: 12, fontWeight: '800', marginLeft: 8, textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#FBBF24' : '#B45309' }}>Branch</Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {branches.length === 0 ? (
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#9CA3AF' : '#6B7280', paddingVertical: 10 }}>No branches available yet. Create one in Branch Management first.</Text>
+                    ) : branches.map((br: any) => {
+                      const active = newSubjectBranchId === Number(br.id);
+                      return (
+                        <TouchableOpacity key={br.id} activeOpacity={0.8} onPress={() => setNewSubjectBranchId(Number(br.id))}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, marginRight: 8, borderWidth: 2, borderColor: active ? brand : (isDark ? '#4B5563' : '#E5E7EB'), backgroundColor: active ? brand : (isDark ? '#24241e' : '#FFFFFF') }}>
+                          <MaterialCommunityIcons name={active ? 'check-circle' : 'office-building'} size={16} color={active ? '#fff' : (isDark ? '#D1D5DB' : '#6B7280')} style={{ marginRight: 6 }} />
+                          <Text style={{ fontWeight: '800', fontSize: 13, color: active ? '#fff' : (isDark ? '#D1D5DB' : '#374151') }}>{br.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
               <View style={{ marginBottom: 18 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <MaterialCommunityIcons name="shape" size={16} color={brand} />
@@ -1169,6 +1216,28 @@ export default function PostHomeworkScreen({ navigation }: Props) {
               <View style={{ height: 1, backgroundColor: isDark ? '#3a3a32' : '#FDE68A', marginBottom: 16 }} />
               <Survey label="Class Name" icon="google-classroom" value={newBatchName} onChange={setNewBatchName} placeholder="e.g. Morning Batch A" isDark={isDark} />
               <Survey label="Description" icon="text-long" value={newBatchDesc} onChange={setNewBatchDesc} placeholder="Optional description" isDark={isDark} />
+              {user?.role === 'master_admin' ? (
+                <View style={{ marginBottom: 18 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <MaterialCommunityIcons name="office-building" size={16} color={brand} />
+                    <Text style={{ fontSize: 12, fontWeight: '800', marginLeft: 8, textTransform: 'uppercase', letterSpacing: 1, color: isDark ? '#FBBF24' : '#B45309' }}>Branch</Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {branches.length === 0 ? (
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: isDark ? '#9CA3AF' : '#6B7280', paddingVertical: 10 }}>No branches available yet. Create one in Branch Management first.</Text>
+                    ) : branches.map((br: any) => {
+                      const active = newBatchBranchId === Number(br.id);
+                      return (
+                        <TouchableOpacity key={br.id} activeOpacity={0.8} onPress={() => setNewBatchBranchId(Number(br.id))}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, marginRight: 8, borderWidth: 2, borderColor: active ? brand : (isDark ? '#4B5563' : '#E5E7EB'), backgroundColor: active ? brand : (isDark ? '#24241e' : '#FFFFFF') }}>
+                          <MaterialCommunityIcons name={active ? 'check-circle' : 'office-building'} size={16} color={active ? '#fff' : (isDark ? '#D1D5DB' : '#6B7280')} style={{ marginRight: 6 }} />
+                          <Text style={{ fontWeight: '800', fontSize: 13, color: active ? '#fff' : (isDark ? '#D1D5DB' : '#374151') }}>{br.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
               <View style={{ marginBottom: 18 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <MaterialCommunityIcons name="palette" size={16} color={brand} />
@@ -1227,7 +1296,7 @@ export default function PostHomeworkScreen({ navigation }: Props) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontWeight: '800', fontSize: 14, color: isDark ? '#fff' : '#1F2937' }}>{st.name}</Text>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>ID: {st.id}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280' }}>ID: {st.student_id || st.studentId || st.id}</Text>
                     </View>
                     <TouchableOpacity onPress={() => { removeStudentFromBatch(st.id); }} style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' }}>
                       <MaterialCommunityIcons name="account-remove" size={16} color="#EF4444" />
