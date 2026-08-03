@@ -248,8 +248,8 @@ export default function TuitionTeacherAccountScreen({ navigation }: Props) {
             <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF', borderWidth: 1, borderColor: isDark ? '#262626' : '#F3F4F6' }}>
               {[
                 { id: 'about', icon: 'information-outline', title: 'About', subtitle: 'App version & details', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)', action: () => Linking.openURL('https://tnhappykids.in') },
-                { id: 'help', icon: 'help-circle-outline', title: 'Help & Support', subtitle: 'Get assistance', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)', action: () => Alert.alert('Contact Support', 'Email: support@tnhappykids.in\nPhone: +91-1234567890') },
-                { id: 'privacy', icon: 'shield-account-outline', title: 'Privacy Policy', subtitle: 'Data protection & privacy', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)', action: () => Linking.openURL('https://tnhappykids.in/privacy') },
+                { id: 'help', icon: 'help-circle-outline', title: 'Help & Support', subtitle: 'Get assistance', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)', action: () => Alert.alert('Coming Soon', 'Help & Support is coming soon! ✨') },
+                { id: 'privacy', icon: 'shield-account-outline', title: 'Privacy Policy', subtitle: 'Data protection & privacy', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)', action: () => Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html') },
               ].map((item, index) => (
                 <TouchableOpacity
                   key={item.id}

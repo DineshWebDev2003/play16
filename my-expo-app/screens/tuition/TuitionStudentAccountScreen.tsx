@@ -97,6 +97,8 @@ export default function TuitionStudentAccountScreen({ navigation }: Props) {
     { id: 'phone', title: 'Phone', subtitle: 'Contact number', icon: 'phone', iconColor: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.15)', value: user?.phone || 'Not provided' },
     { id: 'studentId', title: 'Student ID', subtitle: 'Admission number', icon: 'school', iconColor: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.15)', value: user?.studentId || 'N/A' },
     { id: 'support', title: 'Support & Help', subtitle: 'Get help and contact support', icon: 'help-circle-outline', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)', value: null },
+    { id: 'about', title: 'About', subtitle: 'Visit our school website', icon: 'information-outline', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)', value: null },
+    { id: 'privacy', title: 'Privacy Policy', subtitle: 'Data protection & privacy', icon: 'shield-account-outline', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)', value: null },
   ];
 
   return (
@@ -296,11 +298,15 @@ export default function TuitionStudentAccountScreen({ navigation }: Props) {
                 <TouchableOpacity
                   key={item.id}
                   activeOpacity={0.7}
-                  disabled={item.id !== 'support'}
+                  disabled={item.value !== null}
                   style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== menuItems.length - 1 ? 1 : 0, borderBottomColor: isDark ? '#262626' : '#F3F4F6' }}
                   onPress={() => {
                     if (item.id === 'support') {
+                      Alert.alert('Coming Soon', 'Help & Support is coming soon! ✨');
+                    } else if (item.id === 'about') {
                       Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else if (item.id === 'privacy') {
+                      Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err => Alert.alert('Error', 'Could not open website'));
                     } else {
                       Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
                     }
@@ -315,12 +321,12 @@ export default function TuitionStudentAccountScreen({ navigation }: Props) {
                       <Text style={{ fontSize: 11, fontWeight: '700', opacity: 0.6, marginTop: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>{item.subtitle}</Text>
                     </View>
                   </View>
-                  {item.id === 'support' ? (
+                  {item.value !== null ? (
+                    <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#D1D5DB' : '#6B7280' }} numberOfLines={1}>{item.value}</Text>
+                  ) : (
                     <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
                       <MaterialCommunityIcons name="chevron-right" size={18} color={isDark ? '#9CA3AF' : '#6B7280'} opacity={0.5} />
                     </View>
-                  ) : (
-                    <Text style={{ fontSize: 14, fontWeight: '900', color: isDark ? '#D1D5DB' : '#6B7280' }} numberOfLines={1}>{item.value}</Text>
                   )}
                 </TouchableOpacity>
               ))}

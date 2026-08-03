@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -200,6 +200,52 @@ export default function NannyAccountScreen({ navigation }: Props) {
                 </>
               )}
             </TouchableOpacity>
+          </View>
+
+          {/* ── More ── */}
+          <View style={{ paddingVertical: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: '#111827' }}>More ⚙️</Text>
+              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+                <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Info</Text>
+              </View>
+            </View>
+
+            <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F3F4F6' }}>
+              {[
+                { id: 'help', icon: 'help-circle-outline', title: 'Help & Support', subtitle: 'Get assistance', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
+                { id: 'about', icon: 'information-outline', title: 'About', subtitle: 'App version & details', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)' },
+                { id: 'privacy', icon: 'shield-account-outline', title: 'Privacy Policy', subtitle: 'Data protection & privacy', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)' },
+              ].map((item, index) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== 2 ? 1 : 0, borderBottomColor: '#F3F4F6' }}
+                  onPress={() => {
+                    if (item.id === 'help') {
+                      Alert.alert('Coming Soon', 'Help & Support is coming soon! ✨');
+                    } else if (item.id === 'about') {
+                      Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else if (item.id === 'privacy') {
+                      Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err => Alert.alert('Error', 'Could not open website'));
+                    }
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ backgroundColor: item.bgColor, padding: 12, borderRadius: 14, marginRight: 14 }}>
+                      <MaterialCommunityIcons name={item.icon as any} size={22} color={item.iconColor} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '900', letterSpacing: -0.3, color: '#111827' }}>{item.title}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '700', opacity: 0.6, marginTop: 1, color: '#6B7280' }}>{item.subtitle}</Text>
+                    </View>
+                  </View>
+                  <View style={{ backgroundColor: '#F9FAFB', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="chevron-right" size={18} color="#6B7280" opacity={0.5} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Sign Out */}

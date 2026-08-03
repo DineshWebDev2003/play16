@@ -39,7 +39,9 @@ export default function StudentAccountScreen({ navigation }: StudentAccountScree
     { id: 'profile', title: 'My Profile', subtitle: 'View and update your profile', icon: 'account-circle', iconColor: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.15)' },
     { id: 'guardian', title: 'Guardian Contacts', subtitle: 'Emergency contact information', icon: 'account-group', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
     { id: 'notifications', title: 'Notifications', subtitle: 'Activity and announcement alerts', icon: 'bell-outline', iconColor: '#F59E0B', bgColor: 'rgba(244, 114, 182, 0.15)' },
+    { id: 'support', title: 'Support & Help', subtitle: 'Get help and contact support', icon: 'help-circle-outline', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
     { id: 'about', title: 'About Us', subtitle: 'Visit our school website', icon: 'information-outline', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)' },
+    { id: 'privacy', title: 'Privacy Policy', subtitle: 'Data protection & privacy', icon: 'shield-account-outline', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)' },
   ];
 
   const handleLogout = () => {
@@ -159,6 +161,8 @@ export default function StudentAccountScreen({ navigation }: StudentAccountScree
                       navigation.navigate('notificationSettings');
                     } else if (item.id === 'about') {
                       Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else if (item.id === 'privacy') {
+                      Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err => Alert.alert('Error', 'Could not open website'));
                     } else {
                       Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
                     }

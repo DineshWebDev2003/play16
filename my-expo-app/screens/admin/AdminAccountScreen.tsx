@@ -141,6 +141,14 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
       iconColor: '#EC4899',
       bgColor: 'rgba(236, 72, 153, 0.15)',
     },
+    {
+      id: 'privacy',
+      title: 'Privacy Policy',
+      subtitle: 'Data protection & privacy',
+      icon: 'shield-account-outline',
+      iconColor: '#6366F1',
+      bgColor: 'rgba(99, 102, 241, 0.15)',
+    },
   ];
 
   const handleLogout = () => {
@@ -348,6 +356,10 @@ export default function AdminAccountScreen({ navigation }: AdminAccountScreenPro
                     navigation.navigate('notificationSettings');
                   } else if (item.id === 'about') {
                     Linking.openURL('https://tnhappykids.in').catch(err =>
+                      Alert.alert('Error', 'Could not open website')
+                    );
+                  } else if (item.id === 'privacy') {
+                    Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err =>
                       Alert.alert('Error', 'Could not open website')
                     );
                   } else if (item.id === 'settings') {

@@ -250,7 +250,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         </View>
 
         <TouchableOpacity
-          onPress={() => Alert.alert('Help', 'Contact support at support@tnhappykids.in')}
+          onPress={() => Alert.alert('Coming Soon', 'Help & Support is coming soon! ✨')}
           className={`${colors.surface} rounded-2xl p-4 mb-8 border ${colors.border} flex-row items-center justify-between`}
           activeOpacity={0.7}
         >
