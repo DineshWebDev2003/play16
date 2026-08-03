@@ -268,7 +268,7 @@ const ReelItem = React.memo(({
               <Text className="text-white font-bold text-[10px] tracking-[1px]">{item.type.toUpperCase()}</Text>
             </View>
             <View className="flex-row items-center">
-              {(user?.role === 'admin' || user?.role === 'teacher') && (
+              {(user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'master_admin') && (
                 <TouchableOpacity 
                   onPress={() => onDelete(item.id)} 
                   className="bg-red-500/60 w-11 h-11 rounded-full items-center justify-center border border-white/20 mr-3"
