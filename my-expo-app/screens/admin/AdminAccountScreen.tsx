@@ -1,420 +1,265 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Image, Linking, StyleSheet, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoutModal from '../../components/LogoutModal';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface NavigationProps {
   navigate: (screen: string) => void;
   goBack: () => void;
 }
 
-interface AdminAccountScreenProps {
+interface Props {
   navigation: NavigationProps;
 }
 
-export default function AdminAccountScreen({ navigation }: AdminAccountScreenProps) {
-  const { user, logout, updateAvatar, updateProfile } = useAuth();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
+const BORDER_RADIUS = 28;
+const SECTION_GAP = 28;
+
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_SECONDARY = '#4A5B53';
+const TEXT_MUTED = '#7A8A82';
+const ACCENT = '#10B981';
+
+const SCHOOL_ADMIN_AVATAR = require('../../assets/Avatar/school-admin.png');
+
+const MENU_ICONS: Record<string, any> = {
+  profile: require('../../assets/icons/doctor.png'),
+  notifications: require('../../assets/icons/bell (1).png'),
+  settings: require('../../assets/icons/error.png'),
+  support: require('../../assets/icons/customer.png'),
+  about: require('../../assets/icons/info.png'),
+  privacy: require('../../assets/icons/lock.png'),
+};
+
+// ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
+function RadialGlow({ size, color, opacity, style }: {
+  size: number;
+  color: string;
+  opacity: number;
+  style?: any;
+}) {
+  const layers = [0, 45, 90, 135];
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        { position: 'absolute', width: size, height: size, borderRadius: size / 2, opacity },
+        style,
+      ]}
+    >
+      {layers.map((deg) => (
+        <LinearGradient
+          key={deg}
+          colors={[color, 'rgba(255,255,255,0)']}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${deg}deg` }] }]}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ─── Aurora Glass background (matches home screen) ──────────────────────────────
+function AuroraBackground() {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <LinearGradient
+        colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <RadialGlow size={480} color="#DDF8D7" opacity={0.28} style={{ top: -160, left: -160 }} />
+      <RadialGlow size={420} color="#DDFBFF" opacity={0.25} style={{ top: -140, left: SCREEN_WIDTH / 2 - 210 }} />
+      <RadialGlow size={520} color="#F8FFD8" opacity={0.24} style={{ bottom: -180, left: -180 }} />
+      <RadialGlow size={450} color="#EAF5FF" opacity={0.18} style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }} />
+    </View>
+  );
+}
+
+export default function AdminAccountScreen({ navigation }: Props) {
+  const { user, logout, updateAvatar } = useAuth();
   const insets = useSafeAreaInsets();
-  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [savingName, setSavingName] = useState(false);
-  const [editingEmail, setEditingEmail] = useState(false);
-  const [email, setEmail] = useState(user?.email || '');
-  const [savingEmail, setSavingEmail] = useState(false);
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleSaveName = async () => {
-    if (!name.trim()) return;
-    setSavingName(true);
-    const ok = await updateProfile({ name: name.trim() });
-    setSavingName(false);
-    if (ok) setEditingName(false);
-  };
+  const [showLogout, setShowLogout] = useState(false);
 
-  const handleSaveEmail = async () => {
-    if (!email.trim()) return;
-    setSavingEmail(true);
-    const ok = await updateProfile({ email: email.trim() });
-    setSavingEmail(false);
-    if (ok) setEditingEmail(false);
-  };
-
-  const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill all password fields');
-      return;
-    }
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'New password must be at least 6 characters');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match');
-      return;
-    }
-    setSavingPassword(true);
-    try {
-      const ok = await updateProfile({
-        current_password: currentPassword,
-        password: newPassword,
-        password_confirmation: confirmPassword,
-      } as any);
-      if (ok) {
-        Alert.alert('Success', 'Password updated successfully');
-        setShowPasswordForm(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to update password');
-    } finally {
-      setSavingPassword(false);
-    }
-  };
-
-  const inputStyle = {
-    backgroundColor: isDark ? '#262626' : '#F3F4F6',
-    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 16, fontWeight: '700' as const,
-    color: isDark ? '#FFF' : '#111',
-    borderWidth: 1, borderColor: isDark ? '#333' : '#E5E7EB',
-  };
-
-  const cardStyle = {
-    backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
-    borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+  const glassCard = {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: BORDER_RADIUS,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
   };
 
   const menuItems = [
-    {
-      id: 'profile',
-      title: 'Profile Settings',
-      subtitle: 'Update your profile information',
-      icon: 'account-cog',
-      iconColor: '#F59E0B',
-      bgColor: 'rgba(245, 158, 11, 0.15)',
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      subtitle: 'Manage notification settings',
-      icon: 'bell-outline',
-      iconColor: '#F59E0B',
-      bgColor: 'rgba(244, 114, 182, 0.15)',
-    },
-    {
-      id: 'settings',
-      title: 'App Settings',
-      subtitle: 'Configure app preferences',
-      icon: 'cog-outline',
-      iconColor: '#6366F1',
-      bgColor: 'rgba(99, 102, 241, 0.15)',
-    },
-    {
-      id: 'support',
-      title: 'Support & Help',
-      subtitle: 'Get help and contact support',
-      icon: 'help-circle-outline',
-      iconColor: '#10B981',
-      bgColor: 'rgba(16, 185, 129, 0.15)',
-    },
-    {
-      id: 'about',
-      title: 'About',
-      subtitle: 'App version and information',
-      icon: 'information-outline',
-      iconColor: '#EC4899',
-      bgColor: 'rgba(236, 72, 153, 0.15)',
-    },
-    {
-      id: 'privacy',
-      title: 'Privacy Policy',
-      subtitle: 'Data protection & privacy',
-      icon: 'shield-account-outline',
-      iconColor: '#6366F1',
-      bgColor: 'rgba(99, 102, 241, 0.15)',
-    },
+    { id: 'profile', title: 'Profile Settings', subtitle: 'Update your profile information', icon: 'profile', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+    { id: 'notifications', title: 'Notifications', subtitle: 'Manage notification settings', icon: 'notifications', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' },
+    { id: 'settings', title: 'App Settings', subtitle: 'Configure app preferences', icon: 'settings', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' },
+    { id: 'support', title: 'Support & Help', subtitle: 'Get help and contact support', icon: 'support', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+    { id: 'about', title: 'About', subtitle: 'App version and information', icon: 'about', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' },
+    { id: 'privacy', title: 'Privacy Policy', subtitle: 'Data protection & privacy', icon: 'privacy', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' },
   ];
 
-  const handleLogout = () => {
-    setShowLogoutModal(true);
-  };
-
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFFFFF' }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
-        {/* ── Modern Header (matches Home) ── */}
-        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#D1D5DB' : '#6B7280' }}>
-                TN HAPPYKIDS
+    <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
+      <AuroraBackground />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+        <View style={{ paddingTop: Math.max(insets.top, 56), paddingHorizontal: 20 }}>
+          {/* ── Header (52px) ── */}
+          <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h < 12) return 'Good Morning 👋';
+                  if (h < 17) return 'Good Afternoon 👋';
+                  return 'Good Evening 👋';
+                })()}
               </Text>
-              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: isDark ? '#FFFFFF' : '#111827' }}>
+              <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2 }}>
                 {user?.name?.split(' ')[0] || 'Admin'}
               </Text>
-              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.2)', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.1)', flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="shield-check" size={12} color="#F59E0B" />
-                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Admin Console</Text>
-              </View>
             </View>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={updateAvatar}
-              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: isDark ? '#333' : '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 27,
+                backgroundColor: 'rgba(255,255,255,0.92)',
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+                shadowColor: '#000000',
+                shadowOpacity: 0.1,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
             >
               {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               ) : (
-                <MaterialCommunityIcons name="shield-crown" size={36} color="#92400E" />
+                <Image source={SCHOOL_ADMIN_AVATAR} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               )}
-              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: ACCENT, padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
                 <MaterialCommunityIcons name="camera" size={12} color="white" />
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* ── Profile Hero Card (cyan gradient, matches Campus Hub) ── */}
-        <View style={{ paddingVertical: 8 }}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setShowProfileForm(!showProfileForm)}
-            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
-          >
-            <LinearGradient
-              colors={isDark ? ['#0E7490', '#155E75'] : ['#06B6D4', '#0891B2']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: 16 }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <MaterialCommunityIcons name="shield-account-outline" size={20} color="white" />
-                  </View>
-                  <View>
-                    <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Admin Profile</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Identity & Security</Text>
-                  </View>
+          <View style={{ height: SECTION_GAP }} />
+
+          {/* ── Profile hero card ── */}
+          <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('profileSettings')} style={glassCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(245,158,11,0.12)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Image source={MENU_ICONS.profile} style={{ width: 26, height: 26 }} resizeMode="contain" />
                 </View>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialCommunityIcons name="shield-check" size={11} color="white" />
-                  <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>Verified</Text>
+                <View>
+                  <Text style={{ color: TEXT_PRIMARY, fontSize: 17, fontWeight: '700', letterSpacing: -0.5 }}>Admin Profile</Text>
+                  <Text style={{ color: TEXT_MUTED, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>
+                    Identity & Security
+                  </Text>
                 </View>
               </View>
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 12 }}>
-                <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>{user?.name || 'Administrator'}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '700', marginTop: 3 }}>{user?.email || 'Not provided'}</Text>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="shield-check" size={11} color={ACCENT} />
+                <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>Verified</Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-                <MaterialCommunityIcons name={showProfileForm ? 'chevron-up' : 'chevron-down'} size={12} color="rgba(255,255,255,0.5)" />
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>
-                  {showProfileForm ? 'Hide Details' : 'Edit Profile'}
-                </Text>
-              </View>
-              <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
-                <MaterialCommunityIcons name="share-variant" size={90} color="white" />
-              </View>
-            </LinearGradient>
+            </View>
+            <View style={{ backgroundColor: 'rgba(247,249,246,0.9)', borderRadius: 18, padding: 14 }}>
+              <Text style={{ color: TEXT_PRIMARY, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 }} numberOfLines={1}>
+                {user?.name || 'School Admin'}
+              </Text>
+              <Text style={{ color: TEXT_SECONDARY, fontSize: 12, fontWeight: '600', marginTop: 3 }}>
+                {user?.email || 'Not provided'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+              <MaterialCommunityIcons name="pencil" size={12} color={TEXT_MUTED} />
+              <Text style={{ color: TEXT_MUTED, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>
+                Edit Profile
+              </Text>
+            </View>
           </TouchableOpacity>
-        </View>
 
-        {showProfileForm && (
-          <View style={{ paddingVertical: 8 }}>
-            {/* Name */}
-            <View style={cardStyle}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <MaterialCommunityIcons name="account" size={22} color="#F59E0B" />
-                  </View>
-                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Full Name</Text>
-                </View>
-                {!editingName && (
-                  <TouchableOpacity onPress={() => { setEditingName(true); setName(user?.name || ''); }}>
-                    <MaterialCommunityIcons name="pencil" size={18} color="#F59E0B" />
-                  </TouchableOpacity>
-                )}
+          {/* ── Settings & Controls ── */}
+          <View style={{ paddingTop: SECTION_GAP }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: TEXT_PRIMARY }}>Settings & Controls</Text>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100 }}>
+                <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Management</Text>
               </View>
-              {editingName ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TextInput value={name} onChangeText={setName} style={{ ...inputStyle, flex: 1, fontSize: 18 }} autoFocus placeholder="Enter name" placeholderTextColor="#9CA3AF" />
-                  <TouchableOpacity onPress={handleSaveName} disabled={savingName} style={{ backgroundColor: '#F59E0B', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
-                    {savingName ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setEditingName(false); setName(user?.name || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
-                    <MaterialCommunityIcons name="close" size={22} color={isDark ? '#FFF' : '#111'} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <Text style={{ fontSize: 20, fontWeight: '900', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.name || 'Admin'}</Text>
-              )}
             </View>
 
-            {/* Email */}
-            <View style={[cardStyle, { marginTop: 12 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
+            <View style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              {menuItems.map((item, index) => (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== menuItems.length - 1 ? 1 : 0, borderBottomColor: 'rgba(247,249,246,1)' }}
+                  onPress={() => {
+                    if (item.id === 'profile') {
+                      navigation.navigate('profileSettings');
+                    } else if (item.id === 'notifications') {
+                      navigation.navigate('notificationSettings');
+                    } else if (item.id === 'settings') {
+                      navigation.navigate('settings');
+                    } else if (item.id === 'about') {
+                      Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else if (item.id === 'privacy') {
+                      Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else {
+                      Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
+                    }
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <View style={{ backgroundColor: item.bg, padding: 12, borderRadius: 14, marginRight: 14 }}>
+                      <Image source={MENU_ICONS[item.icon]} style={{ width: 22, height: 22 }} resizeMode="contain" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: TEXT_PRIMARY }}>{item.title}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '600', marginTop: 1, color: TEXT_MUTED }}>{item.subtitle}</Text>
+                    </View>
                   </View>
-                  <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: isDark ? '#9CA3AF' : '#6B7280' }}>Email</Text>
-                </View>
-                {!editingEmail && (
-                  <TouchableOpacity onPress={() => { setEditingEmail(true); setEmail(user?.email || ''); }}>
-                    <MaterialCommunityIcons name="pencil" size={18} color="#6366F1" />
-                  </TouchableOpacity>
-                )}
-              </View>
-              {editingEmail ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TextInput value={email} onChangeText={setEmail} style={{ ...inputStyle, flex: 1, fontSize: 16 }} autoFocus placeholder="Enter email" placeholderTextColor="#9CA3AF" keyboardType="email-address" autoCapitalize="none" />
-                  <TouchableOpacity onPress={handleSaveEmail} disabled={savingEmail} style={{ backgroundColor: '#6366F1', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
-                    {savingEmail ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="check" size={22} color="white" />}
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setEditingEmail(false); setEmail(user?.email || ''); }} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
-                    <MaterialCommunityIcons name="close" size={22} color={isDark ? '#FFF' : '#111'} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <Text style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFF' : '#111', marginTop: 4 }}>{user?.email || 'Not provided'}</Text>
-              )}
+                  <View style={{ backgroundColor: 'rgba(247,249,246,0.9)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="chevron-right" size={18} color={TEXT_MUTED} />
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {/* Password */}
-            <View style={[cardStyle, { marginTop: 12 }]}>
-              <TouchableOpacity onPress={() => setShowPasswordForm(!showPasswordForm)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <MaterialCommunityIcons name="lock" size={22} color="#10B981" />
-                  </View>
-                  <View>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: isDark ? '#FFF' : '#111' }}>Password</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#9CA3AF' : '#6B7280', marginTop: 2 }}>Update your login credentials</Text>
-                  </View>
-                </View>
-                <MaterialCommunityIcons name={showPasswordForm ? 'chevron-up' : 'chevron-down'} size={22} color={isDark ? '#FFF' : '#111'} />
-              </TouchableOpacity>
-
-              {showPasswordForm && (
-                <View style={{ marginTop: 16 }}>
-                  <TextInput value={currentPassword} onChangeText={setCurrentPassword} placeholder="Current Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 12 }} />
-                  <TextInput value={newPassword} onChangeText={setNewPassword} placeholder="New Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 12 }} />
-                  <TextInput value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm New Password" placeholderTextColor="#9CA3AF" secureTextEntry style={{ ...inputStyle, marginBottom: 16 }} />
-                  <TouchableOpacity onPress={handleChangePassword} disabled={savingPassword} style={{ backgroundColor: '#F59E0B', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}>
-                    <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>
-                      {savingPassword ? 'Updating...' : 'Update Password'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* ── Settings & Controls (matches Home Main Operations) ── */}
-        <View style={{ paddingVertical: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: isDark ? '#FFFFFF' : '#111827' }}>Settings & Controls ⚙️</Text>
-            <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
-              <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Management</Text>
-            </View>
-          </View>
-
-          <View
-            style={{
-              borderRadius: 16, overflow: 'hidden',
-              backgroundColor: isDark ? '#1e1e1e' : '#FFFFFF',
-              borderColor: isDark ? '#262626' : '#F3F4F6',
-              borderWidth: 1,
-            }}
-          >
-            {menuItems.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
-                activeOpacity={0.7}
-                style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== menuItems.length - 1 ? 1 : 0, borderBottomColor: isDark ? '#262626' : '#F3F4F6' }}
-                onPress={() => {
-                  if (item.id === 'profile') {
-                    setShowProfileForm(!showProfileForm);
-                  } else if (item.id === 'notifications') {
-                    navigation.navigate('notificationSettings');
-                  } else if (item.id === 'about') {
-                    Linking.openURL('https://tnhappykids.in').catch(err =>
-                      Alert.alert('Error', 'Could not open website')
-                    );
-                  } else if (item.id === 'privacy') {
-                    Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err =>
-                      Alert.alert('Error', 'Could not open website')
-                    );
-                  } else if (item.id === 'settings') {
-                    navigation.navigate('settings');
-                  } else if (item.id === 'backup') {
-                    navigation.navigate('backup');
-                  } else {
-                    console.log(`Navigate to ${item.id}`);
-                    Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
-                  }
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <View style={{ backgroundColor: isDark ? '#262626' : item.bgColor, padding: 12, borderRadius: 14, marginRight: 14 }}>
-                    <MaterialCommunityIcons name={item.icon as any} size={22} color={item.iconColor} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '900', letterSpacing: -0.3, color: isDark ? '#FFFFFF' : '#111827' }}>{item.title}</Text>
-                    <Text style={{ fontSize: 11, fontWeight: '700', opacity: 0.6, marginTop: 1, color: isDark ? '#D1D5DB' : '#6B7280' }}>{item.subtitle}</Text>
-                  </View>
-                </View>
-                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
-                  <MaterialCommunityIcons name="chevron-right" size={18} color={isDark ? '#9CA3AF' : '#6B7280'} opacity={0.5} />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Sign Out */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={handleLogout}
-            style={{ borderRadius: 16, overflow: 'hidden', elevation: 15, marginTop: 20 }}
-          >
-            <LinearGradient
-              colors={['#EF4444', '#B91C1C']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+            {/* Sign Out */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setShowLogout(true)}
+              style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden', marginTop: 20, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}
             >
-              <MaterialCommunityIcons name="power" size={24} color="white" />
-              <Text style={{ color: 'white', fontWeight: '900', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <View style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="power" size={24} color="#EF4444" />
+                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
-          <View style={{ height: 96 }} />
-        </View>
+        {/* Spacer so the tab dock never covers content */}
+        <View style={{ height: 140 }} />
       </ScrollView>
 
-      <LogoutModal
-        visible={showLogoutModal}
-        onConfirm={logout}
-        onCancel={() => setShowLogoutModal(false)}
-      />
+      <LogoutModal visible={showLogout} onConfirm={logout} onCancel={() => setShowLogout(false)} />
     </View>
   );
 }

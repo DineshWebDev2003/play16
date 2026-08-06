@@ -9,84 +9,88 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Notifications from 'expo-notifications';
 import SessionExpiredModal from '../components/SessionExpiredModal';
 import { setOnUnauthorized, fetchMaintenanceStatus } from '../services/api';
-import MaintenanceBlockScreen from '../screens/auth/MaintenanceBlockScreen';
+import MaintenanceBlockScreenV2 from '../screens/auth/v2/MaintenanceBlockScreenV2';
 
 // Import screens
-import LoginScreen from '../screens/auth/LoginScreen';
+import LoginScreenV2 from '../screens/auth/v2/LoginScreenV2';
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
+import AdminHomeScreenV2 from '../screens/admin/v2/AdminHomeScreenV2';
 import AdminQuickActionScreen from '../screens/admin/AdminQuickActionScreen';
+import AdminQuickActionScreenV2 from '../screens/admin/v2/AdminQuickActionScreenV2';
 import AdminAccountScreen from '../screens/admin/AdminAccountScreen';
 import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import UserManagementScreenV2 from '../screens/admin/UserManagementScreenV2';
-import AlumniScreen from '../screens/admin/AlumniScreen';
-import FeesManagementScreen from '../screens/admin/FeesManagementScreen';
-import AnnouncementsScreen from '../screens/admin/AnnouncementsScreen';
-import ReportsScreen from '../screens/admin/ReportsScreen';
-import BackupScreen from '../screens/admin/BackupScreen';
-import SettingsScreen from '../screens/admin/SettingsScreen';
-import StudentListScreen from '../screens/admin/StudentListScreen';
-import StudentDetailScreen from '../screens/admin/StudentDetailScreen';
-import IncomeExpenseScreen from '../screens/admin/IncomeExpenseScreen';
-import StudentHomeScreen from '../screens/student/StudentHomeScreen';
-import StudentQuickActionScreen from '../screens/student/StudentQuickActionScreen';
+import AlumniScreenV2 from '../screens/admin/v2/AlumniScreenV2';
+import FeesManagementScreenV2 from '../screens/admin/v2/FeesManagementScreenV2';
+import AnnouncementsScreenV2 from '../screens/admin/v2/AnnouncementsScreenV2';
+import ReportsScreenV2 from '../screens/admin/v2/ReportsScreenV2';
+import SettingsScreenV2 from '../screens/admin/v2/SettingsScreenV2';
+import StudentListScreenV2 from '../screens/admin/v2/StudentListScreenV2';
+import StudentDetailScreenV2 from '../screens/admin/v2/StudentDetailScreenV2';
+import IncomeExpenseScreenV2 from '../screens/admin/v2/IncomeExpenseScreenV2';
+import UserMange from '../screens/admin/v2/usermange';
+import PettyCashScreenV2 from '../screens/admin/v2/PettyCashScreenV2';
+import BackupScreenV2 from '../screens/admin/v2/BackupScreenV2';
+import TakeAttendanceScreenV2 from '../screens/admin/v2/TakeAttendanceScreenV2';
+import TeacherAttendanceReportScreenV2 from '../screens/admin/v2/TeacherAttendanceReportScreenV2';
+import StudentHomeScreenV2 from '../screens/student/v2/StudentHomeScreenV2';
+import StudentQuickActionScreenV2 from '../screens/student/v2/StudentQuickActionScreenV2';
 import StudentAccountScreen from '../screens/student/StudentAccountScreen';
-import AttendanceScreen from '../screens/student/AttendanceScreen';
-import ActivityFeedScreen from '../screens/student/ActivityFeedScreen';
-import LiveCameraScreen from '../screens/student/LiveCameraScreen';
-import HomeworkScreen from '../screens/student/HomeworkScreen';
-import TimetableScreen from '../screens/student/TimetableScreen';
-import EmergencyContactScreen from '../screens/student/EmergencyContactScreen';
-import MyFeesScreen from '../screens/student/MyFeesScreen';
+import AttendanceScreenV2 from '../screens/student/v2/AttendanceScreenV2';
+import ActivityFeedScreenV2 from '../screens/student/v2/ActivityFeedScreenV2';
+import LiveCameraScreenV2 from '../screens/student/v2/LiveCameraScreenV2';
+import HomeworkScreenV2 from '../screens/student/v2/HomeworkScreenV2';
+import TimetableScreenV2 from '../screens/admin/v2/TimetableScreenV2';
+import EmergencyContactScreenV2 from '../screens/student/v2/EmergencyContactScreenV2';
+import MyFeesScreenV2 from '../screens/student/v2/MyFeesScreenV2';
 import PayGatewayScreen from '../screens/student/PayGatewayScreen';
-import RewardsScreen from '../screens/student/RewardsScreen';
-import ProfileScreen from '../screens/student/ProfileScreen';
-import TeacherHomeScreen from '../screens/teacher/TeacherHomeScreen';
-import TeacherQuickActionScreen from '../screens/teacher/TeacherQuickActionScreen';
+import RewardsScreenV2 from '../screens/student/v2/RewardsScreenV2';
+import ProfileScreenV2 from '../screens/student/v2/ProfileScreenV2';
+import TeacherHomeScreenV2 from '../screens/teacher/v2/TeacherHomeScreenV2';
+import TeacherQuickActionScreenV2 from '../screens/teacher/v2/TeacherQuickActionScreenV2';
 import TeacherAccountScreen from '../screens/teacher/TeacherAccountScreen';
-import PostHomeworkScreen from '../screens/teacher/PostHomeworkScreen';
-import TakeAttendanceScreen from '../screens/teacher/TakeAttendanceScreen';
-import PostActivityScreen from '../screens/admin/PostActivityScreen';
-import ViewSubmissionsScreen from '../screens/teacher/ViewSubmissionsScreen';
-import ClassScheduleScreen from '../screens/teacher/ClassScheduleScreen';
-import ParentMessagesScreen from '../screens/teacher/ParentMessagesScreen';
-import MyAttendanceScreen from '../screens/teacher/MyAttendanceScreen';
-import StudentAttendanceReportScreen from '../screens/teacher/StudentAttendanceReportScreen';
-import TeacherAttendanceReportScreen from '../screens/admin/TeacherAttendanceReportScreen';
-import SplashScreen from '../screens/auth/SplashScreen';
-import OnboardingScreen from '../screens/auth/OnboardingScreen';
-import PrivacyPolicyScreen from '../screens/auth/PrivacyPolicyScreen';
-import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import PostHomeworkScreenV2 from '../screens/teacher/v2/PostHomeworkScreenV2';
+import PostActivityScreenV2 from '../screens/admin/v2/PostActivityScreenV2';
+import ViewSubmissionsScreenV2 from '../screens/teacher/v2/ViewSubmissionsScreenV2';
+import ClassScheduleScreenV2 from '../screens/teacher/v2/ClassScheduleScreenV2';
+import ParentMessagesScreenV2 from '../screens/teacher/v2/ParentMessagesScreenV2';
+import MyAttendanceScreenV2 from '../screens/teacher/v2/MyAttendanceScreenV2';
+import StudentAttendanceReportScreenV2 from '../screens/teacher/v2/StudentAttendanceReportScreenV2';
+import SplashScreenV2 from '../screens/auth/v2/SplashScreenV2';
+import OnboardingScreenV2 from '../screens/auth/v2/OnboardingScreenV2';
+import PrivacyPolicyScreenV2 from '../screens/auth/v2/PrivacyPolicyScreenV2';
+import NotificationSettingsScreenV2 from '../screens/NotificationSettingsScreenV2';
+import ProfileSettingsScreenV2 from '../screens/ProfileSettingsScreenV2';
 // Tuition screens
-import TuitionTeacherHomeScreen from '../screens/tuition/TuitionTeacherHomeScreen';
-import TuitionTeacherQuickActionScreen from '../screens/tuition/TuitionTeacherQuickActionScreen';
+import TuitionTeacherHomeScreenV2 from '../screens/tuition/v2/TuitionTeacherHomeScreenV2';
+import TuitionTeacherQuickActionScreenV2 from '../screens/tuition/v2/TuitionTeacherQuickActionScreenV2';
 import TuitionTeacherAccountScreen from '../screens/tuition/TuitionTeacherAccountScreen';
-import TuitionStudentHomeScreen from '../screens/tuition/TuitionStudentHomeScreen';
-import TuitionStudentQuickActionScreen from '../screens/tuition/TuitionStudentQuickActionScreen';
+import TuitionStudentHomeScreenV2 from '../screens/tuition/v2/TuitionStudentHomeScreenV2';
+import TuitionStudentQuickActionScreenV2 from '../screens/tuition/v2/TuitionStudentQuickActionScreenV2';
 import TuitionStudentAccountScreen from '../screens/tuition/TuitionStudentAccountScreen';
-import TuitionAttendanceScreen from '../screens/tuition/TuitionAttendanceScreen';
-import TuitionStudentListScreen from '../screens/tuition/TuitionStudentListScreen';
-import TuitionStudentDetailScreen from '../screens/tuition/TuitionStudentDetailScreen';
-import TuitionPostProgressScreen from '../screens/tuition/TuitionPostProgressScreen';
-import TuitionMyProgressScreen from '../screens/tuition/TuitionMyProgressScreen';
-import TuitionStudyMaterialsScreen from '../screens/tuition/TuitionStudyMaterialsScreen';
-import TuitionConsoleScreen from '../screens/admin/TuitionConsoleScreen';
-import ManageTuitionUsersScreen from '../screens/admin/ManageTuitionUsersScreen';
-import PettyCashScreen from '../screens/admin/PettyCashScreen';
+import TuitionAttendanceScreenV2 from '../screens/admin/v2/TuitionAttendanceScreenV2';
+import TuitionStudentListScreenV2 from '../screens/admin/v2/TuitionStudentListScreenV2';
+import TuitionStudentDetailScreenV2 from '../screens/admin/v2/TuitionStudentDetailScreenV2';
+import TuitionPostProgressScreenV2 from '../screens/admin/v2/TuitionPostProgressScreenV2';
+import TuitionMyProgressScreenV2 from '../screens/admin/v2/TuitionMyProgressScreenV2';
+import TuitionStudyMaterialsScreenV2 from '../screens/admin/v2/TuitionStudyMaterialsScreenV2';
+import TuitionConsoleScreenV2 from '../screens/admin/v2/TuitionConsoleScreenV2';
+import ManageTuitionUsersScreenV2 from '../screens/admin/v2/ManageTuitionUsersScreenV2';
 // Master Admin screens
-import BranchManagementScreen from '../screens/master_admin/BranchManagementScreen';
-import CameraManagementScreen from '../screens/master_admin/CameraManagementScreen';
-import SuperAdminHomeScreen from '../screens/master_admin/SuperAdminHomeScreen';
-import SuperAdminQuickActionScreen from '../screens/master_admin/SuperAdminQuickActionScreen';
-import SuperAdminAccountScreen from '../screens/master_admin/SuperAdminAccountScreen';
-import AttendanceSelectionScreen from '../screens/master_admin/AttendanceSelectionScreen';
-import StudentInfoScreen from '../screens/master_admin/StudentInfoScreen';
+import BranchManagementScreenV2 from '../screens/master_admin/v2/BranchManagementScreenV2';
+import CameraManagementScreenV2 from '../screens/master_admin/v2/CameraManagementScreenV2';
+import SuperAdminHomeScreenV2 from '../screens/master_admin/v2/SuperAdminHomeScreenV2';
+import SuperAdminQuickActionScreenV2 from '../screens/master_admin/v2/SuperAdminQuickActionScreenV2';
+import SuperAdminAccountScreenV2 from '../screens/master_admin/v2/SuperAdminAccountScreenV2';
+import AttendanceSelectionScreenV2 from '../screens/master_admin/v2/AttendanceSelectionScreenV2';
+import StudentInfoScreenV2 from '../screens/master_admin/v2/StudentInfoScreenV2';
 // Nanny screens
-import NannyHomeScreen from '../screens/nanny/NannyHomeScreen';
+import NannyHomeScreenV2 from '../screens/nanny/v2/NannyHomeScreenV2';
 import NannyAccountScreen from '../screens/nanny/NannyAccountScreen';
-import VoiceChatScreen from '../screens/voice/VoiceChatScreen';
-import MaintenanceScreen from '../screens/admin/MaintenanceScreen';
+import VoiceChatScreenV2 from '../screens/voice/v2/VoiceChatScreenV2';
+import MaintenanceScreenV2 from '../screens/admin/v2/MaintenanceScreenV2';
 
-type ScreenType = 'onboarding' | 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'tuitionStudentList' | 'tuitionStudentDetail' | 'pettyCash' | 'nannyChat' | 'nannyAttendance' | 'maintenance';
+type ScreenType = 'onboarding' | 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'userMange' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'attendanceSelection' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'profileSettings' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'tuitionStudentList' | 'tuitionStudentDetail' | 'pettyCash' | 'nannyChat' | 'nannyAttendance' | 'maintenance';
 
 export default function AppNavigator() {
   const { user, announcements, isLoading, logout } = useAuth();
@@ -128,7 +132,13 @@ export default function AppNavigator() {
     return handled;
   }, []);
 
-  const navigation = useMemo(() => ({ navigate, goBack }), [navigate, goBack]);
+  const navigation = useMemo(() => ({
+    navigate,
+    goBack,
+  } as {
+    navigate: (screen: string, params?: any) => void;
+    goBack: () => void;
+  }), [navigate, goBack]);
 
   // Handle Push Notification Navigation
   useEffect(() => {
@@ -277,6 +287,7 @@ export default function AppNavigator() {
     myFees: 'home',
     rewards: 'home',
     profile: 'account',
+    profileSettings: 'account',
     quickAction: 'quickAction',
     account: 'account',
     // Admin screens
@@ -348,35 +359,35 @@ export default function AppNavigator() {
     }
     switch (activeTab) {
       case 'privacyPolicy':
-        return <PrivacyPolicyScreen navigation={navigation} />;
+        return <PrivacyPolicyScreenV2 navigation={navigation} />;
       case 'home':
         return (
           <>
-            {user?.role === 'master_admin' && <SuperAdminHomeScreen navigation={navigation} />}
-            {user?.role === 'admin' && <AdminHomeScreen navigation={navigation} />}
-            {user?.role === 'student' && <StudentHomeScreen navigation={navigation} />}
-            {user?.role === 'teacher' && <TeacherHomeScreen navigation={navigation} />}
-            {user?.role === 'tuition_teacher' && <TuitionTeacherHomeScreen navigation={navigation} />}
-            {user?.role === 'tuition_student' && <TuitionStudentHomeScreen navigation={navigation} />}
-            {user?.role === 'nanny' && <NannyHomeScreen navigation={navigation} />}
+            {user?.role === 'master_admin' && <SuperAdminHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'admin' && <AdminHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'student' && <StudentHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'teacher' && <TeacherHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'tuition_teacher' && <TuitionTeacherHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'tuition_student' && <TuitionStudentHomeScreenV2 navigation={navigation} />}
+            {user?.role === 'nanny' && <NannyHomeScreenV2 navigation={navigation} />}
           </>
         );
       case 'quickAction':
         return (
           <>
-            {user?.role === 'master_admin' && <SuperAdminQuickActionScreen navigation={navigation} />}
-            {user?.role === 'admin' && <AdminQuickActionScreen navigation={navigation} />}
-            {user?.role === 'student' && <StudentQuickActionScreen navigation={navigation} />}
-            {user?.role === 'teacher' && <TeacherQuickActionScreen navigation={navigation} />}
-            {user?.role === 'tuition_teacher' && <TuitionTeacherQuickActionScreen navigation={navigation} />}
-            {user?.role === 'tuition_student' && <TuitionStudentQuickActionScreen navigation={navigation} />}
-            {user?.role === 'nanny' && <NannyHomeScreen navigation={navigation} />}
+            {user?.role === 'master_admin' && <SuperAdminQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'admin' && <AdminQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'student' && <StudentQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'teacher' && <TeacherQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'tuition_teacher' && <TuitionTeacherQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'tuition_student' && <TuitionStudentQuickActionScreenV2 navigation={navigation} />}
+            {user?.role === 'nanny' && <NannyHomeScreenV2 navigation={navigation} />}
           </>
         );
       case 'account':
         return (
           <>
-            {user?.role === 'master_admin' && <SuperAdminAccountScreen navigation={navigation} />}
+            {user?.role === 'master_admin' && <SuperAdminAccountScreenV2 navigation={navigation} />}
             {user?.role === 'admin' && <AdminAccountScreen navigation={navigation} />}
             {user?.role === 'student' && <StudentAccountScreen navigation={navigation} />}
             {user?.role === 'teacher' && <TeacherAccountScreen navigation={navigation} />}
@@ -385,60 +396,62 @@ export default function AppNavigator() {
             {user?.role === 'nanny' && <NannyAccountScreen navigation={navigation} />}
           </>
         );
-      case 'userManagement': return <UserManagementScreen navigation={navigation} />;
+      case 'userManagement': return <UserMange navigation={navigation} />;
       case 'userManagementV2': return <UserManagementScreenV2 navigation={navigation} />;
-      case 'alumni': return <AlumniScreen navigation={navigation} />;
-      case 'feesManagement': return <FeesManagementScreen navigation={navigation} />;
-      case 'announcements': return <AnnouncementsScreen navigation={navigation} />;
-      case 'reports': return <ReportsScreen navigation={navigation} />;
-      case 'backup': return <BackupScreen navigation={navigation} />;
-      case 'settings': return <SettingsScreen navigation={navigation} />;
-      case 'studentList': return <StudentListScreen navigation={navigation} />;
-      case 'studentDetail': return <StudentDetailScreen navigation={navigation} route={{ params }} />;
-      case 'attendance': return <AttendanceScreen navigation={navigation} />;
-      case 'activityFeed': return <ActivityFeedScreen navigation={navigation} route={{ params }} />;
-      case 'liveCamera': return <LiveCameraScreen navigation={navigation} />;
-      case 'timetable': return <TimetableScreen navigation={navigation} />;
-      case 'homework': return <HomeworkScreen navigation={navigation} />;
-      case 'emergencyContact': return <EmergencyContactScreen navigation={navigation} />;
-      case 'myFees': return <MyFeesScreen navigation={navigation} />;
-      case 'myAttendance': return <MyAttendanceScreen navigation={navigation} />;
-      case 'studentAttendanceReport': return <StudentAttendanceReportScreen navigation={navigation} />;
-      case 'teacherAttendanceReport': return <TeacherAttendanceReportScreen navigation={navigation} />;
-      case 'rewards': return <RewardsScreen navigation={navigation} />;
-      case 'profile': return <ProfileScreen navigation={navigation} route={{ params }} />;
-      case 'postHomework': return <PostHomeworkScreen navigation={navigation} />;
-      case 'attendanceSelection': return <AttendanceSelectionScreen navigation={navigation} />;
-      case 'takeAttendance': return <TakeAttendanceScreen navigation={navigation} />;
-      case 'postActivity': return <PostActivityScreen navigation={navigation} />;
-      case 'viewSubmissions': return <ViewSubmissionsScreen navigation={navigation} />;
-      case 'classSchedule': return <ClassScheduleScreen navigation={navigation} />;
-      case 'parentMessages': return <ParentMessagesScreen navigation={navigation} />;
-      case 'incomeExpense': return <IncomeExpenseScreen navigation={navigation} />;
-      case 'branchManagement': return <BranchManagementScreen navigation={navigation} />;
-      case 'cameraManagement': return <CameraManagementScreen navigation={navigation} />;
-      case 'studentInfo': return <StudentInfoScreen navigation={navigation} />;
-      case 'notificationSettings': return <NotificationSettingsScreen navigation={navigation} />;
-      case 'tuitionPostProgress': return <TuitionPostProgressScreen navigation={navigation} />;
-      case 'tuitionMyProgress': return <TuitionMyProgressScreen navigation={navigation} />;
-      case 'tuitionAttendance': return <TuitionAttendanceScreen navigation={navigation} />;
-      case 'tuitionStudyMaterials': return <TuitionStudyMaterialsScreen navigation={navigation} />;
-      case 'pettyCash': return <PettyCashScreen navigation={navigation} />;
-      case 'maintenance': return <MaintenanceScreen navigation={navigation} />;
-      case 'tuitionConsole': return <TuitionConsoleScreen navigation={navigation} />;
-      case 'tuitionStudentList': return <TuitionStudentListScreen navigation={navigation} />;
-      case 'tuitionStudentDetail': return <TuitionStudentDetailScreen navigation={navigation} route={{ params }} />;
-      case 'manageTuitionUsers': return <ManageTuitionUsersScreen navigation={navigation} />;
-      case 'nannyChat': return <VoiceChatScreen navigation={navigation} />;
-      case 'nannyAttendance': return <TakeAttendanceScreen navigation={navigation} />;
-      default: return <AdminHomeScreen navigation={{ navigate, goBack }} />;
+      case 'userMange': return <UserMange navigation={navigation} />;
+      case 'alumni': return <AlumniScreenV2 navigation={navigation} />;
+      case 'feesManagement': return <FeesManagementScreenV2 navigation={navigation} />;
+      case 'announcements': return <AnnouncementsScreenV2 navigation={navigation} />;
+      case 'reports': return <ReportsScreenV2 navigation={navigation} />;
+      case 'backup': return <BackupScreenV2 navigation={navigation} />;
+      case 'settings': return <SettingsScreenV2 navigation={navigation} />;
+      case 'studentList': return <StudentListScreenV2 navigation={navigation} />;
+      case 'studentDetail': return <StudentDetailScreenV2 navigation={navigation} route={{ params }} />;
+      case 'attendance': return <AttendanceScreenV2 navigation={navigation} />;
+      case 'activityFeed': return <ActivityFeedScreenV2 navigation={navigation} route={{ params }} />;
+      case 'liveCamera': return <LiveCameraScreenV2 navigation={navigation} />;
+      case 'timetable': return <TimetableScreenV2 navigation={navigation} />;
+      case 'homework': return <HomeworkScreenV2 navigation={navigation} />;
+      case 'emergencyContact': return <EmergencyContactScreenV2 navigation={navigation} />;
+      case 'myFees': return <MyFeesScreenV2 navigation={navigation} />;
+      case 'myAttendance': return <MyAttendanceScreenV2 navigation={navigation} />;
+      case 'studentAttendanceReport': return <StudentAttendanceReportScreenV2 navigation={navigation} />;
+      case 'teacherAttendanceReport': return <TeacherAttendanceReportScreenV2 navigation={navigation} />;
+      case 'rewards': return <RewardsScreenV2 navigation={navigation} />;
+      case 'profile': return <ProfileScreenV2 navigation={navigation} route={{ params }} />;
+      case 'profileSettings': return <ProfileSettingsScreenV2 navigation={navigation} />;
+      case 'postHomework': return <PostHomeworkScreenV2 navigation={navigation} />;
+      case 'attendanceSelection': return <AttendanceSelectionScreenV2 navigation={navigation} />;
+      case 'takeAttendance': return <TakeAttendanceScreenV2 navigation={navigation} />;
+      case 'postActivity': return <PostActivityScreenV2 navigation={navigation} />;
+      case 'viewSubmissions': return <ViewSubmissionsScreenV2 navigation={navigation} />;
+      case 'classSchedule': return <ClassScheduleScreenV2 navigation={navigation} />;
+      case 'parentMessages': return <ParentMessagesScreenV2 navigation={navigation} />;
+      case 'incomeExpense': return <IncomeExpenseScreenV2 navigation={navigation} />;
+      case 'branchManagement': return <BranchManagementScreenV2 navigation={navigation} />;
+      case 'cameraManagement': return <CameraManagementScreenV2 navigation={navigation} />;
+      case 'studentInfo': return <StudentInfoScreenV2 navigation={navigation} />;
+      case 'notificationSettings': return <NotificationSettingsScreenV2 navigation={navigation} />;
+      case 'tuitionPostProgress': return <TuitionPostProgressScreenV2 navigation={navigation} />;
+      case 'tuitionMyProgress': return <TuitionMyProgressScreenV2 navigation={navigation} />;
+      case 'tuitionAttendance': return <TuitionAttendanceScreenV2 navigation={navigation} />;
+      case 'tuitionStudyMaterials': return <TuitionStudyMaterialsScreenV2 navigation={navigation} />;
+      case 'pettyCash': return <PettyCashScreenV2 navigation={navigation} />;
+      case 'maintenance': return <MaintenanceScreenV2 navigation={navigation} />;
+      case 'tuitionConsole': return <TuitionConsoleScreenV2 navigation={navigation} />;
+      case 'tuitionStudentList': return <TuitionStudentListScreenV2 navigation={navigation} />;
+      case 'tuitionStudentDetail': return <TuitionStudentDetailScreenV2 navigation={navigation} route={{ params }} />;
+      case 'manageTuitionUsers': return <ManageTuitionUsersScreenV2 navigation={navigation} />;
+      case 'nannyChat': return <VoiceChatScreenV2 navigation={navigation} />;
+      case 'nannyAttendance': return <TakeAttendanceScreenV2 navigation={navigation} />;
+      default: return <AdminHomeScreen navigation={navigation} />;
     }
   };
 
   if (isLoading || isTransitioning) {
     return (
       <>
-        <SplashScreen />
+        <SplashScreenV2 />
         <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
       </>
     );
@@ -448,7 +461,7 @@ export default function AppNavigator() {
   if (maintenanceBlocked) {
     return (
       <>
-        <MaintenanceBlockScreen maintenanceMessage={maintenanceMode.message} onLogout={handleMaintenanceLogout} />
+        <MaintenanceBlockScreenV2 maintenanceMessage={maintenanceMode.message} onLogout={handleMaintenanceLogout} />
         <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
       </>
     );
@@ -458,7 +471,7 @@ export default function AppNavigator() {
     if (onboardingChecked && showOnboarding) {
       return (
         <>
-          <OnboardingScreen onFinish={handleOnboardingFinish} />
+          <OnboardingScreenV2 onFinish={handleOnboardingFinish} />
           <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
         </>
       );
@@ -466,14 +479,14 @@ export default function AppNavigator() {
     if (currentScreen === 'privacyPolicy') {
         return (
           <>
-            <PrivacyPolicyScreen navigation={navigation} />
+            <PrivacyPolicyScreenV2 navigation={navigation} />
             <SessionExpiredModal visible={sessionExpired} onLogin={handleSessionLogin} />
           </>
         );
     }
     return (
       <>
-        <LoginScreen 
+        <LoginScreenV2 
             onLogin={() => navigate('home', true)} 
             onOpenPrivacy={() => navigate('privacyPolicy')}
             maintenanceMessage={maintenanceMode.enabled ? maintenanceMode.message : undefined}

@@ -2,8 +2,9 @@ import React, { useState, memo, useCallback, useMemo, useRef, useEffect } from '
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
-  FlatList, ListRenderItem, ScrollView, Image, RefreshControl, StatusBar
+  FlatList, ListRenderItem, ScrollView, Image, RefreshControl, StatusBar, StyleSheet, Dimensions
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth, User } from '../../contexts/AuthContext';
@@ -19,6 +20,55 @@ import api from '../../services/api';
 
 interface NavigationProps { navigate: (screen: string) => void; goBack: () => void; }
 interface Props { navigation: NavigationProps; }
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
+function RadialGlow({ size, color, opacity, style }: {
+  size: number;
+  color: string;
+  opacity: number;
+  style?: any;
+}) {
+  const layers = [0, 45, 90, 135];
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        { position: 'absolute', width: size, height: size, borderRadius: size / 2, opacity },
+        style,
+      ]}
+    >
+      {layers.map((deg) => (
+        <LinearGradient
+          key={deg}
+          colors={[color, 'rgba(255,255,255,0)']}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${deg}deg` }] }]}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ─── Aurora Glass background layer (matches other V2 screens) ──────────────────
+function AuroraBackground() {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <LinearGradient
+        colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <RadialGlow size={480} color="#DDF8D7" opacity={0.28} style={{ top: -160, left: -160 }} />
+      <RadialGlow size={420} color="#DDFBFF" opacity={0.25} style={{ top: -140, left: SCREEN_WIDTH / 2 - 210 }} />
+      <RadialGlow size={520} color="#F8FFD8" opacity={0.24} style={{ bottom: -180, left: -180 }} />
+      <RadialGlow size={450} color="#EAF5FF" opacity={0.18} style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }} />
+    </View>
+  );
+}
 
 const brandColor = '#F59E0B';
 const studentColor = '#3B82F6';
@@ -459,8 +509,9 @@ const UserFormModal = memo(({ visible, onClose, onSubmit, isSubmitting, theme, i
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#FFF8F0', paddingTop: insets.top }}>
-        <StatusBar backgroundColor={isDark ? '#1c1c14' : '#FFF8F0'} barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={{ flex: 1, backgroundColor: '#F7F9F6', paddingTop: insets.top }}>
+        <AuroraBackground />
+        <StatusBar backgroundColor="#F7F9F6" barStyle={isDark ? 'light-content' : 'dark-content'} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={{ paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1025,12 +1076,14 @@ export default function UserManagementScreenV2({ navigation }: Props) {
   const stickyHeaderStyle = useAnimatedStyle(() => ({}));
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#1c1c14' : '#F8F6F0' }}>
-      <StatusBar backgroundColor={isDark ? '#1c1c14' : '#F8F6F0'} barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
+      {/* ── Aurora Glass background ── */}
+      <AuroraBackground />
+      <StatusBar backgroundColor="#F7F9F6" barStyle={isDark ? 'light-content' : 'dark-content'} />
       {/* ── Sticky Header + Stats Cards ── */}
       <Animated.View style={[{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-        backgroundColor: isDark ? '#1c1c14' : '#F8F6F0',
+        backgroundColor: 'transparent',
         paddingTop: Math.max(insets.top, 20),
       }, stickyHeaderStyle]}>
         <View style={{ paddingHorizontal: 24, paddingBottom: 8 }}>
@@ -1323,7 +1376,7 @@ export default function UserManagementScreenV2({ navigation }: Props) {
       {maintenanceMode && user?.role !== 'super_admin' && user?.username !== 'monster' && (
         <View style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100,
-          backgroundColor: isDark ? '#1c1c14' : '#F8F6F0',
+          backgroundColor: '#F7F9F6',
           justifyContent: 'center', alignItems: 'center', padding: 40,
         }}>
           <MaterialCommunityIcons name="shield-off-outline" size={80} color="#DC2626" />

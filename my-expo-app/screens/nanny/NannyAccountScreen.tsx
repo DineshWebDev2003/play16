@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Linking, StyleSheet, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
 import LogoutModal from '../../components/LogoutModal';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface NavigationProps {
   navigate: (screen: string) => void;
@@ -16,261 +17,252 @@ interface Props {
   navigation: NavigationProps;
 }
 
+const BORDER_RADIUS = 28;
+const SECTION_GAP = 28;
+
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_SECONDARY = '#4A5B53';
+const TEXT_MUTED = '#7A8A82';
+const ACCENT = '#10B981';
+
+const ROLE_AVATAR = require('../../assets/Avatar/Nanny-avatrt.png');
+
+const MENU_ICONS: Record<string, any> = {
+  profile: require('../../assets/icons/doctor.png'),
+  notifications: require('../../assets/icons/bell (1).png'),
+  support: require('../../assets/icons/customer.png'),
+  about: require('../../assets/icons/info.png'),
+  privacy: require('../../assets/icons/lock.png'),
+};
+
+// ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
+function RadialGlow({ size, color, opacity, style }: {
+  size: number;
+  color: string;
+  opacity: number;
+  style?: any;
+}) {
+  const layers = [0, 45, 90, 135];
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        { position: 'absolute', width: size, height: size, borderRadius: size / 2, opacity },
+        style,
+      ]}
+    >
+      {layers.map((deg) => (
+        <LinearGradient
+          key={deg}
+          colors={[color, 'rgba(255,255,255,0)']}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[StyleSheet.absoluteFill, { transform: [{ rotate: `${deg}deg` }] }]}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ─── Aurora Glass background (matches home screen) ──────────────────────────────
+function AuroraBackground() {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <LinearGradient
+        colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <RadialGlow size={480} color="#DDF8D7" opacity={0.28} style={{ top: -160, left: -160 }} />
+      <RadialGlow size={420} color="#DDFBFF" opacity={0.25} style={{ top: -140, left: SCREEN_WIDTH / 2 - 210 }} />
+      <RadialGlow size={520} color="#F8FFD8" opacity={0.24} style={{ bottom: -180, left: -180 }} />
+      <RadialGlow size={450} color="#EAF5FF" opacity={0.18} style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }} />
+    </View>
+  );
+}
+
 export default function NannyAccountScreen({ navigation }: Props) {
-  const { user, updateProfile, updateAvatar, logout } = useAuth();
+  const { user, logout, updateAvatar } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [password, setPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
-  const handlePickImage = useCallback(async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (perm.status !== 'granted') {
-        Alert.alert('Permission Needed', 'Camera roll access is required to change your photo.');
-        return;
-      }
-      await updateAvatar();
-    } catch (err) {
-      Alert.alert('Error', 'Could not update photo.');
-    }
-  }, [updateAvatar]);
-
-  const handleSave = useCallback(async () => {
-    if (!name.trim()) {
-      Alert.alert('Name Required', 'Please enter your name.');
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload: any = { name: name.trim() };
-      if (email.trim()) payload.email = email.trim();
-      if (password) payload.password = password;
-      await updateProfile(payload);
-      setPassword('');
-      Alert.alert('Saved', 'Your profile has been updated.');
-    } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not save changes.');
-    } finally {
-      setSaving(false);
-    }
-  }, [name, email, password, updateProfile]);
-
-  const inputStyle: any = {
-    borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 15, fontWeight: '700', color: '#111827',
-    backgroundColor: '#F9FAFB', borderColor: '#E5E7EB',
+  const glassCard = {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: BORDER_RADIUS,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
   };
 
-  const fieldStyle = {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: '#F3F4F6',
-  };
+  const menuItems = [
+    { id: 'profile', title: 'Profile Settings', subtitle: 'Update your profile information', image: 'profile', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' },
+    { id: 'notifications', title: 'Notifications', subtitle: 'Manage notification settings', image: 'notifications', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' },
+    { id: 'support', title: 'Support & Help', subtitle: 'Get help and contact support', image: 'support', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' },
+    { id: 'about', title: 'About', subtitle: 'App version and information', image: 'about', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' },
+    { id: 'privacy', title: 'Privacy Policy', subtitle: 'Data protection & privacy', image: 'privacy', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' },
+  ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
-        <View style={{ paddingTop: Math.max(insets.top, 50), paddingHorizontal: 24, paddingBottom: 24 }}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ backgroundColor: '#F3F4F6', width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={22} color="#374151" />
-          </TouchableOpacity>
-
-          {/* ── Modern Header (matches Home) ── */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>
-                TN HAPPYKIDS
+    <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
+      <AuroraBackground />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+        <View style={{ paddingTop: Math.max(insets.top, 56), paddingHorizontal: 20 }}>
+          {/* ── Header (52px) ── */}
+          <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+              style={{ width: 44, height: 44, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={22} color={TEXT_PRIMARY} />
+            </TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h < 12) return 'Good Morning 👋';
+                  if (h < 17) return 'Good Afternoon 👋';
+                  return 'Good Evening 👋';
+                })()}
               </Text>
-              <Text style={{ fontSize: 30, fontWeight: '900', letterSpacing: -0.5, marginTop: 4, color: '#111827' }}>
+              <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2 }}>
                 {user?.name?.split(' ')[0] || 'Nanny'}
               </Text>
-              <View style={{ backgroundColor: '#CFFAFE', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="baby-face-outline" size={12} color="#0891B2" />
-                <Text style={{ color: '#0891B2', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginLeft: 6 }}>Nanny Console</Text>
-              </View>
             </View>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={handlePickImage}
-              style={{ backgroundColor: '#FDE047', width: 80, height: 80, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '3deg' }], overflow: 'hidden' }}
+              onPress={updateAvatar}
+              style={{
+                width: 54,
+                height: 54,
+                borderRadius: 27,
+                backgroundColor: 'rgba(255,255,255,0.92)',
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+                shadowColor: '#000000',
+                shadowOpacity: 0.1,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
             >
               {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} />
+                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               ) : (
-                <MaterialCommunityIcons name="baby-face-outline" size={36} color="#92400E" />
+                <Image source={ROLE_AVATAR} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               )}
-              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#7C3AED', padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: ACCENT, padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
                 <MaterialCommunityIcons name="camera" size={12} color="white" />
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* ── Profile Hero Card (cyan gradient) ── */}
-          <View style={{ paddingVertical: 8 }}>
-            <View style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}>
-              <LinearGradient
-                colors={['#06B6D4', '#0891B2']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ padding: 16 }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <MaterialCommunityIcons name="account-badge-outline" size={20} color="white" />
-                    </View>
-                    <View>
-                      <Text style={{ color: 'white', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 }}>Nanny Profile</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>Childcare Staff</Text>
-                    </View>
-                  </View>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
-                    <MaterialCommunityIcons name="shield-check" size={11} color="white" />
-                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>On Duty</Text>
-                  </View>
-                </View>
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 12 }}>
-                  <Text style={{ color: 'white', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={1}>{user?.name || 'Nanny'}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '700', marginTop: 3 }}>@{user?.username || 'nanny'}</Text>
-                </View>
-                <View style={{ position: 'absolute', bottom: -14, right: -14, opacity: 0.1 }}>
-                  <MaterialCommunityIcons name="share-variant" size={90} color="white" />
-                </View>
-              </LinearGradient>
-            </View>
-          </View>
+          <View style={{ height: SECTION_GAP }} />
 
-          {/* ── Edit Details ── */}
-          <View style={{ paddingVertical: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
-              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: '#111827' }}>Edit Details ⚙️</Text>
-              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
-                <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Account</Text>
+          {/* ── Profile hero card ── */}
+          <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('profileSettings')} style={glassCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(245,158,11,0.12)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                  <Image source={MENU_ICONS.profile} style={{ width: 26, height: 26 }} resizeMode="contain" />
+                </View>
+                <View>
+                  <Text style={{ color: TEXT_PRIMARY, fontSize: 17, fontWeight: '700', letterSpacing: -0.5 }}>Nanny Profile</Text>
+                  <Text style={{ color: TEXT_MUTED, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 1 }}>
+                    Childcare Staff
+                  </Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 100, flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="shield-check" size={11} color={ACCENT} />
+                <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginLeft: 4 }}>On Duty</Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: 'rgba(247,249,246,0.9)', borderRadius: 18, padding: 14 }}>
+              <Text style={{ color: TEXT_PRIMARY, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 }} numberOfLines={1}>
+                {user?.name || 'Nanny'}
+              </Text>
+              <Text style={{ color: TEXT_SECONDARY, fontSize: 12, fontWeight: '600', marginTop: 3 }}>
+                @{user?.username || 'nanny'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+              <MaterialCommunityIcons name="pencil" size={12} color={TEXT_MUTED} />
+              <Text style={{ color: TEXT_MUTED, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 6 }}>
+                Edit Profile
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* ── Settings & Controls ── */}
+          <View style={{ paddingTop: SECTION_GAP }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: TEXT_PRIMARY }}>Settings & Controls</Text>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100 }}>
+                <Text style={{ color: ACCENT, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Account</Text>
               </View>
             </View>
 
-            <View style={fieldStyle}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <MaterialCommunityIcons name="account" size={22} color="#F59E0B" />
-                </View>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>Name</Text>
-              </View>
-              <TextInput style={inputStyle} placeholder="Your name" placeholderTextColor="#9CA3AF" value={name} onChangeText={setName} />
-            </View>
-
-            <View style={[fieldStyle, { marginTop: 12 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <View style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <MaterialCommunityIcons name="email" size={22} color="#6366F1" />
-                </View>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>Email / Gmail</Text>
-              </View>
-              <TextInput style={inputStyle} placeholder="email@example.com" placeholderTextColor="#9CA3AF" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-            </View>
-
-            <View style={[fieldStyle, { marginTop: 12 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <MaterialCommunityIcons name="lock" size={22} color="#10B981" />
-                </View>
-                <Text style={{ fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: '#6B7280' }}>New Password</Text>
-              </View>
-              <TextInput style={inputStyle} placeholder="Leave blank to keep current" placeholderTextColor="#9CA3AF" secureTextEntry value={password} onChangeText={setPassword} />
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              disabled={saving}
-              onPress={handleSave}
-              style={{ backgroundColor: saving ? '#67E8F9' : '#06B6D4', borderRadius: 16, marginTop: 20, paddingVertical: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
-            >
-              {saving ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="content-save-outline" size={20} color="white" />
-                  <Text style={{ color: 'white', fontWeight: '900', fontSize: 15, marginLeft: 8 }}>Save Changes</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* ── More ── */}
-          <View style={{ paddingVertical: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: 4 }}>
-              <Text style={{ fontSize: 20, fontWeight: '900', letterSpacing: -0.5, color: '#111827' }}>More ⚙️</Text>
-              <View style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.2)' }}>
-                <Text style={{ color: '#8B5CF6', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 }}>Info</Text>
-              </View>
-            </View>
-
-            <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F3F4F6' }}>
-              {[
-                { id: 'help', icon: 'help-circle-outline', title: 'Help & Support', subtitle: 'Get assistance', iconColor: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
-                { id: 'about', icon: 'information-outline', title: 'About', subtitle: 'App version & details', iconColor: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)' },
-                { id: 'privacy', icon: 'shield-account-outline', title: 'Privacy Policy', subtitle: 'Data protection & privacy', iconColor: '#6366F1', bgColor: 'rgba(99, 102, 241, 0.15)' },
-              ].map((item, index) => (
+            <View style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              {menuItems.map((item, index) => (
                 <TouchableOpacity
                   key={item.id}
                   activeOpacity={0.7}
-                  style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== 2 ? 1 : 0, borderBottomColor: '#F3F4F6' }}
+                  style={{ padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: index !== menuItems.length - 1 ? 1 : 0, borderBottomColor: 'rgba(247,249,246,1)' }}
                   onPress={() => {
-                    if (item.id === 'help') {
-                      Alert.alert('Coming Soon', 'Help & Support is coming soon! ✨');
+                    if (item.id === 'profile') {
+                      navigation.navigate('profileSettings');
+                    } else if (item.id === 'notifications') {
+                      navigation.navigate('notificationSettings');
                     } else if (item.id === 'about') {
                       Linking.openURL('https://tnhappykids.in').catch(err => Alert.alert('Error', 'Could not open website'));
                     } else if (item.id === 'privacy') {
                       Linking.openURL('https://dineshwebdev2003.github.io/play16/privacy-policy.html').catch(err => Alert.alert('Error', 'Could not open website'));
+                    } else {
+                      Alert.alert('Coming Soon', `${item.title} screen is coming soon! ✨`);
                     }
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <View style={{ backgroundColor: item.bgColor, padding: 12, borderRadius: 14, marginRight: 14 }}>
-                      <MaterialCommunityIcons name={item.icon as any} size={22} color={item.iconColor} />
+                    <View style={{ backgroundColor: item.bg, padding: 12, borderRadius: 14, marginRight: 14 }}>
+                      <Image source={MENU_ICONS[item.image]} style={{ width: 22, height: 22 }} resizeMode="contain" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '900', letterSpacing: -0.3, color: '#111827' }}>{item.title}</Text>
-                      <Text style={{ fontSize: 11, fontWeight: '700', opacity: 0.6, marginTop: 1, color: '#6B7280' }}>{item.subtitle}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '700', letterSpacing: -0.3, color: TEXT_PRIMARY }}>{item.title}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '600', marginTop: 1, color: TEXT_MUTED }}>{item.subtitle}</Text>
                     </View>
                   </View>
-                  <View style={{ backgroundColor: '#F9FAFB', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialCommunityIcons name="chevron-right" size={18} color="#6B7280" opacity={0.5} />
+                  <View style={{ backgroundColor: 'rgba(247,249,246,0.9)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="chevron-right" size={18} color={TEXT_MUTED} />
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
 
-          {/* Sign Out */}
-          <View style={{ paddingVertical: 8 }}>
+            {/* Sign Out */}
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => setShowLogoutModal(true)}
-              style={{ borderRadius: 16, overflow: 'hidden', elevation: 15 }}
+              onPress={() => setShowLogout(true)}
+              style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden', marginTop: 20, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}
             >
-              <LinearGradient
-                colors={['#EF4444', '#B91C1C']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <MaterialCommunityIcons name="power" size={24} color="white" />
-                <Text style={{ color: 'white', fontWeight: '900', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
-              </LinearGradient>
+              <View style={{ paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="power" size={24} color="#EF4444" />
+                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18, marginLeft: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Secure Sign Out</Text>
+              </View>
             </TouchableOpacity>
           </View>
-
-          <View style={{ height: 96 }} />
         </View>
+
+        {/* Spacer so the tab dock never covers content */}
+        <View style={{ height: 140 }} />
       </ScrollView>
-      <LogoutModal visible={showLogoutModal} onConfirm={logout} onCancel={() => setShowLogoutModal(false)} />
+
+      <LogoutModal visible={showLogout} onConfirm={logout} onCancel={() => setShowLogout(false)} />
     </View>
   );
 }

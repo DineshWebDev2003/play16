@@ -1,8 +1,11 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../contexts/ThemeContext';
+
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_MUTED = '#7A8A82';
+const TEXT_TERTIARY = '#A0AAA4';
 
 interface ChoiceOption {
   label: string;
@@ -21,18 +24,15 @@ interface ChoiceModalProps {
   accentColor?: string;
 }
 
-export default function ChoiceModal({ 
-  visible, 
-  title, 
-  message, 
-  options, 
+export default function ChoiceModal({
+  visible,
+  title,
+  message,
+  options,
   onClose,
   iconName = 'help-circle-outline',
   accentColor = '#F472B6'
 }: ChoiceModalProps) {
-  const { theme, colors } = useTheme();
-  const isDark = theme === 'dark';
-
   const getButtonStyles = (type?: string) => {
     switch (type) {
       case 'destructive':
@@ -49,9 +49,9 @@ export default function ChoiceModal({
         };
       case 'secondary':
         return {
-          gradient: isDark ? ['#334155', '#1e293b'] : ['#F1F5F9', '#E2E8F0'],
-          textColor: colors.text,
-          iconColor: colors.textTertiary
+          gradient: ['#F1F5F9', '#E2E8F0'],
+          textColor: TEXT_PRIMARY,
+          iconColor: TEXT_TERTIARY
         };
       default: // primary
         return {
@@ -70,41 +70,38 @@ export default function ChoiceModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View 
-          className={`${isDark ? 'bg-[#1c1c14]' : 'bg-white'} rounded-[48px] w-[82%] overflow-hidden border-4 border-brand-pink shadow-2xl`}
-          style={{ elevation: 30, shadowColor: accentColor }}
+        <View
+          style={[
+            styles.container,
+            { shadowColor: accentColor }
+          ]}
         >
           {/* Header Decorative Area */}
-          <View style={{ height: 120, position: 'relative', overflow: 'hidden' }}>
+          <View style={styles.header}>
             <LinearGradient
-              colors={isDark ? ['#f472b622', 'transparent'] : ['#FDF2F8', '#FFFFFF']}
-              className="absolute inset-0"
+              colors={['#FDF2F8', 'rgba(255,255,255,0)']}
+              style={StyleSheet.absoluteFill}
             />
-            <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-               <View 
-                style={{ backgroundColor: accentColor }}
-                className="w-20 h-20 rounded-[28px] items-center justify-center shadow-xl rotate-3 border-4 border-white"
-               >
-                  <MaterialCommunityIcons name={iconName as any} size={44} color="white" />
-               </View>
+            <View
+              style={[styles.iconBox, { backgroundColor: accentColor }]}
+            >
+              <MaterialCommunityIcons name={iconName as any} size={40} color="white" />
             </View>
-            <View style={{ position: 'absolute', top: -10, left: -10, opacity: 0.05, transform: [{ rotate: '15deg' }] }}>
-               <MaterialCommunityIcons name="gesture-tap" size={100} color={colors.text} />
-            </View>
+            <MaterialCommunityIcons name="gesture-tap" size={90} color={TEXT_PRIMARY} style={{ position: 'absolute', top: -12, left: -12, opacity: 0.05, transform: [{ rotate: '15deg' }] }} />
           </View>
 
           {/* Content */}
-          <View className="px-8 pt-6 pb-4 items-center">
-            <Text className={`text-2xl font-black ${colors.text} tracking-tighter text-center`}>{title}</Text>
+          <View style={styles.content}>
+            <Text style={styles.title}>{title}</Text>
             {message && (
-              <Text className={`text-xs ${colors.textSecondary} font-bold text-center mt-2 leading-4 opacity-70`}>
+              <Text style={styles.message}>
                 {message}
               </Text>
             )}
           </View>
 
           {/* Action Buttons */}
-          <View className="px-8 pb-10 gap-3">
+          <View style={styles.actions}>
             {options.map((option, index) => {
               const btnStyle = getButtonStyles(option.type);
               return (
@@ -115,18 +112,18 @@ export default function ChoiceModal({
                     option.onPress();
                     onClose();
                   }}
-                  className="rounded-[24px] overflow-hidden shadow-sm"
+                  style={styles.optionBtn}
                 >
                   <LinearGradient
                     colors={btnStyle.gradient as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="py-4 flex-row items-center justify-center"
+                    style={styles.optionGradient}
                   >
                     {option.icon && (
                       <MaterialCommunityIcons name={option.icon as any} size={18} color={btnStyle.iconColor} style={{ marginRight: 8 }} />
                     )}
-                    <Text 
+                    <Text
                       style={{ color: btnStyle.textColor }}
                       className="font-black text-sm uppercase tracking-widest"
                     >
@@ -136,13 +133,13 @@ export default function ChoiceModal({
                 </TouchableOpacity>
               );
             })}
-            
+
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={onClose}
-              className={`mt-2 py-3 rounded-[20px] border border-dashed ${isDark ? 'border-white/10' : 'border-gray-200'} items-center`}
+              style={styles.cancelBtn}
             >
-              <Text className={`font-black text-[10px] uppercase tracking-widest ${colors.textTertiary}`}>Cancel</Text>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -157,5 +154,91 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  container: {
+    width: '85%',
+    borderRadius: 32,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    elevation: 30,
+  },
+  header: {
+    height: 120,
+    position: 'relative',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBox: {
+    width: 78,
+    height: 78,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '3deg' }],
+    borderWidth: 4,
+    borderColor: 'white',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  content: {
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: TEXT_PRIMARY,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  message: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: TEXT_MUTED,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 17,
+    opacity: 0.85,
+  },
+  actions: {
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    gap: 10,
+  },
+  optionBtn: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  optionGradient: {
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtn: {
+    marginTop: 6,
+    paddingVertical: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(122,138,130,0.3)',
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontWeight: '900',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    color: TEXT_TERTIARY,
   },
 });

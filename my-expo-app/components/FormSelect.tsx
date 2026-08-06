@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_MUTED = '#7A8A82';
+const ACCENT = '#F59E0B';
+
 interface Option {
   label: string;
   value: string;
@@ -20,34 +24,39 @@ export default function FormSelect({ value, options, onSelect, placeholder, them
   const isDark = theme === 'dark';
   const selected = options.find(o => o.value === value);
 
+  const fieldBg = isDark ? '#1e1e1c' : 'rgba(255,255,255,0.92)';
+  const fieldBorder = isDark ? '#3a3a38' : 'rgba(122,138,130,0.25)';
+  const fieldText = isDark ? '#FFFFFF' : TEXT_PRIMARY;
+  const sheetBg = isDark ? '#1c1c14' : 'rgba(255,255,255,0.97)';
+
   return (
     <>
       <TouchableOpacity activeOpacity={0.8} onPress={() => setOpen(true)}
         style={{
           flexDirection: 'row', alignItems: 'center',
-          backgroundColor: isDark ? '#1e1e1c' : '#F9FAFB',
+          backgroundColor: fieldBg,
           borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13,
-          borderWidth: 1.5, borderColor: isDark ? '#3a3a38' : '#E5E7EB',
+          borderWidth: 1.5, borderColor: fieldBorder,
         }}>
         <Text style={{ flex: 1, fontSize: 14, fontWeight: '700',
-          color: selected ? (isDark ? '#fff' : '#111') : '#9CA3AF' }}>
+          color: selected ? fieldText : TEXT_MUTED }}>
           {selected ? selected.label : placeholder || 'Select...'}
         </Text>
-        <MaterialCommunityIcons name="chevron-down" size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
+        <MaterialCommunityIcons name="chevron-down" size={18} color={TEXT_MUTED} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade">
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity activeOpacity={1} onPress={() => setOpen(false)}
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}}
             style={{
-              backgroundColor: isDark ? '#1c1c14' : '#FFFFFF',
+              backgroundColor: sheetBg,
               borderTopLeftRadius: 30, borderTopRightRadius: 30,
               paddingTop: 24, paddingBottom: 40, maxHeight: '60%',
             }}>
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ width: 40, height: 4, backgroundColor: isDark ? '#525252' : '#D1D5DB', borderRadius: 2, marginBottom: 12 }} />
-              <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FFFFFF' : '#111827' }}>{placeholder || 'Select'}</Text>
+              <View style={{ width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2, marginBottom: 12 }} />
+              <Text style={{ fontSize: 18, fontWeight: '900', color: isDark ? '#FFFFFF' : TEXT_PRIMARY }}>{placeholder || 'Select'}</Text>
             </View>
             <FlatList
               data={options}
@@ -60,12 +69,12 @@ export default function FormSelect({ value, options, onSelect, placeholder, them
                     style={{
                       flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16,
                       borderRadius: 16, marginBottom: 8,
-                      backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                      borderWidth: 1, borderColor: isSelected ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                      backgroundColor: isSelected ? 'rgba(245,158,11,0.12)' : 'transparent',
+                      borderWidth: 1, borderColor: isSelected ? 'rgba(245,158,11,0.25)' : 'transparent',
                     }}>
                     <Text style={{ flex: 1, fontSize: 16, fontWeight: '900',
-                      color: isDark ? '#FFFFFF' : '#111827' }}>{item.label}</Text>
-                    {isSelected && <MaterialCommunityIcons name="check-circle" size={22} color="#F59E0B" />}
+                      color: isDark ? '#FFFFFF' : TEXT_PRIMARY }}>{item.label}</Text>
+                    {isSelected && <MaterialCommunityIcons name="check-circle" size={22} color={ACCENT} />}
                   </TouchableOpacity>
                 );
               }}

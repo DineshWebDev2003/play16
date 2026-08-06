@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../contexts/ThemeContext';
+
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_MUTED = '#7A8A82';
 
 interface LogoutModalProps {
   visible: boolean;
@@ -11,82 +13,44 @@ interface LogoutModalProps {
 }
 
 export default function LogoutModal({ visible, onConfirm, onCancel }: LogoutModalProps) {
-  const { theme, colors } = useTheme();
-
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.overlay}>
-        <View 
-          className={`${theme === 'dark' ? 'bg-[#1c1c14]' : 'bg-white'} rounded-[48px] w-[85%] overflow-hidden border-4 border-brand-violet shadow-2xl`}
-          style={{ elevation: 30 }}
-        >
+        <View style={styles.container}>
           {/* Header Illustration & Icon */}
-          <View className="relative h-44 overflow-hidden">
-             <LinearGradient
-               colors={theme === 'dark' ? ['#ef444433', 'transparent'] : ['#FDE2E2', '#FFFFFF']}
-               className="absolute inset-0"
-             />
-             <View className="absolute inset-0 items-center justify-center">
-                <View className="bg-red-500 w-24 h-24 rounded-[32px] items-center justify-center shadow-xl rotate-6 border-4 border-white relative">
-                   <MaterialCommunityIcons name="power" size={60} color="white" />
-                   <View className="absolute -bottom-2 -right-2 bg-brand-yellow p-2 rounded-xl border-2 border-white">
-                      <MaterialCommunityIcons name="alert" size={16} color="#92400E" />
-                   </View>
-                </View>
-             </View>
-             
-             {/* Decorative Background Icons */}
-             <View className="absolute -top-10 -left-10 opacity-10 rotate-12">
-                <MaterialCommunityIcons name="logout" size={120} color={colors.text} />
-             </View>
-             <View className="absolute -bottom-10 -right-10 opacity-10 -rotate-12">
-                <MaterialCommunityIcons name="door-open" size={120} color={colors.text} />
-             </View>
+          <View style={styles.header}>
+            <LinearGradient colors={['#FEE2E2', 'rgba(255,255,255,0)']} style={StyleSheet.absoluteFill} />
+            <View style={styles.iconBox}>
+              <MaterialCommunityIcons name="power" size={44} color="white" />
+              <View style={styles.badge}>
+                <MaterialCommunityIcons name="alert" size={12} color="#92400E" />
+              </View>
+            </View>
+            <MaterialCommunityIcons name="logout" size={100} color={TEXT_PRIMARY} style={{ position: 'absolute', top: -12, left: -16, opacity: 0.06, transform: [{ rotate: '12deg' }] }} />
+            <MaterialCommunityIcons name="door-open" size={100} color={TEXT_PRIMARY} style={{ position: 'absolute', bottom: -16, right: -16, opacity: 0.06, transform: [{ rotate: '-12deg' }] }} />
           </View>
 
           {/* Content */}
-          <View className="p-8 items-center">
-            <Text className={`text-3xl font-black ${colors.text} tracking-tighter text-center`}>Signing Out? 🥺</Text>
-            <Text className={`text-sm ${colors.textSecondary} font-bold text-center mt-3 leading-5 opacity-70`}>
+          <View style={styles.content}>
+            <Text style={styles.title}>Signing Out? 🥺</Text>
+            <Text style={styles.message}>
               Are you sure you want to leave the playground? We'll be waiting for your return! ✨
             </Text>
           </View>
 
           {/* Action Buttons */}
-          <View className="px-8 pb-10 gap-4">
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={onConfirm}
-              style={{ elevation: 10 }}
-              className="rounded-[28px] overflow-hidden shadow-lg shadow-red-500/40"
-            >
-              <LinearGradient
-                colors={['#EF4444', '#B91C1C']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-5 flex-row items-center justify-center"
-              >
-                <MaterialCommunityIcons name="power" size={24} color="white" />
-                <Text className="text-white font-black text-lg ml-3 uppercase tracking-widest">Yes, Sign Out</Text>
+          <View style={styles.actions}>
+            <TouchableOpacity activeOpacity={0.9} onPress={onConfirm} style={styles.confirmBtn}>
+              <LinearGradient colors={['#EF4444', '#B91C1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.confirmGradient}>
+                <MaterialCommunityIcons name="power" size={22} color="white" />
+                <Text style={styles.confirmText}>Yes, Sign Out</Text>
               </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={onCancel}
-              className={`py-5 rounded-[28px] border-2 ${theme === 'dark' ? 'border-white/10' : 'border-gray-100'} flex-row items-center justify-center`}
-            >
-              <Text className={`font-black text-base uppercase tracking-widest ${colors.textSecondary}`}>Stay in Playground</Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={onCancel} style={styles.cancelBtn}>
+              <Text style={styles.cancelText}>Stay in Playground</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Bottom Soft Glow */}
-          <View className="absolute -bottom-10 left-0 right-0 h-2 bg-brand-pink/20 blur-xl" />
         </View>
       </View>
     </Modal>
@@ -99,5 +63,110 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  container: {
+    width: '85%',
+    borderRadius: 32,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    elevation: 30,
+  },
+  header: {
+    height: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  iconBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 32,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '6deg' }],
+    borderWidth: 4,
+    borderColor: 'white',
+    shadowColor: '#EF4444',
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10,
+  },
+  badge: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    backgroundColor: '#F59E0B',
+    padding: 6,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  content: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: TEXT_PRIMARY,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  message: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: TEXT_MUTED,
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 19,
+    opacity: 0.85,
+  },
+  actions: {
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+    gap: 12,
+  },
+  confirmBtn: {
+    borderRadius: 22,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#EF4444',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  confirmGradient: {
+    paddingVertical: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmText: {
+    color: 'white',
+    fontWeight: '900',
+    fontSize: 15,
+    marginLeft: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  cancelBtn: {
+    paddingVertical: 16,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(122,138,130,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelText: {
+    color: TEXT_MUTED,
+    fontWeight: '900',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
 });

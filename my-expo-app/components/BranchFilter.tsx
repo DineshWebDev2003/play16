@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+
+const TEXT_PRIMARY = '#1F2D28';
+const TEXT_MUTED = '#7A8A82';
+const ACCENT = '#F59E0B';
 
 interface BranchFilterProps {
   selectedBranchId: string | null;
@@ -11,7 +14,6 @@ interface BranchFilterProps {
 
 export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilterProps) {
   const { branches, user } = useAuth();
-  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
 
   if (user?.role !== 'master_admin' && user?.role !== 'admin') return null;
@@ -25,21 +27,22 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
     ? branches.find(b => b.id === effectiveBranchId)?.name || 'Unknown'
     : 'Global';
 
+  const pillStyle = {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  };
+
   if (isSchoolAdmin) {
     return (
-      <View style={{
-        backgroundColor: theme === 'dark' ? '#1e1e1e' : '#F3F4F6',
-        borderRadius: 14,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: theme === 'dark' ? '#262626' : '#E5E7EB',
-        opacity: 0.8,
-      }}>
-        <MaterialCommunityIcons name="domain" size={16} color="#F59E0B" />
-        <Text style={{ fontSize: 12, fontWeight: '900', marginLeft: 8, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>
+      <View style={[pillStyle, { opacity: 0.8 }]}>
+        <MaterialCommunityIcons name="domain" size={16} color={ACCENT} />
+        <Text style={{ fontSize: 12, fontWeight: '900', marginLeft: 8, color: TEXT_PRIMARY }}>
           {selectedName}
         </Text>
       </View>
@@ -51,25 +54,16 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => setOpen(true)}
-        style={{
-          backgroundColor: theme === 'dark' ? '#1e1e1e' : '#F3F4F6',
-          borderRadius: 14,
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: theme === 'dark' ? '#262626' : '#E5E7EB',
-        }}
+        style={pillStyle}
       >
-        <MaterialCommunityIcons name="domain" size={16} color="#F59E0B" />
-        <Text style={{ fontSize: 12, fontWeight: '900', marginLeft: 8, color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>
+        <MaterialCommunityIcons name="domain" size={16} color={ACCENT} />
+        <Text style={{ fontSize: 12, fontWeight: '900', marginLeft: 8, color: TEXT_PRIMARY }}>
           {selectedName}
         </Text>
-        <MaterialCommunityIcons name="chevron-down" size={16} color={theme === 'dark' ? '#9CA3AF' : '#6B7280'} style={{ marginLeft: 6 }} />
+        <MaterialCommunityIcons name="chevron-down" size={16} color={TEXT_MUTED} style={{ marginLeft: 6 }} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade">
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setOpen(false)}
@@ -79,7 +73,7 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
             activeOpacity={1}
             onPress={() => {}}
             style={{
-              backgroundColor: theme === 'dark' ? '#1c1c14' : '#FFFFFF',
+              backgroundColor: 'rgba(255,255,255,0.97)',
               borderTopLeftRadius: 30,
               borderTopRightRadius: 30,
               paddingTop: 24,
@@ -88,8 +82,8 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
             }}
           >
             <View style={{ alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ width: 40, height: 4, backgroundColor: theme === 'dark' ? '#525252' : '#D1D5DB', borderRadius: 2, marginBottom: 16 }} />
-              <Text style={{ fontSize: 18, fontWeight: '900', color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>Filter by Branch</Text>
+              <View style={{ width: 40, height: 4, backgroundColor: '#D1D5DB', borderRadius: 2, marginBottom: 16 }} />
+              <Text style={{ fontSize: 18, fontWeight: '900', color: TEXT_PRIMARY }}>Filter by Branch</Text>
             </View>
             <FlatList
               data={[{ id: 'all', name: 'All Branches' } as any, ...branches]}
@@ -112,16 +106,16 @@ export default function BranchFilter({ selectedBranchId, onSelect }: BranchFilte
                       paddingHorizontal: 16,
                       borderRadius: 16,
                       marginBottom: 8,
-                      backgroundColor: isSelected ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                      backgroundColor: isSelected ? 'rgba(245,158,11,0.12)' : 'transparent',
                       borderWidth: 1,
-                      borderColor: isSelected ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                      borderColor: isSelected ? 'rgba(245,158,11,0.25)' : 'transparent',
                     }}
                   >
-                    <View style={{ backgroundColor: isSelected ? '#F59E0B' : theme === 'dark' ? '#262626' : '#F3F4F6', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                      <MaterialCommunityIcons name={isAll ? 'layers-triple-outline' : 'domain'} size={22} color={isSelected ? 'white' : theme === 'dark' ? '#D1D5DB' : '#6B7280'} />
+                    <View style={{ backgroundColor: isSelected ? ACCENT : '#F3F4F6', width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                      <MaterialCommunityIcons name={isAll ? 'layers-triple-outline' : 'domain'} size={22} color={isSelected ? 'white' : TEXT_MUTED} />
                     </View>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: theme === 'dark' ? '#FFFFFF' : '#111827' }}>{item.name}</Text>
-                    {isSelected && <MaterialCommunityIcons name="check-circle" size={22} color="#F59E0B" style={{ marginLeft: 'auto' }} />}
+                    <Text style={{ fontSize: 16, fontWeight: '900', color: TEXT_PRIMARY }}>{item.name}</Text>
+                    {isSelected && <MaterialCommunityIcons name="check-circle" size={22} color={ACCENT} style={{ marginLeft: 'auto' }} />}
                   </TouchableOpacity>
                 );
               }}
