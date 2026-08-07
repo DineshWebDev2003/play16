@@ -392,13 +392,25 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
             {activities.slice(0, 6).map((act, i) => {
               const isVideo = act.mediaType === 'video';
               const imageUri = isVideo ? act.thumbnailUrl || act.mediaUrl : act.mediaUrl;
+              const students = user ? users.filter(u => act.studentIds?.includes(u.id)) : [];
+              const primaryStudent = students[0];
+              const branch =
+                branches.find(b => b.id?.toString() === act.branch_id?.toString());
+              const studentBranch = primaryStudent?.branch_id
+                ? branches.find(b => b.id?.toString() === primaryStudent.branch_id?.toString())
+                : undefined;
               const branchName =
-                branches.find(b => b.id?.toString() === act.branch_id?.toString())?.name || 'All Branches';
-              const students = users.filter(u => act.studentIds?.includes(u.id));
-              const studentName = students[0]?.name || 'Kids';
+                act.branchName
+                || branch?.name
+                || studentBranch?.name
+                || primaryStudent?.branch?.name
+                || (act.branch_id ? `Branch #${act.branch_id}` : 'All Branches');
+              const studentName = primaryStudent?.name || 'Kids';
               return (
-                <View
+                <TouchableOpacity
                   key={act.id}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('activityFeed', { id: act.id })}
                   style={{
                     width: 150,
                     marginRight: 14,
@@ -461,7 +473,7 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </ScrollView>
