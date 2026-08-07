@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       node: latest
-      variables:
+      vars:
         NODE_OPTIONS: "--max-old-space-size=6144"
       groups:
         - android_signing
