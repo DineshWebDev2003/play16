@@ -148,7 +148,7 @@ function StatItem({ image, value, label, tint }: {
 }
 
 export default function NannyHomeScreenV2({ navigation }: Props) {
-  const { user, users, updateAvatar } = useAuth();
+  const { user, users, updateAvatar, announcements } = useAuth();
   const insets = useSafeAreaInsets();
 
   // In & Out
@@ -302,49 +302,94 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" colors={['#F59E0B']} />}
       >
         <View style={{ paddingTop: Math.max(insets.top, 56), paddingHorizontal: 20 }}>
-          {/* ── Header (52px) ── */}
+          {/* ── Header: greet + avatar (left), bell (right) ── */}
           <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>
-                {(() => {
-                  const h = new Date().getHours();
-                  if (h < 12) return 'Good Morning 👋';
-                  if (h < 17) return 'Good Afternoon 👋';
-                  return 'Good Evening 👋';
-                })()}
-              </Text>
-              <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2 }}>
-                {user?.name?.split(' ')[0] || 'Nanny'}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={updateAvatar}
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  marginRight: 12,
+                  backgroundColor: 'rgba(255,255,255,0.92)',
+                  borderWidth: 2,
+                  borderColor: '#FFFFFF',
+                  shadowColor: '#000000',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <Image source={ROLE_AVATAR} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                )}
+                <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: ACCENT, padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                  <MaterialCommunityIcons name="camera" size={12} color="white" />
+                </View>
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>
+                  {(() => {
+                    const h = new Date().getHours();
+                    if (h < 12) return 'Good Morning 👋';
+                    if (h < 17) return 'Good Afternoon 👋';
+                    return 'Good Evening 👋';
+                  })()}
+                </Text>
+                <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2 }}>
+                  {user?.name?.split(' ')[0] || 'Nanny'}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={updateAvatar}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('announcements')}
               style={{
-                width: 54,
-                height: 54,
-                borderRadius: 27,
+                width: 52,
+                height: 52,
+                borderRadius: 18,
                 backgroundColor: 'rgba(255,255,255,0.92)',
-                borderWidth: 2,
-                borderColor: '#FFFFFF',
-                shadowColor: '#000000',
-                shadowOpacity: 0.1,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.6)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
               }}
             >
-              {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <Image source={ROLE_AVATAR} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <Image
+                source={require('../../../assets/icons/bell (1).png')}
+                style={{ width: 28, height: 28 }}
+                resizeMode="contain"
+              />
+              {announcements.length > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: '#EF4444',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                    borderWidth: 1.5,
+                    borderColor: '#FFFFFF',
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
+                    {announcements.length > 99 ? '99+' : announcements.length}
+                  </Text>
+                </View>
               )}
-              <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: ACCENT, padding: 4, borderRadius: 10, borderWidth: 2, borderColor: '#FFFFFF' }}>
-                <MaterialCommunityIcons name="camera" size={12} color="white" />
-              </View>
             </TouchableOpacity>
           </View>
 

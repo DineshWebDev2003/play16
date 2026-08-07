@@ -51,23 +51,23 @@ export default function GlassDropdown({ selectedBranchId, onSelect, icon, showAl
   const [open, setOpen] = useState(false);
   const dropdownIcon = icon || KINDERGARTEN_ICON;
 
-  if (user?.role !== 'master_admin' && user?.role !== 'admin') return null;
+  const isMasterAdmin = user?.role === 'master_admin';
+  const ownsBranch = !!user?.branch_id;
 
-  const isSchoolAdmin = user?.role === 'admin' && !showAll;
-  const adminBranchId = isSchoolAdmin ? user?.branch_id : null;
-  const effectiveBranchId = isSchoolAdmin ? adminBranchId : selectedBranchId;
+  const effectiveSelected = selectedBranchId || (ownsBranch ? String(user.branch_id) : null);
 
-  const selectedName = effectiveBranchId
-    ? branches.find(b => b.id === effectiveBranchId)?.name || 'Unknown'
+  const selectedName = effectiveSelected
+    ? branches.find(b => String(b.id) === String(effectiveSelected))?.name || 'Unknown'
     : hideAll
       ? 'Select a branch'
       : 'All Branches';
 
-  const options = isSchoolAdmin
-    ? [{ id: adminBranchId as string, name: selectedName }]
-    : hideAll
-      ? (branches as any[])
-      : [{ id: 'all', name: 'All Branches' } as any, ...branches];
+  const listBranches = branches as any[];
+  const options = hideAll
+    ? listBranches
+    : isMasterAdmin
+      ? [{ id: 'all', name: 'All Branches' } as any, ...listBranches]
+      : listBranches;
 
   return (
     <>
@@ -132,7 +132,7 @@ export default function GlassDropdown({ selectedBranchId, onSelect, icon, showAl
             >
               {options.map((item) => {
                 const isAll = item.id === 'all';
-                const isSelected = isAll ? !effectiveBranchId : effectiveBranchId === item.id;
+                const isSelected = isAll ? !effectiveSelected : String(item.id) === String(effectiveSelected);
                 const activeColor = '#F59E0B';
                 return (
                   <TouchableOpacity

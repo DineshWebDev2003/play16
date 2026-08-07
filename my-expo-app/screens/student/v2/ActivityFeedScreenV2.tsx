@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import GlassDropdown from '../../admin/v2/GlassDropdown';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video, ResizeMode } from 'expo-av';
@@ -14,7 +15,6 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PremiumPopup from '../../../components/PremiumPopup';
-import GlassDropdown from '../../admin/v2/GlassDropdown';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GAP = 1.5;
@@ -22,6 +22,7 @@ const COLUMN_WIDTH = (SCREEN_WIDTH - GAP * 4) / 3;
 
 const TEXT_PRIMARY = '#1F2D28';
 const TEXT_MUTED = '#7A8A82';
+const TEXT_SECONDARY = '#4A5B53';
 const BORDER_RADIUS = 22;
 
 const PAINT_ICON = require('../../../assets/icons/painting.png');
@@ -440,7 +441,6 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [isMyKidOnly, setIsMyKidOnly] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
-  const [isTabDropdownOpen, setIsTabDropdownOpen] = useState(false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [likedIds, setLikedIds] = useState<string[]>([]);
   const [currentParticipants, setCurrentParticipants] = useState<Student[]>([]);
@@ -484,7 +484,11 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
     let filtered = activities;
 
     if (branchFilterId) {
-      filtered = filtered.filter(act => act.branch_id?.toString() === branchFilterId);
+      filtered = filtered.filter(act => {
+        if (act.branch_id?.toString() === branchFilterId) return true;
+        const taggedStudents = users.filter(u => act.studentIds?.includes(u.id));
+        return taggedStudents.some(u => u.branch_id?.toString() === branchFilterId);
+      });
     }
 
     if (isMyKidOnly && user && user.role === 'student') {
@@ -631,67 +635,47 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
           </View>
         </View>
 
-        <View className="flex-row items-center mt-4">
-          <View style={{ flex: 1 }}>
-            <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} showAll />
-          </View>
-          {user?.role === 'student' && (
-            <TouchableOpacity
-              onPress={() => setIsMyKidOnly(!isMyKidOnly)}
-              activeOpacity={0.8}
-              className="flex-row items-center px-4 py-3 rounded-2xl ml-3"
-              style={{ backgroundColor: isMyKidOnly ? '#10B981' : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isMyKidOnly ? '#10B981' : 'rgba(255,255,255,0.6)' }}
-            >
-              <MaterialCommunityIcons name={isMyKidOnly ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} size={18} color={isMyKidOnly ? "white" : TEXT_MUTED} />
-              <Text className="ml-2 font-black text-xs" style={{ color: isMyKidOnly ? 'white' : TEXT_MUTED }}>MY KID</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Tab Selector Dropdown */}
-      <View className="px-8 mb-6 mt-2 relative z-50">
-        <TouchableOpacity
-          onPress={() => setIsTabDropdownOpen(!isTabDropdownOpen)}
-          activeOpacity={0.9}
-          className="flex-row items-center justify-between px-6 py-4 rounded-[22px]"
-          style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}
-        >
-          <View className="flex-row items-center">
-            <View className="w-8 h-8 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: activeTab === 'posts' ? '#10B981' : '#F59E0B' }}>
-              <MaterialCommunityIcons name={activeTab === 'posts' ? "grid" : "bookmark"} size={16} color="white" />
-            </View>
-            <Text className="font-black text-sm uppercase tracking-widest" style={{ color: TEXT_PRIMARY }}>
-              {activeTab === 'posts' ? 'School Posts' : 'My Saved'}
-            </Text>
-          </View>
-          <MaterialCommunityIcons name={isTabDropdownOpen ? "chevron-up" : "chevron-down"} size={24} color={TEXT_MUTED} />
-        </TouchableOpacity>
-
-        {isTabDropdownOpen && (
-          <View className="absolute top-[72px] left-8 right-8 rounded-[28px] overflow-hidden z-50"
-            style={{ backgroundColor: 'rgba(255,255,255,0.97)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', elevation: 12, shadowColor: '#0B1511', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 10 } }}
+        {/* ── Header toggles: School filter + Posts/Saved ── */}
+        <View className="mt-4">
+          <View
+            className="flex-row items-center p-1.5 rounded-[20px]"
+            style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}
           >
             <TouchableOpacity
-              onPress={() => { setActiveTab('posts'); setIsTabDropdownOpen(false); }}
-              className="flex-row items-center px-6 py-5 border-b border-black/5"
-              style={{ backgroundColor: activeTab === 'posts' ? 'rgba(16,185,129,0.06)' : 'transparent' }}
+              activeOpacity={0.85}
+              onPress={() => setActiveTab('posts')}
+              className="flex-1 flex-row items-center justify-center py-3 rounded-2xl"
+              style={{ backgroundColor: activeTab === 'posts' ? '#10B981' : 'transparent' }}
             >
-              <MaterialCommunityIcons name="grid" size={20} color={activeTab === 'posts' ? '#059669' : TEXT_MUTED} />
-              <Text className="ml-4 font-black" style={{ color: activeTab === 'posts' ? '#059669' : '#4A5B53' }}>School Highlights</Text>
-              {activeTab === 'posts' && <MaterialCommunityIcons name="check" size={20} color="#10B981" style={{ marginLeft: 'auto' }} />}
+              <MaterialCommunityIcons name="grid" size={16} color={activeTab === 'posts' ? 'white' : TEXT_MUTED} />
+              <Text className="ml-2 font-black text-sm" style={{ color: activeTab === 'posts' ? 'white' : TEXT_SECONDARY }}>Posts</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => { setActiveTab('saved'); setIsTabDropdownOpen(false); }}
-              className="flex-row items-center px-6 py-5"
-              style={{ backgroundColor: activeTab === 'saved' ? 'rgba(245,158,11,0.06)' : 'transparent' }}
+              activeOpacity={0.85}
+              onPress={() => setActiveTab('saved')}
+              className="flex-1 flex-row items-center justify-center py-3 rounded-2xl"
+              style={{ backgroundColor: activeTab === 'saved' ? '#F59E0B' : 'transparent' }}
             >
-              <MaterialCommunityIcons name="bookmark" size={20} color={activeTab === 'saved' ? '#F59E0B' : TEXT_MUTED} />
-              <Text className="ml-4 font-black" style={{ color: activeTab === 'saved' ? '#D97706' : '#4A5B53' }}>Saved Moments</Text>
-              {activeTab === 'saved' && <MaterialCommunityIcons name="check" size={20} color="#F59E0B" style={{ marginLeft: 'auto' }} />}
+              <MaterialCommunityIcons name="bookmark" size={16} color={activeTab === 'saved' ? 'white' : TEXT_MUTED} />
+              <Text className="ml-2 font-black text-sm" style={{ color: activeTab === 'saved' ? 'white' : TEXT_SECONDARY }}>Saved</Text>
             </TouchableOpacity>
           </View>
-        )}
+
+          <View style={{ marginTop: 14 }}>
+            <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} showAll />
+            {user?.role === 'student' && (
+              <TouchableOpacity
+                onPress={() => setIsMyKidOnly(!isMyKidOnly)}
+                activeOpacity={0.8}
+                className="flex-row items-center px-4 py-3 rounded-2xl mt-3"
+                style={{ backgroundColor: isMyKidOnly ? '#10B981' : 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: isMyKidOnly ? '#10B981' : 'rgba(255,255,255,0.6)' }}
+              >
+                <MaterialCommunityIcons name={isMyKidOnly ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"} size={18} color={isMyKidOnly ? "white" : TEXT_MUTED} />
+                <Text className="ml-2 font-black text-xs" style={{ color: isMyKidOnly ? 'white' : TEXT_MUTED }}>MY KID</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
 
       {/* Instagram-style 3-column Grid */}

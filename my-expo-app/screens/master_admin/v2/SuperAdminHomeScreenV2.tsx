@@ -160,7 +160,7 @@ function PlaceholderBar({ width, height, radius = 6, style }: {
 }
 
 export default function SuperAdminHomeScreenV2({ navigation }: Props) {
-  const { user, activities, users, branches, transactions } = useAuth();
+  const { user, activities, users, branches, transactions, announcements } = useAuth();
   const insets = useSafeAreaInsets();
 
   const stats = useMemo(() => {
@@ -220,49 +220,94 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         <View style={{ paddingTop: Math.max(insets.top, 56), paddingHorizontal: 20 }}>
-          {/* ── Header (52px) ── */}
+          {/* ── Header: greet + avatar (left), bell (right) ── */}
           <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '400', color: '#7A8A82' }}>
-                {(() => {
-                  const h = new Date().getHours();
-                  if (h < 12) return 'Good Morning 👋';
-                  if (h < 17) return 'Good Afternoon 👋';
-                  return 'Good Evening 👋';
-                })()}
-              </Text>
-              <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: '#1F2D28', marginTop: 2 }}>
-                {user?.name || 'Master Admin'}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}>
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  marginRight: 12,
+                  backgroundColor: 'rgba(255,255,255,0.92)',
+                  borderWidth: 2,
+                  borderColor: '#FFFFFF',
+                  shadowColor: '#000000',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 8,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {user?.avatar ? (
+                  <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <Image
+                    source={ROLE_IMAGE_BY_ROLE[user?.role || ''] || ROLE_IMAGE_BY_ROLE.master_admin}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '400', color: '#7A8A82' }}>
+                  {(() => {
+                    const h = new Date().getHours();
+                    if (h < 12) return 'Good Morning 👋';
+                    if (h < 17) return 'Good Afternoon 👋';
+                    return 'Good Evening 👋';
+                  })()}
+                </Text>
+                <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: '#1F2D28', marginTop: 2 }}>
+                  {user?.name || 'Master Admin'}
+                </Text>
+              </View>
             </View>
-            <View
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('announcements')}
               style={{
-                width: 54,
-                height: 54,
-                borderRadius: 27,
+                width: 52,
+                height: 52,
+                borderRadius: 18,
                 backgroundColor: 'rgba(255,255,255,0.92)',
-                borderWidth: 2,
-                borderColor: '#FFFFFF',
-                shadowColor: '#000000',
-                shadowOpacity: 0.1,
-                shadowRadius: 14,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.6)',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
               }}
             >
-              {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <Image
-                  source={ROLE_IMAGE_BY_ROLE[user?.role || ''] || ROLE_IMAGE_BY_ROLE.master_admin}
-                  style={{ width: '100%', height: '100%' }}
-                  resizeMode="cover"
-                />
+              <Image
+                source={require('../../../assets/icons/bell (1).png')}
+                style={{ width: 28, height: 28 }}
+                resizeMode="contain"
+              />
+              {announcements.length > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: '#EF4444',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                    borderWidth: 1.5,
+                    borderColor: '#FFFFFF',
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
+                    {announcements.length > 99 ? '99+' : announcements.length}
+                  </Text>
+                </View>
               )}
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={{ height: SECTION_GAP }} />
