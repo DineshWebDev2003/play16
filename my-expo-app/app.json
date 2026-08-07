@@ -3,7 +3,7 @@
     "name": "TN HAPPYKIDS",
     "slug": "tn-happykids",
     "scheme": "com.tnhappykids.throneapp",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -43,7 +43,7 @@
       },
       "package": "com.tnhappykids.throneapp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 4,
+      "versionCode": 5,
       "notification": {
         "icon": "./assets/notification-icon.png",
         "color": "#F59E0B"

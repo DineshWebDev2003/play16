@@ -1,6 +1,6 @@
 workflows:
   react-native-expo-android:
-    name: TN Happy Kids - Android Release AAB
+    name: TN Happy Kids - Android Release AAB (1.1.0)
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
@@ -50,15 +50,14 @@ workflows:
               }
           }
           EOF
-      - name: Build Release AAB + APK
+      - name: Build Release AAB
         script: |
           cd my-expo-app
           export NODE_OPTIONS="--max-old-space-size=6144"
           cd android
-          ./gradlew --max-workers=2 bundleRelease assembleRelease
+          ./gradlew --max-workers=2 bundleRelease
     artifacts:
       - my-expo-app/android/app/build/outputs/bundle/release/*.aab
-      - my-expo-app/android/app/build/outputs/apk/release/*.apk
     publishing:
       email:
         recipients:
