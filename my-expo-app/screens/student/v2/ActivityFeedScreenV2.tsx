@@ -76,6 +76,8 @@ interface Activity {
   layoutType: 'square' | 'tall';
   likesCount: number;
   comments: any[];
+  branch_id?: string;
+  branchName?: string;
 }
 
 interface ActivityFeedScreenProps {
@@ -98,6 +100,7 @@ const ReelItem = React.memo(({
   user,
   onDelete,
   onClose,
+  onOpenGroup,
   isLiked,
   isSaved,
   onLike,
@@ -111,6 +114,7 @@ const ReelItem = React.memo(({
   user: any;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onOpenGroup: (participants: Student[]) => void;
   isLiked: boolean;
   isSaved: boolean;
   onLike: () => void;
@@ -230,18 +234,30 @@ const ReelItem = React.memo(({
               </View>
             </View>
             <View className="flex-row items-center justify-between px-6 py-6">
-              <View className="bg-black/60 px-4 py-1.5 rounded-full border border-white/20 flex-row items-center">
-                <MaterialCommunityIcons name={item.type === 'video' ? 'video' : 'camera'} size={12} color="white" style={{ marginRight: 6 }} />
-                <Text className="text-white font-bold text-[10px] tracking-[1px]">{item.type.toUpperCase()}</Text>
+              <View className="flex-row items-center">
+                <View className="px-4 py-1.5 rounded-full flex-row items-center mr-2"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                  <MaterialCommunityIcons name={item.type === 'video' ? 'video' : 'camera'} size={12} color="#1F2D28" style={{ marginRight: 6 }} />
+                  <Text className="font-black text-[10px] tracking-[1px]" style={{ color: TEXT_PRIMARY }}>{item.type.toUpperCase()}</Text>
+                </View>
+                {!!item.branchName && (
+                  <View className="px-4 py-1.5 rounded-full flex-row items-center"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                    <MaterialCommunityIcons name="domain" size={12} color="#F59E0B" style={{ marginRight: 6 }} />
+                    <Text className="font-black text-[10px] tracking-[1px]" style={{ color: TEXT_PRIMARY }}>{item.branchName}</Text>
+                  </View>
+                )}
               </View>
               <View className="flex-row items-center">
                 {(user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'master_admin') && (
-                  <TouchableOpacity onPress={() => onDelete(item.id)} className="bg-red-500/60 w-11 h-11 rounded-full items-center justify-center border border-white/20 mr-3">
-                    <MaterialCommunityIcons name="delete" size={24} color="white" />
+                  <TouchableOpacity onPress={() => onDelete(item.id)} className="w-11 h-11 rounded-full items-center justify-center mr-3"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                    <MaterialCommunityIcons name="delete" size={24} color="#EF4444" />
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity onPress={onClose} className="bg-black/60 w-11 h-11 rounded-full items-center justify-center border border-white/20">
-                  <MaterialCommunityIcons name="close" size={24} color="white" />
+                <TouchableOpacity onPress={onClose} className="w-11 h-11 rounded-full items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                  <MaterialCommunityIcons name="close" size={24} color="#1F2D28" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -249,7 +265,8 @@ const ReelItem = React.memo(({
 
           <View style={styles.bottomOverlay}>
             <View className="flex-row items-center mb-4">
-              <View className="bg-white w-12 h-12 rounded-full p-0.5 mr-3 border-2 border-[#10B981] overflow-hidden items-center justify-center">
+              <View className="w-12 h-12 rounded-full p-0.5 mr-3 border-2 border-[#10B981] overflow-hidden items-center justify-center"
+                style={{ backgroundColor: 'rgba(255,255,255,0.92)' }}>
                 {item.studentAvatar ? (
                   <Image source={{ uri: item.studentAvatar }} className="w-full h-full rounded-full" />
                 ) : (
@@ -257,33 +274,64 @@ const ReelItem = React.memo(({
                 )}
               </View>
               <View className="flex-1">
-                <Text className="text-white text-lg font-black mb-0.5" numberOfLines={1}>{item.studentName}</Text>
-                <Text className="text-white/70 text-sm font-bold tracking-tight">ID: {item.studentId}</Text>
+                <Text className="text-lg font-black mb-0.5" numberOfLines={1} style={{ color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }}>{item.studentName}</Text>
+                <Text className="text-sm font-bold tracking-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>ID: {item.studentId}</Text>
               </View>
             </View>
-            <View className="bg-black/70 p-5 rounded-[28px] border border-white/10">
-              <Text className="text-white font-black text-base mb-1 leading-5">{item.title}</Text>
+            <View className="p-5 rounded-[22px]"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <Text className="font-black text-base mb-1 leading-5" style={{ color: TEXT_PRIMARY }}>{item.title}</Text>
               <View className="flex-row items-center">
                 <MaterialCommunityIcons name="clock-outline" size={12} color="#F59E0B" />
-                <Text className="text-[#FBBF24]/90 text-[10px] ml-1.5 font-black uppercase tracking-widest">{item.timestamp}</Text>
+                <Text className="text-[10px] ml-1.5 font-black uppercase tracking-widest" style={{ color: TEXT_MUTED }}>{item.timestamp}</Text>
               </View>
+
+              {item.groupParticipants.length > 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => onOpenGroup(item.groupParticipants)}
+                  className="flex-row items-center mt-4 rounded-full px-4 py-2 self-start"
+                  style={{ backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)' }}
+                >
+                  <View className="flex-row -space-x-2">
+                    {item.groupParticipants.slice(0, 3).map((p) => (
+                      <View key={p.id} className="w-7 h-7 rounded-full border-2 overflow-hidden items-center justify-center"
+                        style={{ borderColor: 'rgba(255,255,255,0.9)', backgroundColor: 'rgba(245,158,11,0.15)' }}>
+                        {p.avatar ? (
+                          <Image source={{ uri: p.avatar }} className="w-full h-full" />
+                        ) : (
+                          <MaterialCommunityIcons name="account-child" size={14} color="#F59E0B" />
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                  <Text className="text-[11px] font-black ml-2" style={{ color: TEXT_PRIMARY }}>
+                    Group · {item.groupParticipants.length} kids
+                  </Text>
+                  <MaterialCommunityIcons name="chevron-right" size={16} color="#7A8A82" style={{ marginLeft: 6 }} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
           <View style={styles.rightBar}>
-            <TouchableOpacity onPress={onLike} className="items-center mb-4">
-              <MaterialCommunityIcons name={isLiked ? "heart" : "heart-outline"} size={30} color={isLiked ? "#EF4444" : "white"} />
-              <Text className="text-white text-[10px] font-bold mt-1">{item.likesCount}</Text>
+            <TouchableOpacity onPress={onLike} className="items-center justify-center mb-4 w-12 h-12 rounded-full"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <MaterialCommunityIcons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? "#EF4444" : "#1F2D28"} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onComment(item.id)} className="items-center mb-4">
-              <MaterialCommunityIcons name="comment-outline" size={28} color="white" />
-              <Text className="text-white text-[10px] font-bold mt-1">{item.comments?.length || 0}</Text>
+            <Text className="text-[10px] font-bold -mt-2 mb-1" style={{ color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }}>{item.likesCount}</Text>
+            <TouchableOpacity onPress={() => onComment(item.id)} className="items-center justify-center mb-4 w-12 h-12 rounded-full"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <MaterialCommunityIcons name="comment-outline" size={24} color="#1F2D28" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onSave} className="items-center mb-4">
-              <MaterialCommunityIcons name={isSaved ? "bookmark" : "bookmark-outline"} size={28} color={isSaved ? "#FBBF24" : "white"} />
+            <Text className="text-[10px] font-bold -mt-2 mb-1" style={{ color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }}>{item.comments?.length || 0}</Text>
+            <TouchableOpacity onPress={onSave} className="items-center justify-center mb-4 w-12 h-12 rounded-full"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <MaterialCommunityIcons name={isSaved ? "bookmark" : "bookmark-outline"} size={24} color={isSaved ? "#F59E0B" : "#1F2D28"} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleDownload} className="items-center mb-4">
-              <MaterialCommunityIcons name="download" size={28} color="white" />
+            <TouchableOpacity onPress={handleDownload} className="items-center justify-center w-12 h-12 rounded-full"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <MaterialCommunityIcons name="download" size={24} color="#1F2D28" />
             </TouchableOpacity>
           </View>
         </>
@@ -376,7 +424,7 @@ const CommentModal = ({
 };
 
 export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeedScreenProps) {
-  const { activities, users, user, deleteActivity, fetchData } = useAuth();
+  const { activities, users, user, deleteActivity, fetchData, branches } = useAuth();
   const insets = useSafeAreaInsets();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -457,6 +505,16 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
     return filtered.map((act) => {
       const taggedStudents = users.filter(u => act.studentIds?.includes(u.id));
       const primaryStudent = taggedStudents.length > 0 ? taggedStudents[0] : null;
+      const branch = branches.find(b => b.id?.toString() === act.branch_id?.toString());
+      const studentBranch = primaryStudent?.branch_id
+        ? branches.find(b => b.id?.toString() === primaryStudent.branch_id?.toString())
+        : undefined;
+      const resolvedBranchName =
+        act.branchName
+        || branch?.name
+        || studentBranch?.name
+        || primaryStudent?.branch?.name
+        || (act.branch_id ? `Branch #${act.branch_id}` : '');
       return {
         id: act.id,
         type: (act.mediaType === 'video' ? 'video' : 'image') as 'image' | 'video',
@@ -467,6 +525,8 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
         studentId: primaryStudent ? (primaryStudent.studentId || primaryStudent.id) : 'ADMIN',
         studentAvatar: primaryStudent?.avatar || '',
         timestamp: act.date,
+        branch_id: act.branch_id?.toString(),
+        branchName: resolvedBranchName,
         groupParticipants: taggedStudents.map(s => ({
           id: s.id,
           name: s.name,
@@ -478,7 +538,7 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
         comments: act.comments || [],
       };
     });
-  }, [activities, users, isMyKidOnly, user, savedIds, activeTab, branchFilterId]);
+  }, [activities, users, isMyKidOnly, user, savedIds, activeTab, branchFilterId, branches]);
 
   useEffect(() => {
     if (route?.params?.id && gridActivities.length > 0) {
@@ -513,6 +573,11 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
     ]);
   }, [deleteActivity, closeReel]);
 
+  const openGroupModal = useCallback((participants: Student[]) => {
+    setCurrentParticipants(participants);
+    setShowGroupModal(true);
+  }, []);
+
   const renderReelItem = useCallback(({ item, index }: { item: Activity, index: number }) => (
     <ReelItem
       item={item}
@@ -521,6 +586,7 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
       user={user}
       onDelete={handleDelete}
       onClose={closeReel}
+      onOpenGroup={openGroupModal}
       isLiked={likedIds.includes(item.id)}
       isSaved={savedIds.includes(item.id)}
       onLike={() => toggleLike(item.id)}
@@ -528,7 +594,7 @@ export default function ActivityFeedScreenV2({ navigation, route }: ActivityFeed
       onComment={(id) => { setActiveActivityId(id); setShowCommentModal(true); }}
       containerHeight={reelHeight}
     />
-  ), [showReel, activeIndex, user, handleDelete, closeReel, likedIds, savedIds, toggleLike, toggleSave, reelHeight]);
+  ), [showReel, activeIndex, user, handleDelete, closeReel, openGroupModal, likedIds, savedIds, toggleLike, toggleSave, reelHeight]);
 
   return (
     <View className="flex-1 bg-[#F7F9F6]">

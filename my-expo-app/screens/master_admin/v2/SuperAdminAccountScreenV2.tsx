@@ -304,41 +304,43 @@ export default function SuperAdminAccountScreenV2({ navigation }: Props) {
       <LogoutModal visible={showLogout} onConfirm={logout} onCancel={() => setShowLogout(false)} />
 
       <Modal visible={showMaintPassword} transparent={true} animationType="fade" onRequestClose={() => setShowMaintPassword(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
-            <View style={{ alignItems: 'center', marginBottom: 18 }}>
-              <View style={{ backgroundColor: 'rgba(124, 58, 237, 0.12)', width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
-                <MaterialCommunityIcons name="shield-lock" size={32} color="#7C3AED" />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 }}>
+            <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <View style={{ alignItems: 'center', marginBottom: 18 }}>
+                <View style={{ backgroundColor: 'rgba(124, 58, 237, 0.12)', width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="shield-lock" size={32} color="#7C3AED" />
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 14 }}>Enter Password</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: TEXT_MUTED, marginTop: 4, textAlign: 'center' }}>
+                  System Maintenance is protected. Enter your password to continue.
+                </Text>
               </View>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 14 }}>Enter Password</Text>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: TEXT_MUTED, marginTop: 4, textAlign: 'center' }}>
-                System Maintenance is protected. Enter your password to continue.
-              </Text>
-            </View>
-            <TextInput
-              style={inputStyle}
-              placeholder="Your password"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
-              autoCapitalize="none"
-              value={maintPassword}
-              onChangeText={setMaintPassword}
-              autoFocus
-            />
-            <View style={{ flexDirection: 'row', marginTop: 16 }}>
-              <TouchableOpacity
-                onPress={() => setShowMaintPassword(false)}
-                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', marginRight: 8 }}
-              >
-                <Text style={{ color: TEXT_PRIMARY, fontWeight: '700', fontSize: 14 }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleVerifyMaintPassword}
-                disabled={verifyingMaint}
-                style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#7C3AED', alignItems: 'center', marginLeft: 8 }}
-              >
-                {verifyingMaint ? <ActivityIndicator color="white" /> : <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>Continue</Text>}
-              </TouchableOpacity>
+              <TextInput
+                style={inputStyle}
+                placeholder="Your password"
+                placeholderTextColor="#9CA3AF"
+                secureTextEntry
+                autoCapitalize="none"
+                value={maintPassword}
+                onChangeText={setMaintPassword}
+                autoFocus
+              />
+              <View style={{ flexDirection: 'row', marginTop: 16 }}>
+                <TouchableOpacity
+                  onPress={() => setShowMaintPassword(false)}
+                  style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', marginRight: 8 }}
+                >
+                  <Text style={{ color: TEXT_PRIMARY, fontWeight: '700', fontSize: 14 }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleVerifyMaintPassword}
+                  disabled={verifyingMaint}
+                  style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#7C3AED', alignItems: 'center', marginLeft: 8 }}
+                >
+                  {verifyingMaint ? <ActivityIndicator color="white" /> : <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>Continue</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </KeyboardAvoidingView>

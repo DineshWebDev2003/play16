@@ -143,6 +143,12 @@ export default function TimetableScreenV2({ navigation }: Props) {
   const [timetable, setTimetable] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    if (!branchFilterId && branches && branches.length > 0) {
+      setBranchFilterId(String(branches[0].id));
+    }
+  }, [branchFilterId, branches]);
+
   const fetchTimetable = useCallback(async () => {
     try {
       const params = new URLSearchParams();
@@ -306,7 +312,7 @@ export default function TimetableScreenV2({ navigation }: Props) {
             </View>
           </View>
 
-            <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} icon={CALENDAR_ICON} />
+            <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} icon={CALENDAR_ICON} hideAll />
 
           {/* ── Day selector (GlassSelectV2) ── */}
           <View style={{ marginTop: 16 }}>

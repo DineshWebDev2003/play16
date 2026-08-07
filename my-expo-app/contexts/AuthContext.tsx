@@ -120,6 +120,7 @@ export interface Activity {
   author: string;
   studentIds: string[];
   branch_id?: string;
+  branchName?: string | null;
   likesCount: number;
   comments: Comment[];
 }
@@ -245,6 +246,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         thumbnailUrl: getMediaUrl(a.thumbnail_url || a.thumb),
         date: a.date || a.created_at,
         author: a.author || 'Teacher',
+        branch_id: a.branch_id?.toString(),
+        branchName: a.branch?.name || null,
         studentIds: a.student_id ? [a.student_id.toString()] : (a.students ? a.students.map((s: any) => s.id.toString()) : []),
         likesCount: a.likes_count || a.likes || 0,
         comments: a.comments ? a.comments.map((c: any) => ({

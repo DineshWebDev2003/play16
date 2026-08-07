@@ -971,14 +971,24 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
       {/* ── Month selector ── */}
       <Modal visible={showMonthSelector} transparent animationType="fade" onRequestClose={() => setShowMonthSelector(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.45)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
-          <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22 }}>
+          <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22, overflow: 'hidden' }}>
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <LinearGradient
+                colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+              />
+              <RadialGlow size={240} color="#DDF8D7" opacity={0.3} style={{ top: -90, left: -80 }} />
+              <RadialGlow size={260} color="#DDFBFF" opacity={0.28} style={{ bottom: -100, right: -90 }} />
+            </View>
             <Text style={{ fontSize: 18, fontWeight: '800', color: TEXT_PRIMARY, textAlign: 'center', marginBottom: 18 }}>Select Month</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
               {MONTHS.map((m, i) => (
                 <TouchableOpacity
                   key={m}
                   onPress={() => { setSelectedMonth(i); setShowMonthSelector(false); }}
-                  style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedMonth === i ? 'rgba(245,158,11,0.15)' : 'rgba(247,249,246,0.95)' }}
+                  style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedMonth === i ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.85)' }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: selectedMonth === i ? AMBER_DARK : TEXT_SECONDARY }}>{m}</Text>
                 </TouchableOpacity>
@@ -991,7 +1001,17 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
       {/* ── Year selector ── */}
       <Modal visible={showYearSelector} transparent animationType="fade" onRequestClose={() => setShowYearSelector(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.45)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
-          <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22 }}>
+          <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22, overflow: 'hidden' }}>
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <LinearGradient
+                colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+              />
+              <RadialGlow size={240} color="#DDF8D7" opacity={0.3} style={{ top: -90, left: -80 }} />
+              <RadialGlow size={260} color="#DDFBFF" opacity={0.28} style={{ bottom: -100, right: -90 }} />
+            </View>
             <Text style={{ fontSize: 18, fontWeight: '800', color: TEXT_PRIMARY, textAlign: 'center', marginBottom: 18 }}>Select Year</Text>
             <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -999,7 +1019,7 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
                   <TouchableOpacity
                     key={y}
                     onPress={() => { setSelectedYear(y); setShowYearSelector(false); }}
-                    style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedYear === y ? 'rgba(245,158,11,0.15)' : 'rgba(247,249,246,0.95)' }}
+                    style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedYear === y ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.85)' }}
                   >
                     <Text style={{ fontSize: 14, fontWeight: '900', color: selectedYear === y ? AMBER_DARK : TEXT_SECONDARY }}>{y}</Text>
                   </TouchableOpacity>

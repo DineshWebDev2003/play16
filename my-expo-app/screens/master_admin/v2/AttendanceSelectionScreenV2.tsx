@@ -67,6 +67,14 @@ export default function AttendanceSelectionScreenV2({ navigation }: Props) {
       desc: 'View teacher & staff attendance logs',
       tag: 'Staff',
     },
+    {
+      label: 'Nanny Attendance',
+      screen: 'nannyAttendanceReport',
+      icon: require('../../../assets/icons/family.png'),
+      color: '#06B6D4',
+      desc: 'View nanny attendance logs',
+      tag: 'Nanny',
+    },
   ];
 
   return (
@@ -85,8 +93,11 @@ export default function AttendanceSelectionScreenV2({ navigation }: Props) {
         <RadialGlow size={450} color="#EAF5FF" opacity={0.18} style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={{ paddingHorizontal: 20, paddingTop: Math.max(insets.top, 56), paddingBottom: 8 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <View style={{ paddingHorizontal: 20, paddingTop: Math.max(insets.top, 56), paddingBottom: 8, flex: 1 }}>
           {/* Header */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
@@ -123,7 +134,7 @@ export default function AttendanceSelectionScreenV2({ navigation }: Props) {
                 key={item.label}
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate(item.screen)}
-                style={{ marginBottom: 16, borderRadius: BORDER_RADIUS, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', padding: 16 }}
+                style={{ marginBottom: 16, borderRadius: BORDER_RADIUS, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', padding: 16, flex: 1, justifyContent: 'center' }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 84, height: 84, borderRadius: 18, backgroundColor: tintBg, alignItems: 'center', justifyContent: 'center' }}>
@@ -147,8 +158,6 @@ export default function AttendanceSelectionScreenV2({ navigation }: Props) {
             );
           })}
         </View>
-
-        <View style={{ height: 140 }} />
       </ScrollView>
     </View>
   );

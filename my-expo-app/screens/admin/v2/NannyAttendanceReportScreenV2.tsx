@@ -13,13 +13,13 @@ const TEXT_PRIMARY = '#1F2D28';
 const TEXT_SECONDARY = '#4A5B53';
 const TEXT_MUTED = '#7A8A82';
 const BORDER_RADIUS = 22;
-const INDIGO = '#6366F1';
-const INDIGO_DARK = '#4F46E5';
+const NANNY = '#06B6D4';
+const NANNY_DARK = '#0891B2';
 const GREEN = '#10B981';
 const RED = '#EF4444';
 const AMBER = '#F59E0B';
 
-const TEACHER_ICON = require('../../../assets/icons/teacher.png');
+const NANNY_ICON = require('../../../assets/icons/family.png');
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035];
@@ -33,10 +33,9 @@ const getBranchName = (branchId: string | undefined | null, branches: any[]): st
 const generateStaffId = (branchName: string): string => {
   const branchLetter = branchName ? branchName.charAt(0).toUpperCase() : 'X';
   const year = new Date().getFullYear().toString().slice(-2);
-  return `tnhk${branchLetter}t${year}`;
+  return `tnhk${branchLetter}n${year}`;
 };
 
-// ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
 function RadialGlow({ size, color, opacity, style }: {
   size: number;
   color: string;
@@ -65,7 +64,6 @@ function RadialGlow({ size, color, opacity, style }: {
   );
 }
 
-// ─── Aurora Glass background layer ─────────────────────────────────────────────
 function AuroraBackground() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -124,32 +122,32 @@ const MonthlyRecordCard = React.memo(({ record }: { record: any }) => {
 
 interface Props { navigation: { navigate: (s: string, params?: any) => void; goBack: () => void } }
 
-export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
+export default function NannyAttendanceReportScreenV2({ navigation }: Props) {
   const { user: authUser, users, branches } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null);
+  const [selectedNanny, setSelectedNanny] = useState<any | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [monthlyRecords, setMonthlyRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
+  const [showNannyDropdown, setShowNannyDropdown] = useState(false);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const [showYearSelector, setShowYearSelector] = useState(false);
   const [branchFilterId, setBranchFilterId] = useState<string | null>(null);
 
   const isAdminUser = authUser?.role === 'master_admin' || authUser?.role === 'admin';
 
-  const teachers = useMemo(() => {
-    let filtered = users.filter(u => u.role === 'teacher');
+  const nannies = useMemo(() => {
+    let filtered = users.filter(u => u.role === 'nanny');
     if (branchFilterId) filtered = filtered.filter(u => u.branch_id?.toString() === branchFilterId);
     return filtered;
   }, [users, branchFilterId]);
 
-  const fetchMonthlyRecords = useCallback(async (teacherId: string) => {
+  const fetchMonthlyRecords = useCallback(async (nannyId: string) => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/attendance?student_id=${teacherId}&user_role=teacher`);
+      const response = await api.get(`/attendance?student_id=${nannyId}&user_role=nanny`);
       const data = response.data;
       const attendanceMap: Record<string, any> = {};
       data.forEach((r: any) => { attendanceMap[r.date] = r; });
@@ -171,15 +169,15 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
       }
       setMonthlyRecords(records);
     } catch (error) {
-      console.error('Error fetching teacher records:', error);
+      console.error('Error fetching nanny records:', error);
     } finally {
       setIsLoading(false);
     }
   }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
-    if (selectedTeacher) fetchMonthlyRecords(selectedTeacher.id);
-  }, [selectedTeacher, selectedMonth, selectedYear, fetchMonthlyRecords]);
+    if (selectedNanny) fetchMonthlyRecords(selectedNanny.id);
+  }, [selectedNanny, selectedMonth, selectedYear, fetchMonthlyRecords]);
 
   const stats = useMemo(() => {
     const present = monthlyRecords.filter(r => r.status === 'present').length;
@@ -188,8 +186,8 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
     return { present, absent, late, total: monthlyRecords.filter(r => r.status !== 'not_marked').length };
   }, [monthlyRecords]);
 
-  const selectedStaffId = selectedTeacher
-    ? generateStaffId(getBranchName(selectedTeacher.branch_id, branches))
+  const selectedStaffId = selectedNanny
+    ? generateStaffId(getBranchName(selectedNanny.branch_id, branches))
     : '';
 
   return (
@@ -204,45 +202,43 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
         ListHeaderComponent={
           <>
-            {/* ── Header ── */}
             <View style={{ paddingTop: Math.max(insets.top, 56) }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ width: 44, height: 44, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY }}>‹</Text>
                 </TouchableOpacity>
                 <View style={{ flex: 1, marginLeft: 14 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>Staff Attendance</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>Nanny Attendance</Text>
                   <Text style={{ fontSize: 22, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2, letterSpacing: -0.5 }}>Attendance</Text>
                 </View>
                 <View style={{ width: 54, height: 54, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Image source={TEACHER_ICON} style={{ width: 46, height: 46 }} resizeMode="contain" />
+                  <Image source={NANNY_ICON} style={{ width: 46, height: 46 }} resizeMode="contain" />
                 </View>
               </View>
 
               {isAdminUser && (
                 <View style={{ marginTop: 20 }}>
-                  <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} icon={TEACHER_ICON} />
+                  <GlassDropdown selectedBranchId={branchFilterId} onSelect={setBranchFilterId} icon={NANNY_ICON} />
                 </View>
               )}
             </View>
 
-            {/* ── Teacher selector ── */}
             <View style={{ marginTop: 20 }}>
               <TouchableOpacity
-                onPress={() => setShowTeacherDropdown(true)}
+                onPress={() => setShowNannyDropdown(true)}
                 activeOpacity={0.85}
                 style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden' }}
               >
-                <LinearGradient colors={[INDIGO, INDIGO_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, flexDirection: 'row', alignItems: 'center' }}>
+                <LinearGradient colors={[NANNY, NANNY_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                    <Image source={TEACHER_ICON} style={{ width: 34, height: 34 }} resizeMode="contain" />
+                    <Image source={NANNY_ICON} style={{ width: 34, height: 34 }} resizeMode="contain" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Selected Staff</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1.5 }}>Selected Nanny</Text>
                     <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '900', color: '#FFFFFF', marginTop: 3 }}>
-                      {selectedTeacher?.name || 'Tap to select teacher'}
+                      {selectedNanny?.name || 'Tap to select nanny'}
                     </Text>
-                    {selectedTeacher && (
+                    {selectedNanny && (
                       <Text style={{ fontSize: 9, fontWeight: '900', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 3 }}>
                         {selectedStaffId}
                       </Text>
@@ -253,16 +249,14 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
               </TouchableOpacity>
             </View>
 
-            {/* ── Empty state / content ── */}
-            {!selectedTeacher ? (
+            {!selectedNanny ? (
               <View style={{ alignItems: 'center', paddingVertical: 56 }}>
-                <Image source={TEACHER_ICON} style={{ width: 72, height: 72, opacity: 0.25 }} resizeMode="contain" />
-                <Text style={{ fontSize: 16, fontWeight: '800', color: TEXT_PRIMARY, marginTop: 14 }}>Select a Teacher</Text>
+                <Image source={NANNY_ICON} style={{ width: 72, height: 72, opacity: 0.25 }} resizeMode="contain" />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: TEXT_PRIMARY, marginTop: 14 }}>Select a Nanny</Text>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 5 }}>Choose from the directory above</Text>
               </View>
             ) : (
               <>
-                {/* ── Stats summary ── */}
                 <View style={{ flexDirection: 'row', borderRadius: BORDER_RADIUS, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', padding: 16, marginBottom: 14 }}>
                   {[
                     { label: 'Present', value: stats.present, color: GREEN },
@@ -276,21 +270,20 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
                   ))}
                 </View>
 
-                {/* ── Month / Year pills ── */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  <TouchableOpacity onPress={() => setShowMonthSelector(true)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, backgroundColor: 'rgba(99,102,241,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 }}>
-                    <MaterialCommunityIcons name="calendar-month" size={14} color={INDIGO} />
-                    <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: INDIGO, marginLeft: 6 }}>{MONTHS[selectedMonth]}</Text>
+                  <TouchableOpacity onPress={() => setShowMonthSelector(true)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, backgroundColor: 'rgba(6,182,212,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 }}>
+                    <MaterialCommunityIcons name="calendar-month" size={14} color={NANNY} />
+                    <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: NANNY, marginLeft: 6 }}>{MONTHS[selectedMonth]}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowYearSelector(true)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, backgroundColor: 'rgba(99,102,241,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 }}>
-                    <MaterialCommunityIcons name="calendar-range" size={14} color={INDIGO} />
-                    <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: INDIGO, marginLeft: 6 }}>{selectedYear}</Text>
+                  <TouchableOpacity onPress={() => setShowYearSelector(true)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, backgroundColor: 'rgba(6,182,212,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 100 }}>
+                    <MaterialCommunityIcons name="calendar-range" size={14} color={NANNY} />
+                    <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: NANNY, marginLeft: 6 }}>{selectedYear}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {isLoading && (
                   <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-                    <ActivityIndicator color={INDIGO} />
+                    <ActivityIndicator color={NANNY} />
                   </View>
                 )}
               </>
@@ -299,7 +292,7 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
         }
         renderItem={({ item }) => <MonthlyRecordCard record={item} />}
         ListEmptyComponent={
-          selectedTeacher ? (
+          selectedNanny ? (
             !isLoading ? (
               <View style={{ alignItems: 'center', paddingVertical: 48 }}>
                 <MaterialCommunityIcons name="calendar-blank-outline" size={56} color={TEXT_MUTED} style={{ opacity: 0.3 }} />
@@ -310,8 +303,7 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
         }
       />
 
-      {/* ── Teacher selection modal ── */}
-      <Modal visible={showTeacherDropdown} transparent animationType="fade" onRequestClose={() => setShowTeacherDropdown(false)}>
+      <Modal visible={showNannyDropdown} transparent animationType="fade" onRequestClose={() => setShowNannyDropdown(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.45)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
           <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22, maxHeight: '80%', overflow: 'hidden' }}>
             <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -325,35 +317,35 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
               <RadialGlow size={260} color="#DDFBFF" opacity={0.28} style={{ bottom: -100, right: -90 }} />
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingTop: 4 }}>
-              <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(99,102,241,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                <Image source={TEACHER_ICON} style={{ width: 34, height: 34 }} resizeMode="contain" />
+              <View style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: 'rgba(6,182,212,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={NANNY_ICON} style={{ width: 34, height: 34 }} resizeMode="contain" />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: TEXT_PRIMARY }}>Select Teacher</Text>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: TEXT_MUTED, marginTop: 2 }}>{teachers.length} staff in directory</Text>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: TEXT_PRIMARY }}>Select Nanny</Text>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: TEXT_MUTED, marginTop: 2 }}>{nannies.length} in directory</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowTeacherDropdown(false)} activeOpacity={0.8} style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.9)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}>
+              <TouchableOpacity onPress={() => setShowNannyDropdown(false)} activeOpacity={0.8} style={{ width: 34, height: 34, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.9)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 15, color: TEXT_PRIMARY, fontWeight: '900' }}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <FlatList
-              data={teachers}
+              data={nannies}
               keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 6 }}
               ListEmptyComponent={
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Image source={TEACHER_ICON} style={{ width: 52, height: 52, opacity: 0.3 }} resizeMode="contain" />
-                  <Text style={{ marginTop: 10, fontWeight: '800', fontSize: 13, color: TEXT_MUTED }}>No teachers found</Text>
+                  <Image source={NANNY_ICON} style={{ width: 52, height: 52, opacity: 0.3 }} resizeMode="contain" />
+                  <Text style={{ marginTop: 10, fontWeight: '800', fontSize: 13, color: TEXT_MUTED }}>No nannies found</Text>
                 </View>
               }
               renderItem={({ item }) => {
-                const isSelected = selectedTeacher?.id === item.id;
+                const isSelected = selectedNanny?.id === item.id;
                 const staffId = generateStaffId(getBranchName(item.branch_id, branches));
                 return (
                   <TouchableOpacity
-                    onPress={() => { setSelectedTeacher(item); setShowTeacherDropdown(false); }}
+                    onPress={() => { setSelectedNanny(item); setShowNannyDropdown(false); }}
                     activeOpacity={0.8}
                     style={{
                       padding: 14,
@@ -362,19 +354,19 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
                       flexDirection: 'row',
                       alignItems: 'center',
                       borderWidth: 1,
-                      borderColor: isSelected ? 'rgba(99,102,241,0.45)' : 'rgba(31,45,40,0.08)',
-                      backgroundColor: isSelected ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.85)',
+                      borderColor: isSelected ? 'rgba(6,182,212,0.45)' : 'rgba(31,45,40,0.08)',
+                      backgroundColor: isSelected ? 'rgba(6,182,212,0.1)' : 'rgba(255,255,255,0.85)',
                     }}
                   >
-                    <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: isSelected ? INDIGO : 'rgba(99,102,241,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Image source={TEACHER_ICON} style={{ width: 30, height: 30, opacity: isSelected ? 1 : 0.85 }} resizeMode="contain" />
+                    <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: isSelected ? NANNY : 'rgba(6,182,212,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Image source={NANNY_ICON} style={{ width: 30, height: 30, opacity: isSelected ? 1 : 0.85 }} resizeMode="contain" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '800', color: TEXT_PRIMARY }}>{item.name}</Text>
                       <Text style={{ fontSize: 9, fontWeight: '900', color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: 1, marginTop: 3 }}>{staffId}</Text>
                     </View>
                     {isSelected && (
-                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: INDIGO, alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: NANNY, alignItems: 'center', justifyContent: 'center' }}>
                         <Text style={{ fontSize: 11, color: '#FFFFFF', fontWeight: '900' }}>✓</Text>
                       </View>
                     )}
@@ -386,7 +378,6 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* ── Month selector ── */}
       <Modal visible={showMonthSelector} transparent animationType="fade" onRequestClose={() => setShowMonthSelector(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.45)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
           <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22, overflow: 'hidden' }}>
@@ -406,9 +397,9 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
                 <TouchableOpacity
                   key={m}
                   onPress={() => { setSelectedMonth(i); setShowMonthSelector(false); }}
-                  style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedMonth === i ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.85)' }}
+                  style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedMonth === i ? 'rgba(6,182,212,0.12)' : 'rgba(255,255,255,0.85)' }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: selectedMonth === i ? INDIGO_DARK : TEXT_SECONDARY }}>{m}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, color: selectedMonth === i ? NANNY_DARK : TEXT_SECONDARY }}>{m}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -416,7 +407,6 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* ── Year selector ── */}
       <Modal visible={showYearSelector} transparent animationType="fade" onRequestClose={() => setShowYearSelector(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.45)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
           <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 440, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.96)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 22, overflow: 'hidden' }}>
@@ -437,9 +427,9 @@ export default function TeacherAttendanceReportScreenV2({ navigation }: Props) {
                   <TouchableOpacity
                     key={y}
                     onPress={() => { setSelectedYear(y); setShowYearSelector(false); }}
-                    style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedYear === y ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.85)' }}
+                    style={{ width: '48%', paddingVertical: 14, borderRadius: 14, marginBottom: 8, alignItems: 'center', backgroundColor: selectedYear === y ? 'rgba(6,182,212,0.12)' : 'rgba(255,255,255,0.85)' }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '900', color: selectedYear === y ? INDIGO_DARK : TEXT_SECONDARY }}>{y}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '900', color: selectedYear === y ? NANNY_DARK : TEXT_SECONDARY }}>{y}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
