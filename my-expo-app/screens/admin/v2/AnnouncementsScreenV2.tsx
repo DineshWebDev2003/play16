@@ -68,10 +68,12 @@ interface AnnouncementsScreenProps {
 
 // ─── Isolated form — state lives here, never in parent ───────────────────────
 const AddAnnouncementForm = memo(({
-  userName, onClose, onSubmit, isSubmitting,
+  userName, onClose, onSubmit, isSubmitting, isMasterAdmin, ownBranchId,
 }: {
   userName: string;
   onClose: () => void; onSubmit: (a: Announcement) => void; isSubmitting: boolean;
+  isMasterAdmin: boolean;
+  ownBranchId?: string | null;
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -80,8 +82,11 @@ const AddAnnouncementForm = memo(({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [target, setTarget] = useState<'all' | 'student' | 'teacher' | 'admin'>('all');
+  const [annBranchId, setAnnBranchId] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<'date' | 'start' | 'end' | null>(null);
   const insets = useSafeAreaInsets();
+
+  const effectiveBranchId = isMasterAdmin ? annBranchId : (ownBranchId || null);
 
   const pickImage = useCallback(async () => {
     try {
@@ -92,9 +97,8 @@ const AddAnnouncementForm = memo(({
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.5,
+        allowsEditing: false,
+        quality: 0.7,
         base64: true,
       });
       if (!result.canceled && result.assets[0]) {
@@ -119,8 +123,9 @@ const AddAnnouncementForm = memo(({
       end_date: endDate.trim() || undefined,
       target,
       author: userName,
+      branch_id: effectiveBranchId || undefined,
     });
-  }, [title, content, image, date, startDate, endDate, target, userName, onSubmit]);
+  }, [title, content, image, date, startDate, endDate, target, userName, onSubmit, effectiveBranchId]);
 
   const inputStyle = {
     borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14,
@@ -188,6 +193,25 @@ const AddAnnouncementForm = memo(({
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* ── Branch (master admin scope) ── */}
+          {isMasterAdmin && (
+            <View style={{ marginBottom: 22 }}>
+              <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: 10 }}>
+                Broadcast Branch
+              </Text>
+              <GlassDropdown
+                selectedBranchId={annBranchId}
+                onSelect={setAnnBranchId}
+                showAll
+              />
+            </View>
+          )}
+          {!isMasterAdmin && (
+            <Text style={{ fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: TEXT_MUTED, marginBottom: 22 }}>
+              Broadcasting to branch {'#'}{ownBranchId || '—'}
+            </Text>
+          )}
 
           {/* ── Event Date ── */}
           <Text style={{ fontSize: 10, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase', color: TEXT_MUTED, marginBottom: 8 }}>
@@ -271,6 +295,9 @@ const AddAnnouncementForm = memo(({
               {image ? 'Change Image' : 'Select Image'}
             </Text>
           </TouchableOpacity>
+          <Text style={{ fontSize: 9, fontWeight: '600', letterSpacing: 0.5, color: TEXT_MUTED, marginBottom: 12, textAlign: 'center' }}>
+            Recommended: 1280 × 720 px (16:9) — shows fully without cropping
+          </Text>
 
           {image ? (
             <View style={{ borderRadius: 18, overflow: 'hidden', height: 180, marginBottom: 22 }}>
@@ -440,7 +467,7 @@ export default function AnnouncementsScreenV2({ navigation }: AnnouncementsScree
             onPress={() => setSelectedNotice(item)}
           >
             {item.image ? (
-              <Image source={{ uri: item.image }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <Image source={{ uri: item.image }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
             ) : (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                 <Image source={MEGAPHONE_ICON} style={{ width: 64, height: 64, opacity: 0.4 }} resizeMode="contain" />
@@ -500,6 +527,8 @@ export default function AnnouncementsScreenV2({ navigation }: AnnouncementsScree
           onClose={closeForm}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
+          isMasterAdmin={isMasterAdmin}
+          ownBranchId={user?.branch_id}
         />
       </Modal>
 

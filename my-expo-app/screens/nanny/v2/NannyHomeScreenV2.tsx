@@ -29,6 +29,7 @@ const ROLE_AVATAR = require('../../../assets/Avatar/Nanny-avatrt.png');
 
 const EMERALD = ['#10B981', '#059669'] as [string, string];
 const CYAN = ['#06B6D4', '#0891B2'] as [string, string];
+const SLATE = ['#64748B', '#475569'] as [string, string];
 
 // ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
 function RadialGlow({ size, color, opacity, style }: {
@@ -292,6 +293,7 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
   }, [branchStudents, todayAttendance]);
 
   const dutyAccent = isClockedIn ? '#10B981' : '#06B6D4';
+  const isShiftOver = !!clockOutTime && !isClockedIn;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
@@ -398,7 +400,7 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
           {/* ── Duty Status (hero counter card) ── */}
           <View style={{ borderRadius: BORDER_RADIUS, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', elevation: 6, shadowColor: '#000000', shadowOpacity: 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } }}>
             <LinearGradient
-              colors={isClockedIn ? EMERALD : CYAN}
+              colors={isClockedIn ? EMERALD : isShiftOver ? SLATE : CYAN}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{ padding: 12 }}
@@ -406,7 +408,7 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                    <MaterialCommunityIcons name={isClockedIn ? 'logout' : 'login'} size={18} color="white" />
+                    <MaterialCommunityIcons name={isClockedIn ? 'logout' : isShiftOver ? 'clock-check-outline' : 'login'} size={18} color="white" />
                   </View>
                   <View>
                     <Text style={{ color: 'white', fontSize: 16, fontWeight: '900', letterSpacing: -0.5 }}>Duty Status</Text>
@@ -415,7 +417,7 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
                 </View>
                 <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100 }}>
                   <Text style={{ color: 'white', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>
-                    {isClockedIn ? 'On Duty' : (clockOutTime ? 'Ended' : 'Off Duty')}
+                    {isClockedIn ? 'On Duty' : isShiftOver ? 'Duty Over' : (clockOutTime ? 'Ended' : 'Off Duty')}
                   </Text>
                 </View>
               </View>
@@ -436,17 +438,17 @@ export default function NannyHomeScreenV2({ navigation }: Props) {
               </View>
               <TouchableOpacity
                 activeOpacity={0.9}
-                disabled={clockLoading}
+                disabled={clockLoading || isShiftOver}
                 onPress={isClockedIn ? handleClockOut : handleClockIn}
-                style={{ marginTop: 10, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                style={{ marginTop: 10, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 12, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', opacity: isShiftOver ? 0.85 : 1 }}
               >
                 {clockLoading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name={isClockedIn ? 'logout' : 'login'} size={18} color="white" />
+                    <MaterialCommunityIcons name={isClockedIn ? 'logout' : isShiftOver ? 'lock' : 'login'} size={18} color="white" />
                     <Text style={{ color: 'white', fontWeight: '900', fontSize: 14, marginLeft: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                      {isClockedIn ? 'Clock Out' : 'Clock In'}
+                      {isClockedIn ? 'Clock Out' : isShiftOver ? 'Duty Over — Resumes Tomorrow' : 'Clock In'}
                     </Text>
                   </>
                 )}
