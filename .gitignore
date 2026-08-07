@@ -44,3 +44,6 @@ tuition*.png
 
 # Expo prebuild output
 my-expo-app/android/
+
+# Required asset referenced by app (unignore)
+!my-expo-app/assets/Avatar/tuition-teacher.png
