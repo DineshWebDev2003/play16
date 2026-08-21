@@ -7,8 +7,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Pdf from 'react-native-pdf';
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -91,79 +89,40 @@ function AuroraBackground() {
   );
 }
 
-// ── Zoomable Image (pinch + pan + double-tap) ──
-const ZoomableImage = ({ uri }: { uri: string }) => {
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const savedTranslateX = useSharedValue(0);
-  const savedTranslateY = useSharedValue(0);
-  const isZoomed = useSharedValue(false);
+const ZoomableImage = ({ uri, onClose }: { uri: string; onClose: () => void }) => {
+  const lastTap = useRef<number>(0);
 
-  const pinch = Gesture.Pinch()
-    .onStart((e) => { savedScale.value = scale.value; })
-    .onUpdate((e) => { scale.value = Math.max(1, Math.min(6, savedScale.value * e.scale)); })
-    .onEnd(() => {
-      savedScale.value = scale.value;
-      isZoomed.value = scale.value > 1;
-      if (scale.value <= 1) {
-        scale.value = withSpring(1);
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-        savedTranslateX.value = 0;
-        savedTranslateY.value = 0;
-        savedScale.value = 1;
-        isZoomed.value = false;
-      }
-    });
-
-  const pan = Gesture.Pan()
-    .minPointers(2)
-    .onStart(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; })
-    .onUpdate((e) => {
-      if (scale.value > 1) {
-        translateX.value = savedTranslateX.value + e.translationX;
-        translateY.value = savedTranslateY.value + e.translationY;
-      }
-    })
-    .onEnd(() => { savedTranslateX.value = translateX.value; savedTranslateY.value = translateY.value; });
-
-  const doubleTap = Gesture.Tap().numberOfTaps(2).onEnd(() => {
-    if (scale.value > 1) {
-      scale.value = withSpring(1);
-      translateX.value = withSpring(0);
-      translateY.value = withSpring(0);
-      savedScale.value = 1;
-      savedTranslateX.value = 0;
-      savedTranslateY.value = 0;
-      isZoomed.value = false;
-    } else {
-      scale.value = withSpring(3);
-      savedScale.value = 3;
-      isZoomed.value = true;
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      onClose();
     }
-  });
-
-  const zoomPan = Gesture.Simultaneous(pinch, pan);
-  const all = Gesture.Race(doubleTap, zoomPan);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-  }));
+    lastTap.current = now;
+  };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
-      <GestureDetector gesture={all}>
-        <Animated.View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center' }, animStyle]}>
-          <Image source={{ uri }} style={{ width: '100%', height: '90%' }} resizeMode="contain" />
-        </Animated.View>
-      </GestureDetector>
-    </GestureHandlerRootView>
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={handleDoubleTap}
+      style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.92)', justifyContent: 'center', alignItems: 'center' }}
+    >
+      <ScrollView
+        horizontal={false}
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        minimumZoomScale={1}
+        maximumZoomScale={5}
+        bouncesZoom
+        contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Image
+          source={{ uri }}
+          style={{ width: '100%', height: Dimensions.get('window').height * 0.8, borderRadius: 8 }}
+          resizeMode="contain"
+        />
+      </ScrollView>
+    </TouchableOpacity>
   );
 };
 
@@ -1414,7 +1373,7 @@ export default function PostHomeworkScreenV2({ navigation }: Props) {
           </View>
           <View style={{ flex: 1 }}>
             {previewType === 'image' && previewUri ? (
-              <ZoomableImage uri={previewUri} />
+              <ZoomableImage uri={previewUri} onClose={closePreview} />
             ) : null}
             {previewType === 'remote' && previewUri ? (
               <WebView source={{ uri: previewUri }} style={{ flex: 1, backgroundColor: '#000' }} />

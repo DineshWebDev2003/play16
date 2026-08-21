@@ -49,6 +49,10 @@ export interface User {
   fatherPhoto?: string;
   motherPhoto?: string;
   guardianPhoto?: string;
+  studentIdProof?: string;
+  fatherIdProof?: string;
+  motherIdProof?: string;
+  guardianIdProof?: string;
   fees?:          string;
   monthly_fee?:   string;
   admissionDate?: string;
@@ -421,6 +425,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fatherPhoto:   getMediaUrl(u.father_photo),
     motherPhoto:   getMediaUrl(u.mother_photo),
     guardianPhoto: getMediaUrl(u.guardian_photo),
+    studentIdProof: getMediaUrl(u.student_id_proof),
+    fatherIdProof: getMediaUrl(u.father_id_proof),
+    motherIdProof: getMediaUrl(u.mother_id_proof),
+    guardianIdProof: getMediaUrl(u.guardian_id_proof),
     fees:          u.fees,
     monthly_fee:   u.monthly_fee,
     admissionDate: u.admission_date,
@@ -457,6 +465,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (data.fatherPhoto !== undefined) mapped.father_photo = data.fatherPhoto;
     if (data.motherPhoto !== undefined) mapped.mother_photo = data.motherPhoto;
     if (data.guardianPhoto !== undefined) mapped.guardian_photo = data.guardianPhoto;
+    if (data.studentIdProof !== undefined) mapped.student_id_proof = data.studentIdProof;
+    if (data.fatherIdProof !== undefined) mapped.father_id_proof = data.fatherIdProof;
+    if (data.motherIdProof !== undefined) mapped.mother_id_proof = data.motherIdProof;
+    if (data.guardianIdProof !== undefined) mapped.guardian_id_proof = data.guardianIdProof;
     if (data.admissionDate !== undefined) mapped.admission_date = data.admissionDate;
 
     // Remove camelCase keys to avoid confusion or validation issues
@@ -464,7 +476,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       'studentId', 'teacherId', 'fatherName', 'fatherPhone', 
       'motherName', 'motherPhone', 'parentName', 'guardianPhone', 
       'bloodGroup', 'studentPhoto', 'fatherPhoto', 'motherPhoto', 
-      'guardianPhoto', 'admissionDate'
+      'guardianPhoto', 'studentIdProof', 'fatherIdProof', 'motherIdProof',
+      'guardianIdProof', 'admissionDate'
     ];
     camelKeys.forEach(key => delete mapped[key]);
 

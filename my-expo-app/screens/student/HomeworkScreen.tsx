@@ -8,8 +8,7 @@ import api, { getMediaUrl } from '../../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'react-native';
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -386,100 +385,39 @@ export default function HomeworkScreen({ navigation }: Props) {
   };
 
   const ZoomableImage = ({ uri, onClose }: { uri: string; onClose: () => void }) => {
-    const scale = useSharedValue(1);
-    const savedScale = useSharedValue(1);
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-    const savedTranslateX = useSharedValue(0);
-    const savedTranslateY = useSharedValue(0);
-    const isZoomed = useSharedValue(false);
+    const lastTap = useRef<number>(0);
 
-    const pinch = Gesture.Pinch()
-      .onStart((e) => {
-        savedScale.value = scale.value;
-      })
-      .onUpdate((e) => {
-        scale.value = Math.max(1, Math.min(5, savedScale.value * e.scale));
-      })
-      .onEnd(() => {
-        savedScale.value = scale.value;
-        isZoomed.value = scale.value > 1;
-        if (scale.value <= 1) {
-          scale.value = withSpring(1);
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          savedTranslateX.value = 0;
-          savedTranslateY.value = 0;
-          savedScale.value = 1;
-          isZoomed.value = false;
-        }
-      });
-
-    const pan = Gesture.Pan()
-      .minPointers(2)
-      .onStart(() => {
-        savedTranslateX.value = translateX.value;
-        savedTranslateY.value = translateY.value;
-      })
-      .onUpdate((e) => {
-        if (scale.value > 1) {
-          translateX.value = savedTranslateX.value + e.translationX;
-          translateY.value = savedTranslateY.value + e.translationY;
-        }
-      })
-      .onEnd(() => {
-        savedTranslateX.value = translateX.value;
-        savedTranslateY.value = translateY.value;
-      });
-
-    const doubleTap = Gesture.Tap()
-      .numberOfTaps(2)
-      .onEnd(() => {
-        if (scale.value > 1) {
-          scale.value = withSpring(1);
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          savedScale.value = 1;
-          savedTranslateX.value = 0;
-          savedTranslateY.value = 0;
-          isZoomed.value = false;
-        } else {
-          scale.value = withSpring(3);
-          savedScale.value = 3;
-          isZoomed.value = true;
-        }
-      });
-
-    const singleTap = Gesture.Tap()
-      .numberOfTaps(1)
-      .onEnd(() => {
-        if (!isZoomed.value) onClose();
-      });
-
-    const composed = Gesture.Exclusive(doubleTap, singleTap);
-    const zoomPan = Gesture.Simultaneous(pinch, pan);
-    const all = Gesture.Race(composed, zoomPan);
-
-    const animStyle = useAnimatedStyle(() => ({
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { scale: scale.value },
-      ],
-    }));
+    const handleDoubleTap = () => {
+      const now = Date.now();
+      if (now - lastTap.current < 300) {
+        onClose();
+      }
+      lastTap.current = now;
+    };
 
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <GestureDetector gesture={all}>
-          <Animated.View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, animStyle]}>
-            <Image
-              source={{ uri }}
-              style={{ width: '100%', height: '85%', borderRadius: 8 }}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        </GestureDetector>
-      </GestureHandlerRootView>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={handleDoubleTap}
+        style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.92)', justifyContent: 'center', alignItems: 'center' }}
+      >
+        <ScrollView
+          horizontal={false}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          minimumZoomScale={1}
+          maximumZoomScale={5}
+          bouncesZoom
+          contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Image
+            source={{ uri }}
+            style={{ width: '100%', height: Dimensions.get('window').height * 0.8, borderRadius: 8 }}
+            resizeMode="contain"
+          />
+        </ScrollView>
+      </TouchableOpacity>
     );
   };
 

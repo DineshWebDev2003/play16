@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal, FlatList, ListRenderItem,
-  RefreshControl, KeyboardAvoidingView, Platform, Keyboard, Image, StyleSheet, Dimensions, ActivityIndicator, ScrollView,
+  RefreshControl, KeyboardAvoidingView, Platform, Keyboard, Image, StyleSheet, Dimensions, ActivityIndicator, ScrollView, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { useAuth, User } from '../../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlassSelectV2 from './GlassSelectV2';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -282,9 +284,9 @@ function FieldRow({ icon, label, required = false, children }: {
 }
 
 // ─── Add/Edit form modal ───────────────────────────────────────────────────────
-function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting }: {
+function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting, payToActive }: {
   visible: boolean; onClose: () => void; initial?: User | null; isEdit: boolean;
-  onSave: (data: any) => void; isSubmitting: boolean;
+  onSave: (data: any) => void; isSubmitting: boolean; payToActive?: boolean;
 }) {
   const { user, branches } = useAuth();
   const insets = useSafeAreaInsets();
@@ -293,10 +295,120 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
     fatherPhone: '', motherPhone: '', category: 'Playschool' as CategoryType,
     email: '', phone: '', password: '', role: 'student', gender: 'Male' as 'Male' | 'Female',
     fees: '', monthly_fee: '', fee_due_day: '5', branch_id: '', batch_id: '',
+    studentIdProof: '', fatherIdProof: '', motherIdProof: '', guardianIdProof: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [batches, setBatches] = useState<any[]>([]);
+  const [pendingIdProofField, setPendingIdProofField] = useState<string | null>(null);
+  const [previewIdProof, setPreviewIdProof] = useState<{ field: string; label: string; uri: string } | null>(null);
+
+  const handleIdProofResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled && result.assets[0].base64 && pendingIdProofField) {
+      set(pendingIdProofField, `data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
+  };
+
+  const launchCameraCapture = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'We need camera permission to capture ID proofs!');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.4,
+        base64: true,
+      });
+      handleIdProofResult(result);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to capture image');
+    }
+  };
+
+  const launchLibraryPicker = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'We need camera roll permissions to upload ID proofs!');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.4,
+        base64: true,
+      });
+      handleIdProofResult(result);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const pickIdProof = (field: string) => {
+    setPendingIdProofField(field);
+  };
+
+  const idProofItems = [
+    { field: 'studentIdProof', label: 'Student ID Proof', color: '#3B82F6', uri: formData.studentIdProof },
+    { field: 'fatherIdProof', label: 'Father ID Proof', color: '#F59E0B', uri: formData.fatherIdProof },
+    { field: 'motherIdProof', label: 'Mother ID Proof', color: '#10B981', uri: formData.motherIdProof },
+    { field: 'guardianIdProof', label: 'Guardian ID Proof', color: '#7C3AED', uri: formData.guardianIdProof },
+  ];
+  const uploadedIdProofCount = idProofItems.filter(i => !!i.uri).length;
+
+  const openIdProofPreview = (field: string) => {
+    const item = idProofItems.find(i => i.field === field);
+    if (item?.uri) setPreviewIdProof({ field: item.field, label: item.label, uri: item.uri });
+  };
+
+  const renderIdProofCard = (field: string, label: string, icon: string, color: string, uri?: string) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => pickIdProof(field)}
+      style={{
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        borderWidth: 1,
+        borderColor: uri ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.6)',
+        borderRadius: 16, padding: 10, marginBottom: 10,
+      }}
+    >
+      <View style={{ width: 56, height: 56, borderRadius: 14, overflow: 'hidden', backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center' }}>
+        {uri ? (
+          <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name="card-account-details-outline" size={26} color={color} />
+        )}
+      </View>
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={{ fontSize: 11, fontWeight: '900', color: TEXT_PRIMARY }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: uri ? '#10B981' : '#D1D5DB', alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialCommunityIcons name="check" size={9} color="#FFFFFF" />
+          </View>
+          <Text style={{ fontSize: 9, fontWeight: '700', color: uri ? '#059669' : TEXT_MUTED, marginLeft: 5 }}>
+            {uri ? 'Uploaded' : 'Not uploaded'}
+          </Text>
+        </View>
+      </View>
+      {uri && (
+        <TouchableOpacity
+          onPress={(e) => { e.stopPropagation(); openIdProofPreview(field); }}
+          style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: 'rgba(59,130,246,0.12)', alignItems: 'center', justifyContent: 'center', marginRight: 6 }}
+        >
+          <MaterialCommunityIcons name="eye-outline" size={17} color="#3B82F6" />
+        </TouchableOpacity>
+      )}
+      <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: uri ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+        <MaterialCommunityIcons name={uri ? 'check-circle-outline' : 'camera-plus-outline'} size={15} color={uri ? '#059669' : '#D97706'} />
+      </View>
+    </TouchableOpacity>
+  );
 
   useEffect(() => {
     if (!visible) return;
@@ -319,6 +431,10 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
       fee_due_day: ((initial as any)?.fee_due_day?.toString()) || '5',
       branch_id: initial?.branch_id?.toString() || (user?.role === 'admin' ? user?.branch_id?.toString() || '' : ''),
       batch_id: (initial as any)?.batch_id?.toString() || '',
+      studentIdProof: initial?.studentIdProof || (initial as any)?.student_id_proof || '',
+      fatherIdProof: initial?.fatherIdProof || (initial as any)?.father_id_proof || '',
+      motherIdProof: initial?.motherIdProof || (initial as any)?.mother_id_proof || '',
+      guardianIdProof: initial?.guardianIdProof || (initial as any)?.guardian_id_proof || '',
     });
   }, [visible, initial, user]);
 
@@ -346,8 +462,9 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
     if (isStudentRole && !formData.monthly_fee?.toString().trim()) m.push('Monthly Fee');
     if (isStudentRole && !formData.fee_due_day?.toString().trim()) m.push('Fee Due Date');
     if (isStudentRole && parseInt(formData.fee_due_day as any, 10) > 28) m.push('Fee Due Date (max 28)');
+    if (isStudentRole && payToActive && !formData.fees?.toString().trim()) m.push('Admission Fee');
     return m;
-  }, [formData, isEdit, isStudentRole]);
+  }, [formData, isEdit, isStudentRole, payToActive]);
 
   const isValid = missing.length === 0;
 
@@ -519,17 +636,39 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
                     </View>
                   </FieldRow>
 
-                  <FieldRow icon="currency-inr" label="Admission Fee">
+                  <FieldRow icon="currency-inr" label="Admission Fee" required={!!(payToActive && isStudentRole)}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ backgroundColor: '#7C3AED', width: 48, height: 52, borderTopLeftRadius: 16, borderBottomLeftRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
                         <Text style={{ color: 'white', fontWeight: '900', fontSize: 18 }}>₹</Text>
                       </View>
-                      <TextInput style={{ ...rowInp, borderRadius: 16 }} placeholder="Admission Amount" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={formData.fees ? formData.fees.toString() : ''} onChangeText={v => set('fees', v)} />
+                      <TextInput style={{ ...rowInp, borderRadius: 16, borderColor: (payToActive && isStudentRole && !formData.fees?.toString().trim()) ? '#EF4444' : undefined }} placeholder="Admission Amount" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={formData.fees ? formData.fees.toString() : ''} onChangeText={v => set('fees', v)} />
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                      <Text style={{ fontSize: 9, color: '#7C3AED', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Admission Fee</Text>
+                      <Text style={{ fontSize: 9, color: (payToActive && isStudentRole) ? '#EF4444' : '#7C3AED', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {(payToActive && isStudentRole) ? '* Admission Fee (required when Pay-to-Active is ON)' : 'Admission Fee'}
+                      </Text>
                       <Text style={{ fontSize: 9, color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>No due date</Text>
                     </View>
+                  </FieldRow>
+
+                  <FieldRow icon="card-account-details-outline" label="ID Proofs (Aadhar / ID Cards)">
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: TEXT_SECONDARY }}>
+                        {uploadedIdProofCount === 4 ? 'All 4 ID proofs uploaded' : `${uploadedIdProofCount} of 4 ID proofs uploaded`}
+                      </Text>
+                      <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: 4 }}>
+                        {idProofItems.map((it) => (
+                          <View key={it.field} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: it.uri ? '#10B981' : '#D1D5DB' }} />
+                        ))}
+                      </View>
+                    </View>
+                    {renderIdProofCard('studentIdProof', 'Student ID Proof', 'school', '#3B82F6', formData.studentIdProof)}
+                    {renderIdProofCard('fatherIdProof', 'Father ID Proof', 'account-tie', '#F59E0B', formData.fatherIdProof)}
+                    {renderIdProofCard('motherIdProof', 'Mother ID Proof', 'account-heart', '#10B981', formData.motherIdProof)}
+                    {renderIdProofCard('guardianIdProof', 'Guardian ID Proof', 'account-group', '#7C3AED', formData.guardianIdProof)}
+                    <Text style={{ fontSize: 9, color: TEXT_MUTED, fontWeight: '600', marginTop: 2, lineHeight: 14 }}>
+                      Upload Aadhar / Government ID for student and guardians. Tap the eye icon to preview.
+                    </Text>
                   </FieldRow>
                 </>
               )}
@@ -584,6 +723,94 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
+
+      {/* ── ID Proof upload chooser popup ── */}
+      <Modal visible={!!pendingIdProofField} transparent animationType="fade" onRequestClose={() => setPendingIdProofField(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.55)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{ width: '100%', maxWidth: 400, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 20 }}>
+            <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: 'rgba(245,158,11,0.14)', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' }}>
+              <MaterialCommunityIcons name="card-account-details-outline" size={28} color="#D97706" />
+            </View>
+            <Text style={{ fontSize: 19, fontWeight: '900', color: TEXT_PRIMARY, textAlign: 'center', marginTop: 14 }}>
+              Upload ID Proof
+            </Text>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: TEXT_MUTED, textAlign: 'center', marginTop: 5, lineHeight: 16 }}>
+              {idProofItems.find(i => i.field === pendingIdProofField)?.label || 'Select the document to upload'}
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setPendingIdProofField(null); launchCameraCapture(); }}
+                style={{ flex: 1, borderRadius: 18, backgroundColor: 'rgba(59,130,246,0.08)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)', paddingVertical: 18, alignItems: 'center' }}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 15, backgroundColor: '#3B82F6', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="camera" size={24} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 12, fontWeight: '900', color: '#2563EB', marginTop: 10 }}>Take Photo</Text>
+                <Text style={{ fontSize: 9, fontWeight: '600', color: TEXT_MUTED, marginTop: 3 }}>Capture with camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => { setPendingIdProofField(null); launchLibraryPicker(); }}
+                style={{ flex: 1, borderRadius: 18, backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)', paddingVertical: 18, alignItems: 'center' }}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 15, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="folder-image" size={24} color="#FFFFFF" />
+                </View>
+                <Text style={{ fontSize: 12, fontWeight: '900', color: '#059669', marginTop: 10 }}>From Library</Text>
+                <Text style={{ fontSize: 9, fontWeight: '600', color: TEXT_MUTED, marginTop: 3 }}>Choose existing photo</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setPendingIdProofField(null)}
+              style={{ marginTop: 14, height: 48, borderRadius: 16, backgroundColor: 'rgba(247,249,246,0.95)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5, color: TEXT_SECONDARY }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── ID Proof preview popup ── */}
+      <Modal visible={!!previewIdProof} transparent animationType="fade" onRequestClose={() => setPreviewIdProof(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.55)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{ width: '100%', maxWidth: 400, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 20, alignItems: 'center' }}>
+            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(59,130,246,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="card-account-details-outline" size={22} color="#3B82F6" />
+            </View>
+            <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: TEXT_MUTED, marginTop: 12 }}>
+              ID Proof Preview
+            </Text>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: TEXT_PRIMARY, marginTop: 4, textAlign: 'center' }}>
+              {previewIdProof?.label}
+            </Text>
+            <View style={{ width: '100%', height: 280, borderRadius: 20, overflow: 'hidden', backgroundColor: 'rgba(247,249,246,0.9)', marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              {previewIdProof?.uri && (
+                <Image source={{ uri: previewIdProof.uri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+              )}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
+              <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="check" size={9} color="#FFFFFF" />
+              </View>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669', marginLeft: 6 }}>Uploaded successfully</Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setPreviewIdProof(null)}
+              style={{ marginTop: 18, alignSelf: 'stretch', height: 50, borderRadius: 16, overflow: 'hidden' }}
+            >
+              <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#FFFFFF', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12 }}>Close</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -598,6 +825,7 @@ export default function UserMange({ navigation, route }: Props) {
   const isMasterAdmin = user?.role === 'master_admin';
 
   const [refreshing, setRefreshing] = useState(false);
+  const [payToActive, setPayToActive] = useState(false);
   const [filter, setFilter] = useState<'all' | 'master_admin' | 'admin' | 'teacher' | 'student' | 'tuition_teacher' | 'tuition_student' | 'nanny'>('all');
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -605,6 +833,7 @@ export default function UserMange({ navigation, route }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [statusPopup, setStatusPopup] = useState({ visible: false, title: '', message: '', type: 'success' as 'success' | 'error' | 'info' });
   const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
 
@@ -613,6 +842,33 @@ export default function UserMange({ navigation, route }: Props) {
       setSelectedBranchId(user.branch_id?.toString());
     }
   }, [isMasterAdmin, user?.branch_id]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/settings');
+        const backendValue = res.data?.pay_to_active;
+        if (typeof backendValue === 'boolean') {
+          setPayToActive(backendValue);
+          AsyncStorage.setItem('payToActive', String(backendValue)).catch(() => {});
+          return;
+        }
+      } catch {}
+      try {
+        const stored = await AsyncStorage.getItem('payToActive');
+        if (stored !== null) setPayToActive(stored === 'true');
+      } catch {}
+    })();
+  }, []);
+
+  const togglePayToActive = useCallback(() => {
+    const next = !payToActive;
+    setPayToActive(next);
+    AsyncStorage.setItem('payToActive', String(next)).catch(() => {});
+    if (isMasterAdmin) {
+      api.post('/settings/pay-to-active', { value: next }).catch(() => {});
+    }
+  }, [payToActive, isMasterAdmin]);
 
   useEffect(() => {
     const role = route?.params?.role;
@@ -678,6 +934,10 @@ export default function UserMange({ navigation, route }: Props) {
           fee_due_day: isStudentRole ? data.fee_due_day : undefined,
           date_of_birth: isStudentRole && data.dateOfBirth ? data.dateOfBirth : undefined,
           batch_id: data.batch_id ? data.batch_id : undefined,
+          student_id_proof: isStudentRole && data.studentIdProof ? data.studentIdProof : undefined,
+          father_id_proof: isStudentRole && data.fatherIdProof ? data.fatherIdProof : undefined,
+          mother_id_proof: isStudentRole && data.motherIdProof ? data.motherIdProof : undefined,
+          guardian_id_proof: isStudentRole && data.guardianIdProof ? data.guardianIdProof : undefined,
         }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
         if (data.password) payload.password = data.password;
         await updateUser(editingUser.id, payload);
@@ -748,7 +1008,8 @@ export default function UserMange({ navigation, route }: Props) {
         role: data.role,
         gender: data.gender,
         password: data.password,
-        status: 'active',
+        status: (payToActive && isStudentRole) ? 'pending_payment' : 'active',
+        pay_to_active: (payToActive && isStudentRole) ? true : undefined,
         branch_id: data.branch_id || undefined,
         father_name: isStudentRole ? data.fatherName : undefined,
         mother_name: isStudentRole ? data.motherName : undefined,
@@ -759,6 +1020,10 @@ export default function UserMange({ navigation, route }: Props) {
         monthly_fee: isStudentRole ? data.monthly_fee : undefined,
         fee_due_day: isStudentRole ? data.fee_due_day : undefined,
         batch_id: data.batch_id ? data.batch_id : undefined,
+        student_id_proof: isStudentRole && data.studentIdProof ? data.studentIdProof : undefined,
+        father_id_proof: isStudentRole && data.fatherIdProof ? data.fatherIdProof : undefined,
+        mother_id_proof: isStudentRole && data.motherIdProof ? data.motherIdProof : undefined,
+        guardian_id_proof: isStudentRole && data.guardianIdProof ? data.guardianIdProof : undefined,
       }).forEach(([k, v]) => { if (v !== undefined) payload[k] = v; });
 
       if (isStudentRole) payload.student_id = `${prefix}${nextSeq}`;
@@ -772,7 +1037,7 @@ export default function UserMange({ navigation, route }: Props) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingUser, isMasterAdmin, users, branches, addUser, updateUser]);
+  }, [editingUser, isMasterAdmin, users, branches, addUser, updateUser, payToActive]);
 
   const handleDelete = useCallback(async (target: User) => {
     if (target.role === 'admin' || target.role === 'master_admin') {
@@ -789,18 +1054,40 @@ export default function UserMange({ navigation, route }: Props) {
     }
   }, [deleteUser]);
 
+  const openEdit = useCallback(async (u: User) => {
+    setIsLoadingUser(true);
+    try {
+      const res = await api.get(`/users/${u.id}`);
+      const raw = res.data?.data && !Array.isArray(res.data.data) ? res.data.data : res.data;
+      const full = {
+        ...u,
+        studentIdProof: (raw as any)?.student_id_proof || '',
+        fatherIdProof: (raw as any)?.father_id_proof || '',
+        motherIdProof: (raw as any)?.mother_id_proof || '',
+        guardianIdProof: (raw as any)?.guardian_id_proof || '',
+      };
+      setEditingUser(full);
+      setShowForm(true);
+    } catch (e) {
+      setEditingUser(u);
+      setShowForm(true);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  }, []);
+
   const renderItem: ListRenderItem<User> = useCallback(({ item }) => {
     const branch = branches.find(b => b.id?.toString() === item.branch_id?.toString());
     return (
       <UserCard
         user={item}
         branchName={branch?.name || ''}
-        onEdit={(u) => { setEditingUser(u); setShowForm(true); }}
+        onEdit={openEdit}
         onToggle={toggleUserStatus}
         onDelete={(u) => setConfirmDelete(u)}
       />
     );
-  }, [branches, toggleUserStatus]);
+  }, [branches, toggleUserStatus, openEdit]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
@@ -842,6 +1129,39 @@ export default function UserMange({ navigation, route }: Props) {
               allLabel="All Branches"
               allHint={`${branches.length} branches combined`}
             />
+          </View>
+        )}
+
+        {isMasterAdmin && (
+          <View style={{ marginTop: 14 }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: payToActive ? brandColor : '#1F2D28',
+              borderRadius: 18, padding: 14,
+              borderWidth: 1, borderColor: payToActive ? brandColor : '#1F2D28',
+              elevation: 3,
+            }}>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.18)', width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="cash-lock" size={20} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '900', color: '#FFFFFF' }}>Pay to Active</Text>
+                <Text style={{ fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginTop: 2 }}>
+                  {payToActive ? 'ON - New students must pay admission fee before access' : 'OFF - New students get instant access'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={togglePayToActive}
+                style={{
+                  width: 50, height: 28, borderRadius: 14,
+                  backgroundColor: 'rgba(255,255,255,0.35)',
+                  justifyContent: 'center', paddingHorizontal: 3,
+                }}>
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: 'white',
+                  alignSelf: payToActive ? 'flex-end' : 'flex-start',
+                }} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -951,6 +1271,7 @@ export default function UserMange({ navigation, route }: Props) {
         isEdit={!!editingUser}
         onSave={handleSave}
         isSubmitting={isSubmitting}
+        payToActive={payToActive}
       />
 
       <StatusPopup

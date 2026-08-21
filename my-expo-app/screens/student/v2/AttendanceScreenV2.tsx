@@ -165,24 +165,50 @@ export default function AttendanceScreenV2({ navigation }: Props) {
   }, [attendanceData]);
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={{ backgroundColor: 'rgba(255,255,255,0.92)', padding: 16, borderRadius: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ backgroundColor: item.status === 'present' ? '#10B981' : (item.status === 'absent' ? '#EF4444' : '#E5E7EB'), width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>{item.day}</Text>
-        </View>
-        <View>
-          <Text style={{ fontWeight: '800', color: TEXT_PRIMARY, fontSize: 13 }}>{item.dayName}, {item.date}</Text>
-          <Text style={{ fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2, color: item.status === 'present' ? '#059669' : (item.status === 'absent' ? '#EF4444' : TEXT_MUTED) }}>
-            {item.status.replace('_', ' ')}
-          </Text>
-        </View>
-      </View>
-      {item.status === 'present' && (
-        <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MaterialCommunityIcons name="clock-check-outline" size={12} color="#10B981" />
-            <Text style={{ color: '#059669', fontSize: 10, fontWeight: '700', marginLeft: 4 }}>{item.clockIn || '--:--'}</Text>
+    <View style={{ backgroundColor: 'rgba(255,255,255,0.92)', padding: 16, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ backgroundColor: item.status === 'present' ? '#10B981' : (item.status === 'absent' ? '#EF4444' : '#E5E7EB'), width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>{item.day}</Text>
           </View>
+          <View>
+            <Text style={{ fontWeight: '800', color: TEXT_PRIMARY, fontSize: 13 }}>{item.dayName}, {item.date}</Text>
+            <Text style={{ fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginTop: 2, color: item.status === 'present' ? '#059669' : (item.status === 'absent' ? '#EF4444' : TEXT_MUTED) }}>
+              {item.status.replace('_', ' ')}
+            </Text>
+          </View>
+        </View>
+        {item.status === 'present' && (
+          <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <MaterialCommunityIcons name="login" size={11} color="#10B981" />
+              <Text style={{ color: '#059669', fontSize: 10, fontWeight: '700', marginLeft: 4 }}>{item.clockIn || '--:--'}</Text>
+            </View>
+            <View style={{ backgroundColor: 'rgba(59,130,246,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="logout" size={11} color="#3B82F6" />
+              <Text style={{ color: '#2563EB', fontSize: 10, fontWeight: '700', marginLeft: 4 }}>{item.clockOut || '--:--'}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+      {item.status === 'present' && (item.clockInBy || item.clockOutBy) && (
+        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(122,138,130,0.15)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {item.clockInBy ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(16,185,129,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="account-check-outline" size={12} color="#059669" />
+              </View>
+              <Text style={{ color: TEXT_SECONDARY, fontSize: 9, fontWeight: '700', marginLeft: 5, flex: 1 }} numberOfLines={1}>In by {item.clockInBy}</Text>
+            </View>
+          ) : <View style={{ flex: 1 }} />}
+          {item.clockOutBy ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(59,130,246,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="account-arrow-right-outline" size={12} color="#2563EB" />
+              </View>
+              <Text style={{ color: TEXT_SECONDARY, fontSize: 9, fontWeight: '700', marginLeft: 5, flex: 1 }} numberOfLines={1}>Out by {item.clockOutBy}</Text>
+            </View>
+          ) : <View style={{ flex: 1 }} />}
         </View>
       )}
     </View>

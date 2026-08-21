@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Image, TextInput, FlatList, Modal, ActivityIndicator, ScrollView, RefreshControl, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, TextInput, FlatList, Modal, ActivityIndicator, ScrollView, RefreshControl, StyleSheet, Dimensions, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,26 @@ const GREEN = '#10B981';
 const RED = '#EF4444';
 
 const STUDENT_ICON = require('../../../assets/icons/student.png');
+
+interface ConfirmData {
+  studentName: string;
+  studentAvatar?: string;
+  guardianName: string;
+  guardianPhoto?: string;
+  guardianType: string;
+  markingType: 'IN' | 'OUT';
+  time: string;
+  bothIn?: boolean;
+  bothOut?: boolean;
+  inTime?: string;
+  outTime?: string;
+  inGuardian?: string;
+  inGuardianPhoto?: string;
+  inGuardianType?: string;
+  outGuardian?: string;
+  outGuardianPhoto?: string;
+  outGuardianType?: string;
+}
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035];
@@ -166,16 +186,72 @@ interface StudentAttendance {
   pickedByType?: string;
 }
 
-const StudentCard = React.memo(({ student, record, onTap, onLongPress }: {
+interface GuardianDetail {
+  kind: 'in' | 'out';
+  photo?: string;
+  name?: string;
+  type?: string;
+  time?: string | null;
+  studentName: string;
+  studentAvatar?: string;
+}
+
+const StudentCard = React.memo(({ student, record, onTap, onLongPress, onGuardianTap }: {
   student: any;
   record: StudentAttendance | undefined;
   onTap: (id: string) => void;
   onLongPress?: (id: string) => void;
+  onGuardianTap?: (detail: GuardianDetail) => void;
 }) => {
   const isAbsent = record?.status === 'absent';
   const isIn = !!record?.inTime;
   const isOut = !!record?.outTime;
   const accent = isAbsent ? RED : isIn ? GREEN : AMBER;
+
+  const guardianPhotoFor = (type?: string) => {
+    if (!type) return undefined;
+    if (type === 'Father') return student.fatherPhoto;
+    if (type === 'Mother') return student.motherPhoto;
+    if (type === 'Guardian') return student.guardianPhoto;
+    return undefined;
+  };
+
+  const renderInOutChip = (kind: 'in' | 'out') => {
+    const isInKind = kind === 'in';
+    const name = isInKind ? record?.droppedBy : record?.pickedBy;
+    const type = isInKind ? record?.droppedByType : record?.pickedByType;
+    const time = isInKind ? record?.inTime : record?.outTime;
+    const photo = guardianPhotoFor(type);
+    const color = isInKind ? GREEN : AMBER_DARK;
+    const bg = isInKind ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)';
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => onGuardianTap && onGuardianTap({
+          kind,
+          photo,
+          name,
+          type,
+          time,
+          studentName: student.name,
+          studentAvatar: student.avatar,
+        })}
+        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: bg, borderRadius: 10, padding: 4, paddingRight: 9, marginRight: 6 }}
+      >
+        <View style={{ width: 28, height: 28, borderRadius: 14, overflow: 'hidden', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: color + '33', marginRight: 5 }}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          ) : (
+            <MaterialCommunityIcons name={isInKind ? 'login' : 'logout'} size={12} color={color} />
+          )}
+        </View>
+        <View>
+          <Text style={{ fontSize: 9, fontWeight: '800', color }}>{type || (isInKind ? 'In' : 'Out')}: {time}</Text>
+          <Text numberOfLines={1} style={{ fontSize: 8, fontWeight: '600', color: TEXT_MUTED, maxWidth: 120 }}>{name || 'Guardian'}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <TouchableOpacity
@@ -226,18 +302,8 @@ const StudentCard = React.memo(({ student, record, onTap, onLongPress }: {
           </View>
           {(isIn || isOut) && !isAbsent && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
-              {isIn && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginRight: 6 }}>
-                  <MaterialCommunityIcons name="login" size={11} color={GREEN} />
-                  <Text style={{ fontSize: 9, fontWeight: '800', color: GREEN, marginLeft: 3 }}>{record?.droppedByType || 'In'}: {record?.inTime}</Text>
-                </View>
-              )}
-              {isOut && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(245,158,11,0.1)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <MaterialCommunityIcons name="logout" size={11} color={AMBER_DARK} />
-                  <Text style={{ fontSize: 9, fontWeight: '800', color: AMBER_DARK, marginLeft: 3 }}>{record?.pickedByType || 'Out'}: {record?.outTime}</Text>
-                </View>
-              )}
+              {isIn && renderInOutChip('in')}
+              {isOut && renderInOutChip('out')}
             </View>
           )}
         </View>
@@ -256,9 +322,14 @@ const StudentCard = React.memo(({ student, record, onTap, onLongPress }: {
   );
 }, (prev, next) => {
   return prev.student.id === next.student.id &&
+    prev.student.fatherPhoto === next.student.fatherPhoto &&
+    prev.student.motherPhoto === next.student.motherPhoto &&
+    prev.student.guardianPhoto === next.student.guardianPhoto &&
     prev.record?.status === next.record?.status &&
     prev.record?.inTime === next.record?.inTime &&
-    prev.record?.outTime === next.record?.outTime;
+    prev.record?.outTime === next.record?.outTime &&
+    prev.record?.droppedByType === next.record?.droppedByType &&
+    prev.record?.pickedByType === next.record?.pickedByType;
 });
 
 const MonthlyRecordCard = React.memo(({ record }: { record: any }) => {
@@ -300,6 +371,137 @@ const MonthlyRecordCard = React.memo(({ record }: { record: any }) => {
   );
 });
 
+// ─── Attendance confirmation popup with animated circles ─────────────────────
+function AttendanceConfirmPopup({ visible, data, onClose }: {
+  visible: boolean;
+  data: ConfirmData | null;
+  onClose: () => void;
+}) {
+  const scaleAnim = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const textAnim = React.useRef(new Animated.Value(0)).current;
+  const checkAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible && data) {
+      scaleAnim.setValue(0);
+      fadeAnim.setValue(0);
+      textAnim.setValue(0);
+      checkAnim.setValue(0);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
+          Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]),
+        Animated.timing(textAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(checkAnim, { toValue: 1, friction: 5, tension: 50, useNativeDriver: true }),
+      ]).start();
+      const timer = setTimeout(onClose, 2800);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, data]);
+
+  if (!data) return null;
+
+  const isBoth = data.bothIn || data.bothOut;
+  const accent = data.markingType === 'IN' ? GREEN : AMBER_DARK;
+  const accentBg = data.markingType === 'IN' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)';
+
+  const renderCircle = (photo?: string, size: number = 80, borderColor: string = accent, label?: string, labelColor?: string) => (
+    <View style={{ alignItems: 'center' }}>
+      <View style={{
+        width: size, height: size, borderRadius: size / 2,
+        backgroundColor: accentBg,
+        borderWidth: 4, borderColor,
+        alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
+        {photo ? (
+          <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name="account" size={size * 0.5} color={accent} />
+        )}
+      </View>
+      {label ? (
+        <Text style={{ fontSize: 9, fontWeight: '800', color: labelColor || TEXT_MUTED, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={1}>{label}</Text>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(31,45,40,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+        <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 380, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 28, alignItems: 'center', overflow: 'hidden' }}>
+          {/* Gradient background */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <LinearGradient colors={[accentBg, 'rgba(255,255,255,0)']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 28 }]} />
+          </View>
+
+          {/* Checkmark */}
+          <Animated.View style={{ transform: [{ scale: checkAnim }], opacity: checkAnim }}>
+            <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: accent + '18', alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="check-bold" size={28} color={accent} />
+            </View>
+          </Animated.View>
+
+          {/* Title */}
+          <Animated.View style={{ opacity: textAnim, transform: [{ translateY: textAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }}>
+            <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: TEXT_MUTED, marginTop: 14, textAlign: 'center' }}>
+              Attendance Marked
+            </Text>
+          </Animated.View>
+
+          {/* Student + Guardian circles with connector */}
+          <Animated.View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20, transform: [{ scale: scaleAnim }], opacity: fadeAnim }}>
+            {renderCircle(data.studentAvatar, 80, accent, data.studentName, TEXT_PRIMARY)}
+            <Animated.View style={{ marginHorizontal: 12, alignItems: 'center', transform: [{ scale: scaleAnim }] }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: accentBg, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name={data.markingType === 'IN' ? 'login' : 'logout'} size={16} color={accent} />
+              </View>
+            </Animated.View>
+            {renderCircle(data.guardianPhoto, 64, data.guardianType === 'Father' ? '#3B82F6' : data.guardianType === 'Mother' ? '#D97706' : GREEN, data.guardianName, TEXT_SECONDARY)}
+          </Animated.View>
+
+          {/* Matched text */}
+          <Animated.View style={{ opacity: textAnim, transform: [{ translateY: textAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }], marginTop: 16, alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: TEXT_PRIMARY, textAlign: 'center' }}>
+              {data.studentName}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: TEXT_SECONDARY }}>
+                {data.markingType === 'IN' ? 'dropped by' : 'picked up by'}
+              </Text>
+              <View style={{ backgroundColor: (data.guardianType === 'Father' ? '#3B82F6' : data.guardianType === 'Mother' ? '#D97706' : GREEN) + '18', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginLeft: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', color: data.guardianType === 'Father' ? '#3B82F6' : data.guardianType === 'Mother' ? '#D97706' : GREEN, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {data.guardianType}
+                </Text>
+              </View>
+            </View>
+            {data.inTime && data.outTime ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN, marginRight: 5 }} />
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: GREEN }}>{data.inTime}</Text>
+                </View>
+                <MaterialCommunityIcons name="arrow-right" size={14} color={TEXT_MUTED} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: AMBER_DARK, marginRight: 5 }} />
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: AMBER_DARK }}>{data.outTime}</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 100, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                <MaterialCommunityIcons name="clock-outline" size={14} color={accent} />
+                <Text style={{ fontSize: 13, fontWeight: '900', color: TEXT_PRIMARY, marginLeft: 6 }}>{data.time}</Text>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 interface Props { navigation: { navigate: (s: string, params?: any) => void; goBack: () => void } }
 
 export default function TakeAttendanceScreenV2({ navigation }: Props) {
@@ -319,6 +521,7 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
   const [statusPopup, setStatusPopup] = useState({ visible: false, title: '', message: '', type: 'error' as 'success' | 'error' | 'warning' });
   const [choicePopup, setChoicePopup] = useState({ visible: false, title: '', message: '', iconName: 'alert', accentColor: AMBER, options: [] as { label: string; type?: 'primary' | 'destructive'; onPress?: () => void }[] });
   const [showSearch, setShowSearch] = useState(false);
+  const [guardianDetail, setGuardianDetail] = useState<GuardianDetail | null>(null);
 
   // monthly state
   const [selectedStudentForMonthly, setSelectedStudentForMonthly] = useState<any | null>(null);
@@ -328,6 +531,7 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
   const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const [showYearSelector, setShowYearSelector] = useState(false);
+  const [confirmData, setConfirmData] = useState<ConfirmData | null>(null);
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, branchFilterId]);
 
@@ -492,6 +696,37 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
     setAttendanceRecords(prev => ({ ...prev, [studentId]: newRecord }));
     setMarkingStudentId(null);
 
+    // Build confirm data
+    const inGuardianPhoto = markingType === 'IN'
+      ? (guardianType === 'Father' ? (student as any)?.fatherPhoto : guardianType === 'Mother' ? (student as any)?.motherPhoto : (student as any)?.guardianPhoto)
+      : current?.droppedByType === 'Father' ? (student as any)?.fatherPhoto : current?.droppedByType === 'Mother' ? (student as any)?.motherPhoto : (student as any)?.guardianPhoto;
+
+    const outGuardianPhoto = markingType === 'OUT'
+      ? (guardianType === 'Father' ? (student as any)?.fatherPhoto : guardianType === 'Mother' ? (student as any)?.motherPhoto : (student as any)?.guardianPhoto)
+      : undefined;
+
+    setConfirmData({
+      studentName: (student as any)?.name || 'Student',
+      studentAvatar: (student as any)?.avatar,
+      guardianName,
+      guardianPhoto: markingType === 'IN'
+        ? (guardianType === 'Father' ? (student as any)?.fatherPhoto : guardianType === 'Mother' ? (student as any)?.motherPhoto : (student as any)?.guardianPhoto)
+        : (guardianType === 'Father' ? (student as any)?.fatherPhoto : guardianType === 'Mother' ? (student as any)?.motherPhoto : (student as any)?.guardianPhoto),
+      guardianType,
+      markingType,
+      time,
+      inTime: newRecord.inTime || undefined,
+      outTime: newRecord.outTime || undefined,
+      inGuardian: markingType === 'IN' ? guardianName : current?.droppedBy,
+      inGuardianPhoto,
+      inGuardianType: markingType === 'IN' ? guardianType : current?.droppedByType,
+      outGuardian: markingType === 'OUT' ? guardianName : undefined,
+      outGuardianPhoto,
+      outGuardianType: markingType === 'OUT' ? guardianType : undefined,
+      bothIn: markingType === 'IN' && !!current?.outTime,
+      bothOut: markingType === 'OUT' && !!newRecord.inTime,
+    });
+
     try {
       await api.post('/attendance', {
         student_id: studentId,
@@ -626,6 +861,7 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
       record={attendanceRecords[item.id]}
       onTap={onDayStudentTap}
       onLongPress={markAbsent}
+      onGuardianTap={setGuardianDetail}
     />
   ), [attendanceRecords, onDayStudentTap, markAbsent]);
 
@@ -641,9 +877,9 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
 
   const guardianOptions = markingStudent
     ? [
-        { label: 'Father', icon: 'face-man' as any, color: '#3B82F6', name: (markingStudent as any).fatherName },
-        { label: 'Mother', icon: 'face-woman' as any, color: '#D97706', name: (markingStudent as any).motherName },
-        { label: 'Guardian', icon: 'account-child' as any, color: '#10B981', name: (markingStudent as any).parentName },
+        { label: 'Father', icon: 'face-man' as any, color: '#3B82F6', name: (markingStudent as any).fatherName, photo: (markingStudent as any).fatherPhoto },
+        { label: 'Mother', icon: 'face-woman' as any, color: '#D97706', name: (markingStudent as any).motherName, photo: (markingStudent as any).motherPhoto },
+        { label: 'Guardian', icon: 'account-child' as any, color: '#10B981', name: (markingStudent as any).parentName, photo: (markingStudent as any).guardianPhoto },
       ]
     : [];
 
@@ -943,8 +1179,12 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
                       style={{ marginBottom: 12, borderRadius: BORDER_RADIUS, backgroundColor: 'rgba(255,255,255,0.92)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', padding: 16 }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: item.color + '16', alignItems: 'center', justifyContent: 'center' }}>
-                          <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
+                        <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: item.color + '16', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                          {item.photo ? (
+                            <Image source={{ uri: item.photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                          ) : (
+                            <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
+                          )}
                         </View>
                         <View style={{ flex: 1, marginLeft: 12 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -965,6 +1205,69 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
               </>
             )}
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ── Guardian detail popup ── */}
+      <Modal visible={!!guardianDetail} transparent animationType="fade" onRequestClose={() => setGuardianDetail(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+          <View style={{ width: SCREEN_WIDTH - 40, maxWidth: 420, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 24, alignItems: 'center', overflow: 'hidden' }}>
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <LinearGradient
+                colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+              />
+              <RadialGlow size={240} color="#DDF8D7" opacity={0.3} style={{ top: -90, left: -80 }} />
+              <RadialGlow size={260} color="#DDFBFF" opacity={0.28} style={{ bottom: -100, right: -90 }} />
+            </View>
+
+            {guardianDetail && (
+              <>
+                <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: (guardianDetail.kind === 'in' ? GREEN : AMBER) + '18', alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name={guardianDetail.kind === 'in' ? 'login-variant' : 'logout-variant'} size={20} color={guardianDetail.kind === 'in' ? GREEN : AMBER_DARK} />
+                </View>
+                <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: TEXT_MUTED, marginTop: 12 }}>
+                  {guardianDetail.kind === 'in' ? 'Dropped Off By' : 'Picked Up By'}
+                </Text>
+
+                <View style={{ position: 'relative', marginTop: 18 }}>
+                  <View style={{ width: 132, height: 132, borderRadius: 40, overflow: 'hidden', backgroundColor: (guardianDetail.kind === 'in' ? GREEN : AMBER) + '14', borderWidth: 4, borderColor: guardianDetail.kind === 'in' ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+                    {guardianDetail.photo ? (
+                      <Image source={{ uri: guardianDetail.photo }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    ) : (
+                      <MaterialCommunityIcons name="account-question-outline" size={52} color={guardianDetail.kind === 'in' ? GREEN : AMBER_DARK} />
+                    )}
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 22, fontWeight: '900', color: TEXT_PRIMARY, marginTop: 18, textAlign: 'center' }}>
+                  {guardianDetail.name || 'Guardian'}
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: TEXT_MUTED, marginTop: 4 }}>
+                  {guardianDetail.type || (guardianDetail.kind === 'in' ? 'In' : 'Out')} · {guardianDetail.studentName}
+                </Text>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+                  <MaterialCommunityIcons name="clock-outline" size={16} color={guardianDetail.kind === 'in' ? GREEN : AMBER_DARK} />
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: TEXT_PRIMARY, marginLeft: 6 }}>
+                    {guardianDetail.kind === 'in' ? 'In' : 'Out'} · {guardianDetail.time || '—'}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setGuardianDetail(null)}
+                  style={{ marginTop: 22, alignSelf: 'stretch', height: 52, borderRadius: 16, overflow: 'hidden' }}
+                >
+                  <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12 }}>Close</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
       </Modal>
 
@@ -1047,6 +1350,12 @@ export default function TakeAttendanceScreenV2({ navigation }: Props) {
         iconName={choicePopup.iconName}
         accentColor={choicePopup.accentColor}
         onClose={() => setChoicePopup(prev => ({ ...prev, visible: false }))}
+      />
+
+      <AttendanceConfirmPopup
+        visible={!!confirmData}
+        data={confirmData}
+        onClose={() => setConfirmData(null)}
       />
     </View>
   );

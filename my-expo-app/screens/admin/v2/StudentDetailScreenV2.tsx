@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, Linking, Alert,
-  RefreshControl, ActivityIndicator, StyleSheet, Dimensions,
+  RefreshControl, ActivityIndicator, StyleSheet, Dimensions, Modal,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import api from '../../../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -81,6 +83,66 @@ export default function StudentDetailScreenV2({ navigation, route }: StudentDeta
   const { studentId } = route.params;
   const [refreshing, setRefreshing] = React.useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [idProofStudent, setIdProofStudent] = useState<any | null>(null);
+  const [idProofLoading, setIdProofLoading] = useState(false);
+  const [previewIdProof, setPreviewIdProof] = useState<{ label: string; uri?: string } | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+
+  const student = users.find(u => u.id === studentId);
+
+  useEffect(() => {
+    if (!student) return;
+    setIdProofLoading(true);
+    api.get(`/users/${student.id}`)
+      .then((res) => {
+        const raw = res.data?.data && !Array.isArray(res.data.data) ? res.data.data : res.data;
+        setIdProofStudent({
+          ...student,
+          studentIdProof: (raw as any)?.student_id_proof || '',
+          fatherIdProof: (raw as any)?.father_id_proof || '',
+          motherIdProof: (raw as any)?.mother_id_proof || '',
+          guardianIdProof: (raw as any)?.guardian_id_proof || '',
+        });
+      })
+      .catch(() => setIdProofStudent(null))
+      .finally(() => setIdProofLoading(false));
+  }, [studentId]);
+
+  const idProofItems = (s: any) => {
+    if (!s) return [];
+    return [
+      { label: 'Student ID Proof', color: '#3B82F6', uri: s.studentIdProof },
+      { label: 'Father ID Proof', color: '#F59E0B', uri: s.fatherIdProof },
+      { label: 'Mother ID Proof', color: '#10B981', uri: s.motherIdProof },
+      { label: 'Guardian ID Proof', color: '#7C3AED', uri: s.guardianIdProof },
+    ];
+  };
+
+  const uploadedIdProofCount = (s: any) =>
+    idProofItems(s).filter(i => !!i.uri).length;
+
+  const handleDownloadIdProof = useCallback(async (item: { label: string; uri?: string }) => {
+    if (!item.uri) return;
+    setDownloadingKey(item.label);
+    try {
+      const uri = item.uri.startsWith('data:')
+        ? await (async () => {
+            const match = item.uri!.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
+            const ext = match?.[1] === 'png' ? 'png' : (match?.[1] === 'webp' ? 'webp' : 'jpg');
+            const base64 = match?.[2] || item.uri!.split(',')[1] || item.uri!;
+            const file = new FileSystem.File(FileSystem.Paths.cache, `idproof_${Date.now()}.${ext}`);
+            file.write(base64, { encoding: 'base64' as any });
+            return file.uri;
+          })()
+        : item.uri;
+      await Sharing.shareAsync(uri, { mimeType: 'image/jpeg', dialogTitle: item.label });
+    } catch (e) {
+      console.error('Download ID Proof Error:', e);
+      Alert.alert('Error', `Failed to download: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
+      setDownloadingKey(null);
+    }
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -92,8 +154,6 @@ export default function StudentDetailScreenV2({ navigation, route }: StudentDeta
       setRefreshing(false);
     }
   }, [fetchData]);
-
-  const student = users.find(u => u.id === studentId);
 
   const handleExportPdf = useCallback(async () => {
     if (!student) return;
@@ -492,8 +552,153 @@ export default function StudentDetailScreenV2({ navigation, route }: StudentDeta
             <InfoRow label="Guardian Name" value={student.parentName} icon="account-group" iconColor={TEXT_MUTED} photo={student.guardianPhoto} />
             <InfoRow label="Guardian Phone" value={student.guardianPhone} icon="phone" iconColor="#22C55E" isPhone />
           </View>
+
+          {/* ID Proofs */}
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.92)',
+            borderRadius: BORDER_RADIUS,
+            padding: 22,
+            borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)',
+            marginTop: 20,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+              <View style={{ width: 4, height: 20, backgroundColor: '#8B5CF6', borderRadius: 4, marginRight: 10 }} />
+              <Text style={{ fontSize: 14, fontWeight: '900', color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: 1.5 }}>ID Proofs</Text>
+              {idProofLoading ? (
+                <ActivityIndicator color="#8B5CF6" style={{ marginLeft: 12 }} size="small" />
+              ) : (
+                <View style={{ flexDirection: 'row', marginLeft: 'auto', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', color: TEXT_MUTED, marginRight: 4 }}>
+                    {uploadedIdProofCount(idProofStudent)}/4
+                  </Text>
+                  {idProofItems(idProofStudent).map((it, i) => (
+                    <View key={i} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: it.uri ? '#10B981' : '#D1D5DB' }} />
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {idProofItems(idProofStudent).map((item, i) => (
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.85}
+                disabled={!item.uri}
+                onPress={() => setPreviewIdProof({ label: item.label, uri: item.uri })}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.92)',
+                  borderWidth: 1,
+                  borderColor: item.uri ? 'rgba(16,185,129,0.35)' : 'rgba(122,138,130,0.15)',
+                  borderRadius: 16, padding: 10, marginBottom: 10,
+                }}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 12, overflow: 'hidden', backgroundColor: item.color + '1A', alignItems: 'center', justifyContent: 'center' }}>
+                  {item.uri ? (
+                    <Image source={{ uri: item.uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : (
+                    <MaterialCommunityIcons name="card-account-details-outline" size={22} color={item.color} />
+                  )}
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: TEXT_PRIMARY }}>{item.label}</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '700', color: item.uri ? '#059669' : TEXT_MUTED, marginTop: 2 }}>
+                    {item.uri ? 'Uploaded ✓' : 'Not uploaded'}
+                  </Text>
+                </View>
+                {item.uri && (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setPreviewIdProof({ label: item.label, uri: item.uri })}
+                    style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(59,130,246,0.12)', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}
+                  >
+                    <MaterialCommunityIcons name="eye-outline" size={17} color="#3B82F6" />
+                  </TouchableOpacity>
+                )}
+                {item.uri && (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => handleDownloadIdProof(item)}
+                    disabled={downloadingKey === item.label}
+                    style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: 'rgba(16,185,129,0.12)', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {downloadingKey === item.label ? (
+                      <ActivityIndicator size="small" color="#059669" />
+                    ) : (
+                      <MaterialCommunityIcons name="download" size={17} color="#059669" />
+                    )}
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            ))}
+            {!idProofLoading && uploadedIdProofCount(idProofStudent) === 0 && (
+              <Text style={{ fontSize: 11, fontWeight: '600', color: TEXT_MUTED, textAlign: 'center', marginTop: 4 }}>
+                No ID proofs uploaded yet. Tap an eye icon to view, or the download icon to save.
+              </Text>
+            )}
+          </View>
         </View>
       </ScrollView>
+
+      {/* ── ID Proof full preview ── */}
+      <Modal visible={!!previewIdProof} transparent animationType="fade" onRequestClose={() => setPreviewIdProof(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(15,23,20,0.92)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: '100%', maxWidth: 420, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)', padding: 20, alignItems: 'center', overflow: 'hidden' }}>
+            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(139,92,246,0.12)', alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="card-account-details-outline" size={22} color="#8B5CF6" />
+            </View>
+            <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, color: TEXT_MUTED, marginTop: 12 }}>ID Proof Preview</Text>
+            <Text style={{ fontSize: 17, fontWeight: '900', color: TEXT_PRIMARY, marginTop: 4, textAlign: 'center' }}>{previewIdProof?.label}</Text>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: TEXT_MUTED, marginTop: 4, textAlign: 'center' }}>Pinch to zoom · double-tap to reset</Text>
+
+            {/* Zoomable image */}
+            <View style={{ width: '100%', height: 280, borderRadius: 20, overflow: 'hidden', backgroundColor: '#000', marginTop: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <ScrollView
+                horizontal={false}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                minimumZoomScale={1}
+                maximumZoomScale={5}
+                bouncesZoom
+                contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 280 }}
+              >
+                {previewIdProof?.uri && (
+                  <Image
+                    source={{ uri: previewIdProof.uri }}
+                    style={{ width: Dimensions.get('window').width - 88, height: 280 }}
+                    resizeMode="contain"
+                  />
+                )}
+              </ScrollView>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16, alignSelf: 'stretch' }}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setPreviewIdProof(null)}
+                style={{ flex: 1, height: 50, borderRadius: 16, backgroundColor: 'rgba(247,249,246,0.95)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: TEXT_PRIMARY, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12 }}>Close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => handleDownloadIdProof(previewIdProof as any)}
+                disabled={downloadingKey === previewIdProof?.label}
+                style={{ flex: 1, height: 50, borderRadius: 16, overflow: 'hidden' }}
+              >
+                <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>
+                  {downloadingKey === previewIdProof?.label ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <MaterialCommunityIcons name="download" size={16} color="white" />
+                  )}
+                  <Text style={{ color: 'white', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, marginLeft: 6 }}>Download</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

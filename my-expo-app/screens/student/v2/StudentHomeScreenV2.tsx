@@ -420,8 +420,22 @@ export default function StudentHomeScreenV2({ navigation }: Props) {
                 <View style={{ backgroundColor: 'rgba(247,249,246,0.9)', borderRadius: 14, padding: 8 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     {[
-                      { label: 'Arrival', value: todayAttendance?.in_time || '--:--', image: require('../../../assets/icons/student.png') },
-                      { label: 'Departure', value: todayAttendance?.out_time || '--:--', image: require('../../../assets/icons/family.png') },
+                      {
+                        label: 'Arrival',
+                        value: todayAttendance?.in_time || '--:--',
+                        by: todayAttendance?.in_time
+                          ? `${todayAttendance?.dropped_by_name || todayAttendance?.dropped_by_type || 'Someone'}${todayAttendance?.dropped_by_type && todayAttendance?.dropped_by_name ? ` (${todayAttendance?.dropped_by_type})` : ''}`
+                          : '',
+                        image: require('../../../assets/icons/student.png'),
+                      },
+                      {
+                        label: 'Departure',
+                        value: todayAttendance?.out_time || '--:--',
+                        by: todayAttendance?.out_time
+                          ? `${todayAttendance?.picked_by_name || todayAttendance?.picked_by_type || 'Someone'}${todayAttendance?.picked_by_type && todayAttendance?.picked_by_name ? ` (${todayAttendance?.picked_by_type})` : ''}`
+                          : '',
+                        image: require('../../../assets/icons/family.png'),
+                      },
                       { label: 'Status', value: todayAttendance?.in_time ? (todayAttendance?.out_time ? 'Done' : 'Active') : 'Pending', image: require('../../../assets/icons/bell (1).png') },
                     ].map((item) => (
                       <View key={item.label} style={{ alignItems: 'center', flex: 1 }}>
@@ -430,6 +444,11 @@ export default function StudentHomeScreenV2({ navigation }: Props) {
                         </View>
                         <Text style={{ color: TEXT_PRIMARY, fontSize: 13, fontWeight: '900' }} numberOfLines={1}>{item.value}</Text>
                         <Text style={{ color: TEXT_MUTED, fontSize: 7, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginTop: 1 }}>{item.label}</Text>
+                        {item.by ? (
+                          <Text style={{ color: journeyAccent, fontSize: 8, fontWeight: '800', marginTop: 2 }} numberOfLines={1}>by {item.by}</Text>
+                        ) : (
+                          <Text style={{ fontSize: 8, marginTop: 2 }}>{''}</Text>
+                        )}
                       </View>
                     ))}
                   </View>

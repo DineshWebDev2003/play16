@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View } from 'react-native';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AppNavigator from './navigation/AppNavigator';
@@ -63,11 +63,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <ThemeProvider>
           <AppContent />
         </ThemeProvider>
-      </GestureHandlerRootView>
+      </View>
     </SafeAreaProvider>
   );
 }
