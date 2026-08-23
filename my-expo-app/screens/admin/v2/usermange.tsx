@@ -846,7 +846,8 @@ export default function UserMange({ navigation, route }: Props) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get('/settings');
+        // Backend is the source of truth; AsyncStorage is only a cache.
+        const res = await api.get('/settings/pay-to-active');
         const backendValue = res.data?.pay_to_active;
         if (typeof backendValue === 'boolean') {
           setPayToActive(backendValue);
@@ -861,12 +862,18 @@ export default function UserMange({ navigation, route }: Props) {
     })();
   }, []);
 
-  const togglePayToActive = useCallback(() => {
+  const togglePayToActive = useCallback(async () => {
+    if (!isMasterAdmin) return;
     const next = !payToActive;
     setPayToActive(next);
     AsyncStorage.setItem('payToActive', String(next)).catch(() => {});
-    if (isMasterAdmin) {
-      api.post('/settings/pay-to-active', { value: next }).catch(() => {});
+    try {
+      await api.post('/settings/pay-to-active', { value: next });
+    } catch {
+      // Never fail silently: revert the switch and inform the admin.
+      setPayToActive(!next);
+      AsyncStorage.setItem('payToActive', String(!next)).catch(() => {});
+      setStatusPopup({ visible: true, title: 'Error', message: 'Could not save the Pay to Active setting. Please try again.', type: 'error' });
     }
   }, [payToActive, isMasterAdmin]);
 

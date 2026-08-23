@@ -75,33 +75,32 @@ export default function PayGatewayScreen({ navigation }: Props) {
       if (!user) return;
 
       const today = new Date().toISOString().split('T')[0];
-      try {
-        await api.post('/fees', {
-          student_id: user.id,
-          student_name: user.name,
-          type: 'Admission',
-          amount,
-          status: 'paid',
-          date: today,
-          due_date: today,
-          paid_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          payment_method: 'Razorpay (Sandbox)',
-          payer_name: user.parentName || user.name,
-          payer_phone: user.guardianPhone || user.phone || '',
-          branch_id: user.branch_id || undefined,
-        });
-      } catch (feeErr) {
-        console.error('Fee record creation error:', feeErr);
-      }
+      // The fee record MUST be created successfully before any success is
+      // shown or the account can be activated. Never swallow this error.
+      await api.post('/fees', {
+        student_id: user.id,
+        student_name: user.name,
+        type: 'Admission',
+        amount,
+        status: 'paid',
+        date: today,
+        due_date: today,
+        paid_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        payment_method: 'Razorpay (Sandbox)',
+        payer_name: user.parentName || user.name,
+        payer_phone: user.guardianPhone || user.phone || '',
+        branch_id: user.branch_id || undefined,
+      });
 
       setCheckoutVisible(false);
       setProcessing(false);
       setSuccessVisible(true);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Checkout error:', e);
       setProcessing(false);
       setCheckoutVisible(false);
-      Alert.alert('Payment Failed', 'Something went wrong. Please try again.');
+      const msg = e?.response?.data?.message || 'The payment could not be recorded. Please try again.';
+      Alert.alert('Payment Failed', msg);
     }
   }, [user, amount]);
 
@@ -266,8 +265,17 @@ export default function PayGatewayScreen({ navigation }: Props) {
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={{ fontSize: 12, fontWeight: '700', color: textSecondary }}>Status</Text>
-            <Text style={{ fontSize: 12, fontWeight: '900', color: '#F59E0B' }}>Pending Payment</Text>
+            <Text style={{ fontSize: 12, fontWeight: '900', color: '#F59E0B' }}>Awaiting Payment</Text>
           </View>
+        </View>
+
+        <View style={{
+          marginTop: 14, backgroundColor: isDark ? '#2d2d24' : '#FFF7E6',
+          borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)',
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: textSecondary, textAlign: 'center' }}>
+            Paying by cash? Your Master Admin will confirm the payment in Fees Management and activate your account.
+          </Text>
         </View>
 
         <TouchableOpacity

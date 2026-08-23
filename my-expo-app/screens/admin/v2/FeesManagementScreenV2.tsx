@@ -1070,7 +1070,12 @@ export default function FeesManagementScreenV2({ navigation }: { navigation: Nav
 
     const result = baseList.filter(f => {
       const student = findUserByFeeId(f.student_id);
-      if (!student || student.status !== 'active') return false;
+      if (!student) return false;
+      const isAdmission = (f.type || '').toLowerCase().includes('admission');
+      // Pending-payment students appear only through their Admission fee
+      // (Awaiting Payment) so the Master Admin can confirm cash payments.
+      if (student.status === 'pending_payment') return isAdmission;
+      if (student.status !== 'active') return false;
       if (isMasterAdmin && branchFilterId && student.branch_id?.toString() !== branchFilterId) return false;
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date));
@@ -1217,10 +1222,72 @@ export default function FeesManagementScreenV2({ navigation }: { navigation: Nav
       ]);
       return;
     }
+    // Pay-to-Active cash confirmation for pending admission fees.
+    const feeStudent = findUserByFeeId(item.student_id);
+    if (
+      (item.type || '').toLowerCase().includes('admission') &&
+      item.status !== 'paid' &&
+      feeStudent?.status === 'pending_payment'
+    ) {
+      const branchName = feeStudent?.branch?.name || branches.find(b => b.id === feeStudent?.branch_id)?.name || '---';
+      Alert.alert(
+        'Confirm Cash Payment',
+        `Student: ${item.student_name}\nBranch: ${branchName}\nAdmission Fee: ₹${(item.amount || 0).toLocaleString()}\nPayment Method: Cash\n\nHave you received this amount?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Confirm Payment', onPress: () => confirmCashPayment(item) }
+        ]
+      );
+      return;
+    }
     setPayerName(item.student_name || '');
     setPayerPhone('');
     setPaymentMethod('Cash');
     setPaymentModal({ visible: true, item });
+  };
+
+  const confirmCashPayment = async (item: FeeRecord) => {
+    try {
+      setIsLocalLoading(true);
+      let feeId = item.id;
+      if (item.id.toString().startsWith('VIRTUAL_')) {
+        const matchedStudent = findUserByFeeId(item.student_id);
+        const realStudentId = matchedStudent?.id || item.student_id;
+        const existingFee = fees.find(f =>
+          f.student_id?.toString() === realStudentId?.toString() &&
+          (f.type || '').toLowerCase().includes('admission')
+        );
+        if (existingFee) {
+          feeId = existingFee.id;
+        } else {
+          const created = await api.post('/fees', {
+            student_id: realStudentId,
+            student_name: item.student_name,
+            type: 'Admission',
+            amount: item.amount,
+            status: 'unpaid',
+            date: new Date().toISOString().split('T')[0],
+            due_date: new Date().toISOString().split('T')[0],
+            branch_id: matchedStudent?.branch_id,
+          });
+          feeId = created.data?.id ?? created.data?.data?.id;
+        }
+      }
+      await api.post(`/fees/${feeId}/mark-paid`, {
+        payment_method: 'Cash',
+        payer_name: item.student_name,
+      });
+      await Promise.all([refreshFees(), fetchData()]);
+      setIsLocalLoading(false);
+      setTimeout(() => {
+        Alert.alert('Payment Confirmed ✅', `${item.student_name} has been activated. The ₹${(item.amount || 0).toLocaleString()} Admission income was posted to Master Admin.`);
+      }, 300);
+    } catch (err: any) {
+      console.error('Cash confirmation error:', err);
+      try { await Promise.all([refreshFees(), fetchData()]); } catch {}
+      setIsLocalLoading(false);
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to confirm the cash payment.');
+    }
   };
 
   const executeToggle = async (item: FeeRecord, targetStatus: string, payMethod?: string, payName?: string, payPhone?: string) => {
@@ -1282,6 +1349,10 @@ export default function FeesManagementScreenV2({ navigation }: { navigation: Nav
 
   const renderFeeItem = ({ item }: any) => {
     const isOverdue = item.status === 'unpaid' && item.due_date && new Date(item.due_date) < new Date(new Date().toISOString().split('T')[0]);
+    const feeStudent = findUserByFeeId(item.student_id);
+    const isAwaitingPayment = item.status !== 'paid' &&
+      (item.type || '').toLowerCase().includes('admission') &&
+      feeStudent?.status === 'pending_payment';
 
     const student = findUserByFeeId(item.student_id);
     const displayId = student?.studentId || item.student_id;
@@ -1335,9 +1406,9 @@ export default function FeesManagementScreenV2({ navigation }: { navigation: Nav
               </View>
             </View>
 
-            <View style={{ backgroundColor: item.status === 'paid' ? '#10B981' : '#EF4444', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
+            <View style={{ backgroundColor: item.status === 'paid' ? '#10B981' : (isAwaitingPayment ? '#F59E0B' : '#EF4444'), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
               <Text style={{ fontSize: 9, fontWeight: '900', color: 'white', textTransform: 'uppercase', letterSpacing: 1 }}>
-                {item.status === 'paid' ? 'PAID' : 'UNPAID'}
+                {item.status === 'paid' ? 'PAID' : (isAwaitingPayment ? 'AWAITING PAYMENT' : 'UNPAID')}
               </Text>
             </View>
           </View>
