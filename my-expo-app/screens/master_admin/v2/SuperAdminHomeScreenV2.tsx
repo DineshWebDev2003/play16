@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -163,6 +163,19 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
   const { user, activities, users, branches, transactions, announcements } = useAuth();
   const insets = useSafeAreaInsets();
 
+  // ── Overview carousel swipe progress ──
+  const overviewScrollX = useRef(new Animated.Value(0)).current;
+  const OVERVIEW_CARD_COUNT = 3;
+  const OVERVIEW_TRACK_W = 96;
+  const overviewContentWidth = OVERVIEW_CARD_COUNT * (SCREEN_WIDTH - 40 + 16);
+  const overviewRange = Math.max(overviewContentWidth - SCREEN_WIDTH, 1);
+  const overviewThumbW = Math.max(OVERVIEW_TRACK_W * (SCREEN_WIDTH / overviewContentWidth), 28);
+  const overviewThumbX = overviewScrollX.interpolate({
+    inputRange: [0, overviewRange],
+    outputRange: [0, OVERVIEW_TRACK_W - overviewThumbW],
+    extrapolate: 'clamp',
+  });
+
   const stats = useMemo(() => {
     const admins = users.filter(u => u.role === 'admin').length;
     const teachers = users.filter(u => u.role === 'teacher').length;
@@ -325,6 +338,8 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
             decelerationRate="fast"
             style={{ marginHorizontal: -20 }}
             contentContainerStyle={{ paddingHorizontal: 20 }}
+            onScroll={(e: any) => overviewScrollX.setValue(e.nativeEvent.contentOffset.x)}
+            scrollEventThrottle={16}
           >
             <StatCard
               iconImage={require('../../../assets/icons/team.png')}
@@ -360,6 +375,30 @@ export default function SuperAdminHomeScreenV2({ navigation }: Props) {
               ]}
             />
           </ScrollView>
+
+          {/* ── Swipe hint + progress slider ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="gesture-swipe-horizontal" size={14} color="#8AA096" />
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#8AA096', marginLeft: 5, letterSpacing: 0.3 }}>
+                Swipe to explore
+              </Text>
+            </View>
+            <View style={{ width: OVERVIEW_TRACK_W, height: 5, borderRadius: 3, backgroundColor: '#E3EBE7', overflow: 'hidden' }}>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: overviewThumbW,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: '#F59E0B',
+                  transform: [{ translateX: overviewThumbX }],
+                }}
+              />
+            </View>
+          </View>
 
           <View style={{ height: SECTION_GAP }} />
 
