@@ -452,6 +452,21 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
 
   const isStudentRole = formData.role === 'student' || formData.role === 'tuition_student';
 
+  // ID proofs are optional, but all-or-nothing: either all 4 together or none.
+  const idProofStates = useMemo(() => [
+    { label: 'Student ID Proof', uri: formData.studentIdProof },
+    { label: 'Father ID Proof', uri: formData.fatherIdProof },
+    { label: 'Mother ID Proof', uri: formData.motherIdProof },
+    { label: 'Guardian ID Proof', uri: formData.guardianIdProof },
+  ], [formData.studentIdProof, formData.fatherIdProof, formData.motherIdProof, formData.guardianIdProof]);
+
+  const uploadedIdProofCountState = idProofStates.filter(i => !!i.uri).length;
+  const isPartialIdProofs = isStudentRole && uploadedIdProofCountState > 0 && uploadedIdProofCountState < 4;
+  const missingIdProofs = useMemo(() =>
+    isPartialIdProofs ? idProofStates.filter(i => !i.uri).map(i => i.label) : [],
+    [isPartialIdProofs, idProofStates]
+  );
+
   const missing = useMemo(() => {
     const m: string[] = [];
     if (!formData.name.trim()) m.push('Name');
@@ -463,8 +478,9 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
     if (isStudentRole && !formData.fee_due_day?.toString().trim()) m.push('Fee Due Date');
     if (isStudentRole && parseInt(formData.fee_due_day as any, 10) > 28) m.push('Fee Due Date (max 28)');
     if (isStudentRole && payToActive && !formData.fees?.toString().trim()) m.push('Admission Fee');
+    if (isPartialIdProofs) m.push('ID Proofs (upload all 4 together, or none)');
     return m;
-  }, [formData, isEdit, isStudentRole, payToActive]);
+  }, [formData, isEdit, isStudentRole, payToActive, isPartialIdProofs]);
 
   const isValid = missing.length === 0;
 
@@ -653,7 +669,7 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
 
                   <FieldRow icon="card-account-details-outline" label="ID Proofs (Aadhar / ID Cards)">
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: TEXT_SECONDARY }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: uploadedIdProofCount === 4 ? '#10B981' : TEXT_SECONDARY }}>
                         {uploadedIdProofCount === 4 ? 'All 4 ID proofs uploaded' : `${uploadedIdProofCount} of 4 ID proofs uploaded`}
                       </Text>
                       <View style={{ flexDirection: 'row', marginLeft: 'auto', gap: 4 }}>
@@ -666,6 +682,11 @@ function UserFormModal({ visible, onClose, initial, isEdit, onSave, isSubmitting
                     {renderIdProofCard('fatherIdProof', 'Father ID Proof', 'account-tie', '#F59E0B', formData.fatherIdProof)}
                     {renderIdProofCard('motherIdProof', 'Mother ID Proof', 'account-heart', '#10B981', formData.motherIdProof)}
                     {renderIdProofCard('guardianIdProof', 'Guardian ID Proof', 'account-group', '#7C3AED', formData.guardianIdProof)}
+                    {missingIdProofs.length > 0 && (
+                      <Text style={{ fontSize: 10, color: '#EF4444', fontWeight: '800', marginTop: 8, lineHeight: 15 }}>
+                        ID proofs are optional — but if you upload, all 4 must be uploaded together. Missing: {missingIdProofs.join(', ')}. Upload the rest or remove the added ones to skip.
+                      </Text>
+                    )}
                     <Text style={{ fontSize: 9, color: TEXT_MUTED, fontWeight: '600', marginTop: 2, lineHeight: 14 }}>
                       Upload Aadhar / Government ID for student and guardians. Tap the eye icon to preview.
                     </Text>
