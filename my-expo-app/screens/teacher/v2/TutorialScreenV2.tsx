@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as IntentLauncher from 'expo-intent-launcher';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,16 +23,18 @@ const ACCENT = '#F59E0B';
 
 const APPS = [
   {
-    name: 'CarPics for Schools',
+    name: 'Caprics for Schools',
     packageName: 'com.todquest.caprics.school',
     color: '#3B82F6',
     image: require('../../../assets/icons/education.png'),
+    storeUrl: 'https://play.google.com/store/apps/details?id=com.todquest.caprics.school&pcampaignid=web_share',
   },
   {
-    name: 'CarPics for Students',
+    name: 'Caprics for Students',
     packageName: 'com.todquest.caprics.student',
     color: '#10B981',
     image: require('../../../assets/icons/student.png'),
+    storeUrl: 'https://play.google.com/store/apps/details?id=com.todquest.caprics.student&pcampaignid=web_share',
   },
 ];
 
@@ -69,20 +70,14 @@ function AppCard({ app }: { app: typeof APPS[0] }) {
   const tintBg = app.color + '1F';
 
   const handlePress = async () => {
-    const marketUrl = `market://details?id=${app.packageName}`;
-    const webUrl = `https://play.google.com/store/apps/details?id=${app.packageName}`;
-
     try {
-      const result = await IntentLauncher.startActivityAsync(
-        'android.intent.action.MAIN',
-        { packageName: app.packageName }
-      );
-      if (result.resultCode === -1) return;
+      await Linking.openURL(app.storeUrl);
     } catch {
+      // fallback to market:// if Linking fails
       try {
-        await Linking.openURL(marketUrl);
+        await Linking.openURL(`market://details?id=${app.packageName}`);
       } catch {
-        await Linking.openURL(webUrl);
+        // last resort - do nothing
       }
     }
   };
@@ -207,9 +202,9 @@ export default function TutorialScreenV2({ navigation }: Props) {
           {APPS.map((app) => (
             <AppCard key={app.packageName} app={app} />
           ))}
-        </View>
 
-        <View style={{ height: 140 }} />
+          <View style={{ height: 140 }} />
+        </View>
       </ScrollView>
     </View>
   );
