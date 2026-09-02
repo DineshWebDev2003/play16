@@ -57,6 +57,7 @@ import ClassScheduleScreenV2 from '../screens/teacher/v2/ClassScheduleScreenV2';
 import ParentMessagesScreenV2 from '../screens/teacher/v2/ParentMessagesScreenV2';
 import MyAttendanceScreenV2 from '../screens/teacher/v2/MyAttendanceScreenV2';
 import StudentAttendanceReportScreenV2 from '../screens/teacher/v2/StudentAttendanceReportScreenV2';
+import TutorialScreenV2 from '../screens/teacher/v2/TutorialScreenV2';
 import SplashScreenV2 from '../screens/auth/v2/SplashScreenV2';
 import OnboardingScreenV2 from '../screens/auth/v2/OnboardingScreenV2';
 import PrivacyPolicyScreenV2 from '../screens/auth/v2/PrivacyPolicyScreenV2';
@@ -91,7 +92,7 @@ import NannyAccountScreen from '../screens/nanny/NannyAccountScreen';
 import VoiceChatScreenV2 from '../screens/voice/v2/VoiceChatScreenV2';
 import MaintenanceScreenV2 from '../screens/admin/v2/MaintenanceScreenV2';
 
-type ScreenType = 'onboarding' | 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'userMange' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'attendanceSelection' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'profileSettings' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'tuitionStudentList' | 'tuitionStudentDetail' | 'pettyCash' | 'nannyChat' | 'nannyAttendance' | 'nannyAttendanceReport' | 'maintenance';
+type ScreenType = 'onboarding' | 'login' | 'privacyPolicy' | 'home' | 'quickAction' | 'account' | 'userManagement' | 'userManagementV2' | 'userMange' | 'alumni' | 'feesManagement' | 'announcements' | 'reports' | 'backup' | 'settings' | 'attendance' | 'activityFeed' | 'liveCamera' | 'attendanceSelection' | 'homework' | 'emergencyContact' | 'myFees' | 'rewards' | 'profile' | 'profileSettings' | 'timetable' | 'postHomework' | 'takeAttendance' | 'postActivity' | 'viewSubmissions' | 'classSchedule' | 'parentMessages' | 'studentList' | 'studentDetail' | 'incomeExpense' | 'myAttendance' | 'studentAttendanceReport' | 'teacherAttendanceReport' | 'notificationSettings' | 'branchManagement' | 'cameraManagement' | 'studentInfo' | 'tuitionPostProgress' | 'tuitionMyProgress' | 'tuitionAttendance' | 'tuitionConsole' | 'manageTuitionUsers' | 'tuitionStudyMaterials' | 'tuitionStudentList' | 'tuitionStudentDetail' | 'pettyCash' | 'nannyChat' | 'nannyAttendance' | 'nannyAttendanceReport' | 'maintenance' | 'tutorial';
 
 export default function AppNavigator() {
   const { user, announcements, isLoading, logout } = useAuth();
@@ -329,6 +330,7 @@ export default function AppNavigator() {
     nannyChat: 'home',
     nannyAttendance: 'home',
     maintenance: 'quickAction',
+    tutorial: 'quickAction',
   };
 
   const needsPayment = (user?.role === 'student' || user?.role === 'tuition_student') && (user?.pay_to_active === true || user?.status === 'pending_payment');
@@ -441,6 +443,7 @@ export default function AppNavigator() {
       case 'tuitionStudyMaterials': return <TuitionStudyMaterialsScreenV2 navigation={navigation} />;
       case 'pettyCash': return <PettyCashScreenV2 navigation={navigation} />;
       case 'maintenance': return <MaintenanceScreenV2 navigation={navigation} />;
+      case 'tutorial': return <TutorialScreenV2 navigation={navigation} />;
       case 'tuitionConsole': return <TuitionConsoleScreenV2 navigation={navigation} />;
       case 'tuitionStudentList': return <TuitionStudentListScreenV2 navigation={navigation} />;
       case 'tuitionStudentDetail': return <TuitionStudentDetailScreenV2 navigation={navigation} route={{ params }} />;

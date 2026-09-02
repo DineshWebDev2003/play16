@@ -177,8 +177,32 @@ export default function TeacherQuickActionScreenV2({ navigation }: Props) {
 
           <View style={{ height: SECTION_GAP }} />
 
-          {/* ── Section title ── */}
-          <Text style={{ fontSize: 18, fontWeight: '600', color: TEXT_PRIMARY }}>Teacher Controls</Text>
+          {/* ── Section title + Tutorial pill button ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: TEXT_PRIMARY }}>Teacher Controls</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('tutorial')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#8B5CF6',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 100,
+                shadowColor: '#8B5CF6',
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: 4,
+              }}
+            >
+              <Image source={require('../../../assets/icons/education.png')} style={{ width: 20, height: 20 }} resizeMode="contain" />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF', marginLeft: 6, letterSpacing: 0.5 }}>
+                TUTORIAL
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={{ height: 18 }} />
 
