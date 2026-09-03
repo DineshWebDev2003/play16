@@ -3,6 +3,13 @@ workflows:
     name: TN Happy Kids - Android Release AAB (1.1.1)
     max_build_duration: 60
     instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: '*'
+          include: true
+      cancel_previous_builds: false
     environment:
       node: latest
       vars:
