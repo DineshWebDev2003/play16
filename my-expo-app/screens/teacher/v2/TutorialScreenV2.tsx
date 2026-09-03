@@ -189,14 +189,26 @@ export default function TutorialScreenV2({ navigation }: Props) {
               <MaterialCommunityIcons name="arrow-left" size={20} color={TEXT_PRIMARY} />
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>Tutorial</Text>
+              <Text style={{ fontSize: 12, fontWeight: '400', color: TEXT_MUTED }}>Learning Room</Text>
               <Text numberOfLines={1} style={{ fontSize: 20, fontWeight: '700', color: TEXT_PRIMARY, marginTop: 2 }}>
                 Our Apps
               </Text>
             </View>
           </View>
 
-          <View style={{ height: 32 }} />
+          <View style={{ height: 16 }} />
+
+          {/* ── Login options ── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 }}>
+            <View style={{ padding: 12, backgroundColor: '#E5E7EB', borderRadius: 12, width: '48%', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="account-circle" size={28} color='#6B7280' />
+              <Text style={{ fontSize: 14, color: '#374151', marginTop: 4 }}>Student Login</Text>
+            </View>
+            <View style={{ padding: 12, backgroundColor: '#E5E7EB', borderRadius: 12, width: '48%', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="account-circle" size={28} color='#6B7280' />
+              <Text style={{ fontSize: 14, color: '#374151', marginTop: 4 }}>Staff Login</Text>
+            </View>
+          </View>
 
           {/* ── App cards ── */}
           {APPS.map((app) => (
