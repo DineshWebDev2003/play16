@@ -535,9 +535,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchData]);
 
   const verifyPassword = useCallback(async (password: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('[verifyPassword] No user found');
+      return false;
+    }
+    console.log('[verifyPassword] Verifying for email:', user.email);
     try {
       const response = await api.post('/login', { username: user.email, password });
+      console.log('[verifyPassword] API response:', response.data?.access_token ? 'SUCCESS' : 'NO_TOKEN');
       return !!response.data?.access_token;
     } catch (error: any) {
       console.log('[verifyPassword] Failed:', error.response?.status, error.message);
@@ -1003,6 +1008,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: !!user,
     isLoading,
     login,
+    verifyPassword,
     testLogin,
     logout,
     addUser,

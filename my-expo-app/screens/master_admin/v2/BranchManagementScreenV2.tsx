@@ -112,37 +112,49 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
   };
 
   const handlePasswordSubmit = async () => {
+    console.log('[BranchDelete] handlePasswordSubmit called, step:', deleteStep, 'password length:', password.trim().length);
+    
     if (!password.trim()) {
+      console.log('[BranchDelete] Empty password, showing error');
       setPasswordError('Please enter your password');
       return;
     }
 
     setIsVerifying(true);
     setPasswordError('');
+    console.log('[BranchDelete] Calling verifyPassword...');
 
     try {
       const isValid = await verifyPassword(password.trim());
+      console.log('[BranchDelete] verifyPassword result:', isValid);
+
       if (!isValid) {
+        console.log('[BranchDelete] Password incorrect');
         setPasswordError('Incorrect password. Try again.');
         setPassword('');
         setIsVerifying(false);
         return;
       }
 
+      console.log('[BranchDelete] Password correct, moving to step:', deleteStep + 1);
       setPassword('');
 
       if (deleteStep < 2) {
         setDeleteStep(deleteStep + 1);
       } else {
+        console.log('[BranchDelete] All 3 steps done, deleting branch:', deletingBranch?.id);
         setShowDeleteModal(false);
         try {
           await deleteBranch(deletingBranch.id);
+          console.log('[BranchDelete] Branch deleted successfully');
           Alert.alert('Deleted', `"${deletingBranch.name}" has been removed. ${deletingBranch.userCount} users were in this branch and may need reassignment.`);
         } catch (e) {
+          console.log('[BranchDelete] Delete failed:', e);
           Alert.alert('Error', 'Failed to delete branch');
         }
       }
     } catch (e) {
+      console.log('[BranchDelete] Verify error:', e);
       setPasswordError('Verification failed. Please try again.');
       setPassword('');
     } finally {
