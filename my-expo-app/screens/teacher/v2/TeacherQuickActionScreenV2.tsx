@@ -199,7 +199,7 @@ export default function TeacherQuickActionScreenV2({ navigation }: Props) {
             >
               <Image source={require('../../../assets/icons/education.png')} style={{ width: 20, height: 20 }} resizeMode="contain" />
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF', marginLeft: 6, letterSpacing: 0.5 }}>
-                TUTORIAL
+                Learning Room
               </Text>
             </TouchableOpacity>
           </View>
