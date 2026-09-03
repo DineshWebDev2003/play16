@@ -1,43 +1,4 @@
 workflows:
-  react-native-expo-android-debug:
-    name: TN Happy Kids - Android Debug APK
-    max_build_duration: 60
-    instance_type: mac_mini_m1
-    environment:
-      node: latest
-      vars:
-        NODE_OPTIONS: "--max-old-space-size=6144"
-      groups:
-        - android_signing
-    scripts:
-      - name: Install dependencies
-        script: |
-          cd my-expo-app
-          npm install
-          npx expo install expo-build-properties expo-splash-screen expo-intent-launcher
-      - name: Decode google-services.json
-        script: |
-          cd my-expo-app
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" | base64 -d > google-services.json
-          fi
-      - name: Expo Prebuild
-        script: |
-          cd my-expo-app
-          npx expo prebuild --platform android
-      - name: Build Debug APK
-        script: |
-          cd my-expo-app
-          export NODE_OPTIONS="--max-old-space-size=6144"
-          cd android
-          ./gradlew --max-workers=2 assembleDebug
-    artifacts:
-      - my-expo-app/android/app/build/outputs/apk/debug/*.apk
-    publishing:
-      email:
-        recipients:
-          - dineshwebdev2003@gmail.com
-
   react-native-expo-android:
     name: TN Happy Kids - Android Release AAB (1.1.1)
     max_build_duration: 60

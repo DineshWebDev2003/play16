@@ -23,14 +23,14 @@ const ACCENT = '#F59E0B';
 
 const APPS = [
   {
-    name: 'Caprics for Schools',
+    name: 'Staff Login',
     packageName: 'com.todquest.caprics.school',
     color: '#3B82F6',
     image: require('../../../assets/icons/education.png'),
     storeUrl: 'https://play.google.com/store/apps/details?id=com.todquest.caprics.school&pcampaignid=web_share',
   },
   {
-    name: 'Caprics for Students',
+    name: 'Student Login',
     packageName: 'com.todquest.caprics.student',
     color: '#10B981',
     image: require('../../../assets/icons/student.png'),
@@ -137,7 +137,7 @@ function AppCard({ app }: { app: typeof APPS[0] }) {
               }}>
                 <MaterialCommunityIcons name="play" size={14} color={app.color} />
                 <Text style={{ fontSize: 10, fontWeight: '700', color: app.color, marginLeft: 4, letterSpacing: 0.5 }}>
-                  OPEN PLAY STORE
+                  CLICK TO OPEN 
                 </Text>
               </View>
             </View>
