@@ -156,6 +156,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  verifyPassword: (password: string) => Promise<boolean>;
   googleLogin: (idToken: string) => Promise<boolean>;
   testLogin: (role: UserRole) => void;
   logout: () => void;
@@ -532,6 +533,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
   }, [fetchData]);
+
+  const verifyPassword = useCallback(async (password: string): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const response = await api.post('/login', { username: user.email, password });
+      return !!response.data?.access_token;
+    } catch (error: any) {
+      console.log('[verifyPassword] Failed:', error.response?.status, error.message);
+      return false;
+    }
+  }, [user]);
 
   const googleLogin = useCallback(async (idToken: string): Promise<boolean> => {
     try {
@@ -1025,7 +1037,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     googleLogin,
   }), [
     user, users, announcements, activities, transactions, fees, feeStructures, branches, selectedBranch,
-    isLoading, login, googleLogin, testLogin, logout, addUser, updateUser, updateProfile,
+    isLoading,     login, verifyPassword, googleLogin, testLogin, logout, addUser, updateUser, updateProfile,
     deleteUser, toggleUserStatus, addAnnouncement, deleteAnnouncement, notifyAnnouncement,
     addActivity, deleteActivity, likeActivity, addComment, addTransaction, deleteTransaction, updateTransaction,
     approveTransaction, rejectTransaction,

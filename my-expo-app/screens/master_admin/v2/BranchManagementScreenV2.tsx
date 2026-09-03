@@ -52,7 +52,7 @@ function RadialGlow({ size, color, opacity, style }: {
 const KINDERGARTEN_ICON = require('../../../assets/icons/kindergarten.png');
 
 export default function BranchManagementScreenV2({ navigation }: Props) {
-  const { branches, addBranch, updateBranch, deleteBranch, users, user } = useAuth();
+  const { branches, addBranch, updateBranch, deleteBranch, users, user, verifyPassword } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [showModal, setShowModal] = useState(false);
@@ -61,9 +61,10 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingBranch, setDeletingBranch] = useState<any>(null);
-  const [deleteStep, setDeleteStep] = useState(0); // 0, 1, 2 = three password attempts
+  const [deleteStep, setDeleteStep] = useState(0);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const openAddModal = () => {
     setEditingBranch(null);
@@ -116,29 +117,36 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
       return;
     }
 
-    // Validate password against user's actual password
-    // In production, this should call an API to verify
-    if (password !== user?.email && password !== 'admin123') {
-      setPasswordError('Incorrect password. Try again.');
-      setPassword('');
-      return;
-    }
-
+    setIsVerifying(true);
     setPasswordError('');
-    setPassword('');
 
-    if (deleteStep < 2) {
-      // Move to next step
-      setDeleteStep(deleteStep + 1);
-    } else {
-      // All 3 passwords entered correctly — delete the branch
-      setShowDeleteModal(false);
-      try {
-        await deleteBranch(deletingBranch.id);
-        Alert.alert('Deleted', `"${deletingBranch.name}" has been removed. ${deletingBranch.userCount} users were in this branch and may need reassignment.`);
-      } catch (e) {
-        Alert.alert('Error', 'Failed to delete branch');
+    try {
+      const isValid = await verifyPassword(password.trim());
+      if (!isValid) {
+        setPasswordError('Incorrect password. Try again.');
+        setPassword('');
+        setIsVerifying(false);
+        return;
       }
+
+      setPassword('');
+
+      if (deleteStep < 2) {
+        setDeleteStep(deleteStep + 1);
+      } else {
+        setShowDeleteModal(false);
+        try {
+          await deleteBranch(deletingBranch.id);
+          Alert.alert('Deleted', `"${deletingBranch.name}" has been removed. ${deletingBranch.userCount} users were in this branch and may need reassignment.`);
+        } catch (e) {
+          Alert.alert('Error', 'Failed to delete branch');
+        }
+      }
+    } catch (e) {
+      setPasswordError('Verification failed. Please try again.');
+      setPassword('');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -415,10 +423,11 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handlePasswordSubmit}
-                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: deleteStep === 2 ? '#EF4444' : '#F59E0B', alignItems: 'center' }}
+                disabled={isVerifying}
+                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: deleteStep === 2 ? '#EF4444' : '#F59E0B', alignItems: 'center', opacity: isVerifying ? 0.6 : 1 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
-                  {deleteStep === 2 ? 'CONFIRM DELETE' : 'NEXT'}
+                  {isVerifying ? 'VERIFYING...' : deleteStep === 2 ? 'CONFIRM DELETE' : 'NEXT'}
                 </Text>
               </TouchableOpacity>
             </View>
