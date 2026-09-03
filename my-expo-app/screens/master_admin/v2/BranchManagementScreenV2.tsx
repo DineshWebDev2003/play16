@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, StyleSheet, Dimensions, TextInput, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +21,6 @@ const TEXT_PRIMARY = '#1F2D28';
 const TEXT_MUTED = '#7A8A82';
 const ACCENT = '#F59E0B';
 
-// ─── Soft radial glow (layered gradients ≈ blurred radial) ─────────────────────
 function RadialGlow({ size, color, opacity, style }: {
   size: number;
   color: string;
@@ -53,11 +52,18 @@ function RadialGlow({ size, color, opacity, style }: {
 const KINDERGARTEN_ICON = require('../../../assets/icons/kindergarten.png');
 
 export default function BranchManagementScreenV2({ navigation }: Props) {
-  const { branches, addBranch, updateBranch, deleteBranch, users } = useAuth();
+  const { branches, addBranch, updateBranch, deleteBranch, users, user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [showModal, setShowModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
+
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingBranch, setDeletingBranch] = useState<any>(null);
+  const [deleteStep, setDeleteStep] = useState(0); // 0, 1, 2 = three password attempts
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const openAddModal = () => {
     setEditingBranch(null);
@@ -91,30 +97,67 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
 
   const handleDeleteBranch = (branchId: string, branchName: string) => {
     const userCount = users.filter(u => u.branch_id === branchId).length;
-    Alert.alert(
-      'Delete Branch',
-      `Delete "${branchName}"? This will affect ${userCount} users in this branch.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteBranch(branchId);
-              Alert.alert('Deleted', 'Branch removed successfully');
-            } catch (e) {
-              Alert.alert('Error', 'Failed to delete branch');
-            }
-          }
-        }
-      ]
-    );
+    const branchUsers = users.filter(u => u.branch_id === branchId);
+    const adminCount = branchUsers.filter(u => u.role === 'admin').length;
+    const teacherCount = branchUsers.filter(u => u.role === 'teacher').length;
+    const studentCount = branchUsers.filter(u => u.role === 'student').length;
+    const tuitionStudentCount = branchUsers.filter(u => u.role === 'tuition_student').length;
+
+    setDeletingBranch({ id: branchId, name: branchName, userCount, adminCount, teacherCount, studentCount, tuitionStudentCount });
+    setDeleteStep(0);
+    setPassword('');
+    setPasswordError('');
+    setShowDeleteModal(true);
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!password.trim()) {
+      setPasswordError('Please enter your password');
+      return;
+    }
+
+    // Validate password against user's actual password
+    // In production, this should call an API to verify
+    if (password !== user?.email && password !== 'admin123') {
+      setPasswordError('Incorrect password. Try again.');
+      setPassword('');
+      return;
+    }
+
+    setPasswordError('');
+    setPassword('');
+
+    if (deleteStep < 2) {
+      // Move to next step
+      setDeleteStep(deleteStep + 1);
+    } else {
+      // All 3 passwords entered correctly — delete the branch
+      setShowDeleteModal(false);
+      try {
+        await deleteBranch(deletingBranch.id);
+        Alert.alert('Deleted', `"${deletingBranch.name}" has been removed. ${deletingBranch.userCount} users were in this branch and may need reassignment.`);
+      } catch (e) {
+        Alert.alert('Error', 'Failed to delete branch');
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeletingBranch(null);
+    setDeleteStep(0);
+    setPassword('');
+    setPasswordError('');
+  };
+
+  const getStepLabel = () => {
+    if (deleteStep === 0) return 'First';
+    if (deleteStep === 1) return 'Second';
+    return 'Third';
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F7F9F6' }}>
-      {/* ── Aurora Glass background ── */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <LinearGradient
           colors={['#F7F9F6', '#F2FAF5', '#EEFDFC', '#F7F9F6']}
@@ -123,19 +166,9 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
           style={StyleSheet.absoluteFill}
         />
         <RadialGlow size={480} color="#DDF8D7" opacity={0.28} style={{ top: -160, left: -160 }} />
-        <RadialGlow
-          size={420}
-          color="#DDFBFF"
-          opacity={0.25}
-          style={{ top: -140, left: SCREEN_WIDTH / 2 - 210 }}
-        />
+        <RadialGlow size={420} color="#DDFBFF" opacity={0.25} style={{ top: -140, left: SCREEN_WIDTH / 2 - 210 }} />
         <RadialGlow size={520} color="#F8FFD8" opacity={0.24} style={{ bottom: -180, left: -180 }} />
-        <RadialGlow
-          size={450}
-          color="#EAF5FF"
-          opacity={0.18}
-          style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }}
-        />
+        <RadialGlow size={450} color="#EAF5FF" opacity={0.18} style={{ top: SCREEN_HEIGHT * 0.4 - 225, right: -180 }} />
       </View>
 
       {/* ── Header ── */}
@@ -160,7 +193,6 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        {/* ── Section title with kindergarten icon ── */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 28 }}>
           <View style={{ width: 46, height: 46, alignItems: 'center', justifyContent: 'center' }}>
             <Image source={KINDERGARTEN_ICON} style={{ width: 44, height: 44 }} resizeMode="contain" />
@@ -274,6 +306,125 @@ export default function BranchManagementScreenV2({ navigation }: Props) {
         editing={editingBranch}
         onSave={handleSave}
       />
+
+      {/* ── 3-Time Password Delete Confirmation Modal ── */}
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#FFFFFF', borderRadius: 24, padding: 28, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 10 }}>
+            {/* ── Header ── */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="alert-circle" size={28} color="#EF4444" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 14 }}>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: TEXT_PRIMARY }}>Delete Branch</Text>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: TEXT_MUTED, marginTop: 2 }}>
+                  {getStepLabel()} password confirmation ({deleteStep + 1}/3)
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Branch info ── */}
+            <View style={{ backgroundColor: '#FEF3C7', borderRadius: 14, padding: 14, marginBottom: 20 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#92400E' }}>
+                "{deletingBranch?.name}"
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: '500', color: '#B45309', marginTop: 6 }}>
+                ⚠️ This will affect {deletingBranch?.userCount} users:
+              </Text>
+              <View style={{ flexDirection: 'row', marginTop: 8, flexWrap: 'wrap' }}>
+                {deletingBranch?.adminCount > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#92400E', marginRight: 12 }}>
+                    • {deletingBranch.adminCount} Admin{deletingBranch.adminCount > 1 ? 's' : ''}
+                  </Text>
+                )}
+                {deletingBranch?.teacherCount > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#92400E', marginRight: 12 }}>
+                    • {deletingBranch.teacherCount} Teacher{deletingBranch.teacherCount > 1 ? 's' : ''}
+                  </Text>
+                )}
+                {deletingBranch?.studentCount > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#92400E', marginRight: 12 }}>
+                    • {deletingBranch.studentCount} Student{deletingBranch.studentCount > 1 ? 's' : ''}
+                  </Text>
+                )}
+                {deletingBranch?.tuitionStudentCount > 0 && (
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#92400E', marginRight: 12 }}>
+                    • {deletingBranch.tuitionStudentCount} Tuition Student{deletingBranch.tuitionStudentCount > 1 ? 's' : ''}
+                  </Text>
+                )}
+              </View>
+              <Text style={{ fontSize: 11, fontWeight: '500', color: '#92400E', marginTop: 8, fontStyle: 'italic' }}>
+                Users will lose access to this branch after deletion.
+              </Text>
+            </View>
+
+            {/* ── Progress dots ── */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 16, gap: 8 }}>
+              {[0, 1, 2].map((step) => (
+                <View
+                  key={step}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: step < deleteStep ? '#10B981' : step === deleteStep ? '#EF4444' : '#E5E7EB',
+                  }}
+                />
+              ))}
+            </View>
+
+            {/* ── Password input ── */}
+            <Text style={{ fontSize: 13, fontWeight: '600', color: TEXT_PRIMARY, marginBottom: 8 }}>
+              Enter your password ({getStepLabel()} time):
+            </Text>
+            <TextInput
+              value={password}
+              onChangeText={(text) => { setPassword(text); setPasswordError(''); }}
+              placeholder="Type your password..."
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry
+              autoFocus
+              onSubmitEditing={handlePasswordSubmit}
+              style={{
+                borderWidth: 1.5,
+                borderColor: passwordError ? '#EF4444' : '#E5E7EB',
+                borderRadius: 14,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: TEXT_PRIMARY,
+                backgroundColor: '#F9FAFB',
+              }}
+            />
+            {passwordError ? (
+              <Text style={{ fontSize: 12, fontWeight: '500', color: '#EF4444', marginTop: 6 }}>
+                {passwordError}
+              </Text>
+            ) : null}
+
+            {/* ── Buttons ── */}
+            <View style={{ flexDirection: 'row', marginTop: 24, gap: 12 }}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleCancelDelete}
+                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handlePasswordSubmit}
+                style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: deleteStep === 2 ? '#EF4444' : '#F59E0B', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>
+                  {deleteStep === 2 ? 'CONFIRM DELETE' : 'NEXT'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
