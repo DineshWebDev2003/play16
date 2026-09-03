@@ -198,18 +198,6 @@ export default function TutorialScreenV2({ navigation }: Props) {
 
           <View style={{ height: 16 }} />
 
-          {/* ── Login options ── */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 }}>
-            <View style={{ padding: 12, backgroundColor: '#E5E7EB', borderRadius: 12, width: '48%', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="account-circle" size={28} color='#6B7280' />
-              <Text style={{ fontSize: 14, color: '#374151', marginTop: 4 }}>Student Login</Text>
-            </View>
-            <View style={{ padding: 12, backgroundColor: '#E5E7EB', borderRadius: 12, width: '48%', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="account-circle" size={28} color='#6B7280' />
-              <Text style={{ fontSize: 14, color: '#374151', marginTop: 4 }}>Staff Login</Text>
-            </View>
-          </View>
-
           {/* ── App cards ── */}
           {APPS.map((app) => (
             <AppCard key={app.packageName} app={app} />
