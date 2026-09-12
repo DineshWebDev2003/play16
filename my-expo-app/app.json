@@ -67,6 +67,13 @@
           }
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos",
+          "mediaLibraryPermission": "Allow $(PRODUCT_NAME) to access your media"
+        }
+      ],
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
       [
