@@ -17,28 +17,17 @@ workflows:
       groups:
         - android_signing
     scripts:
-      - name: Install dependencies
+      - name: Install & Build AAB
         script: |
           cd my-expo-app
           npm install
           npx expo install expo-build-properties expo-splash-screen expo-intent-launcher
-      - name: Decode google-services.json
-        script: |
-          cd my-expo-app
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" | base64 -d > google-services.json
           fi
-      - name: Place release keystore
-        script: |
-          cd my-expo-app
           echo "$CM_KEYSTORE" | base64 -d > android_keystore.jks
-      - name: Expo Prebuild
-        script: |
-          cd my-expo-app
           npx expo prebuild --platform android
-      - name: Wire release signing config
-        script: |
-          cd my-expo-app/android
+          cd android
           cat >> app/build.gradle <<'EOF'
 
           android {
@@ -57,11 +46,6 @@ workflows:
               }
           }
           EOF
-      - name: Build Release AAB
-        script: |
-          cd my-expo-app
-          export NODE_OPTIONS="--max-old-space-size=6144"
-          cd android
           ./gradlew --max-workers=2 bundleRelease
     artifacts:
       - my-expo-app/android/app/build/outputs/bundle/release/*.aab
