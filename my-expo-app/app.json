@@ -44,6 +44,10 @@
       "package": "com.tnhappykids.throneapp",
       "googleServicesFile": "./google-services.json",
       "versionCode": 8,
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
       "notification": {
         "icon": "./assets/notification-icon.png",
         "color": "#F59E0B"
@@ -68,11 +72,7 @@
         }
       ],
       [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos",
-          "mediaLibraryPermission": "Allow $(PRODUCT_NAME) to access your media"
-        }
+        "expo-image-picker"
       ],
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
